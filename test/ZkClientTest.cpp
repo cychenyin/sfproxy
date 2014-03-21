@@ -21,7 +21,7 @@ ZkClientTest::~ZkClientTest() {
 
 void ZkClientTest::ConnecionTest(){
 	// "192.168.117.19"
-	ZkClient client = ZkClient("yz-cdc-wrk-02.dns.ganji.com:2181");
+	ZkClient client = ZkClient("yz-cdc-wrk-02.dns.ganji.com:2181", 0);
 	client.ConnectZK();
 
 // 	client.Update("/aha/services/testservice/"); // bad arguments
@@ -30,7 +30,6 @@ void ZkClientTest::ConnecionTest(){
 	client.UpdateServices("/aha/services/testservice");
 //	client.Update("/aha/services/testservice/member_0000000084");
 }
-
 
 
 

@@ -14,6 +14,7 @@ int zoo_create(zhandle_t *zh, const char *path, const char *value,int valuelen,
 int zoo_wget_children(zhandle_t *zh, const char *path, watcher_fn watcher, void* watcherCtx, struct String_vector *strings)
 //close the zookeeper handle and free up any resources.
 int zookeeper_close(zhandle_t *zh)
+// ZOOAPI int zoo_wget(zhandle_t *zh, const char *path,watcher_fn watcher, void* watcherCtx, char *buffer, int* buffer_len, struct Stat *stat);
  */
 
 #ifndef ZKCLIENT_H_
@@ -27,20 +28,9 @@ int zookeeper_close(zhandle_t *zh)
 #include <zookeeper/zk_adaptor.h>
 #include <zookeeper/zookeeper_log.h>
 
-//extern "C" {
-//#include <zookeeper.h>
-////zhandle_t *zookeeper_init(const char *host, watcher_fn fn, int recv_timeout, const clientid_t *clientid, void *context, int flags);
-////int zoo_create(zhandle_t *zh, const char *path, const char *value,int valuelen, const struct ACL_vector *acl, int flags,char *path_buffer, int path_buffer_len);
-////int zoo_wget_children(zhandle_t *zh, const char *path, watcher_fn watcher, void* watcherCtx, struct String_vector *strings);
-////int zookeeper_close(zhandle_t *zh);
-//}
 
-//extern "C" zhandle_t *zookeeper_init(const char *host, watcher_fn fn, int recv_timeout, const clientid_t *clientid, void *context, int flags);
-//extern "C" int zoo_create(zhandle_t *zh, const char *path, const char *value,int valuelen, const struct ACL_vector *acl, int flags,char *path_buffer, int path_buffer_len);
-//extern "C" int zoo_wget_children(zhandle_t *zh, const char *path, watcher_fn watcher, void* watcherCtx, struct String_vector *strings);
-//extern "C" int zookeeper_close(zhandle_t *zh);
-
-//#include <zk_adaptor.h>
+#include "JsonUtil.h"
+#include "RegistryCache.h"
 
 using namespace std;
 
@@ -50,24 +40,24 @@ const int ZK_MAX_CONNECT_RETRY_TIMES = 10;
 
 class ZkClient {
 public:
-	ZkClient();
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
-	ZkClient(string hosts);
-	ZkClient(zhandle_t *zh);
+	ZkClient(string hosts, RegistryCache *pcache);
+
 	virtual ~ZkClient();
 	void ConnectZK();
 	void UpdateServices(string serviceName);
-	void UpdateService(string path);
+	void UpdateService(string serviceName, string subNodeName);
 	static void ChildrenWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void GetWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void GlobalWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	void Close();
 //	void InitWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctx);
 	void DumpStat(struct Stat *stat);
+	void parse(string json);
+
 private:
-//	string serviceName_;
+	RegistryCache *pcache;
 	zhandle_t *zhandle_;
-	//bool connected_;
 	string zk_hosts_;
 	int timeout_;
 	void Init();

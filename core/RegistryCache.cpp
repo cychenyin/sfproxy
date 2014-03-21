@@ -16,10 +16,10 @@ RegistryCache::RegistryCache() {
 RegistryCache::~RegistryCache() {
 }
 
-void RegistryCache::add(Registry& proxy) {
-	add(proxy.name, proxy);
+void RegistryCache::add(Registry& reg) {
+	add(reg.name, reg);
 }
-void RegistryCache::add(string name, Registry& proxy) {
+void RegistryCache::add(string name, Registry& reg) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it == cache.end()) {
@@ -29,10 +29,10 @@ void RegistryCache::add(string name, Registry& proxy) {
 		*ptr = it->second;
 	}
 
-	ptr->push_back(proxy);
+	ptr->push_back(reg);
 }
 
-void RegistryCache::remove(string name, Registry& proxy) {
+void RegistryCache::remove(string name, Registry& reg) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it != cache.end()) {
@@ -42,7 +42,7 @@ void RegistryCache::remove(string name, Registry& proxy) {
 //			ptr->erase(itProxy);
 //		}
 		vector<Registry>::iterator itProxy = ptr->begin();
-		while(itProxy != ptr->end()) {
+		while (itProxy != ptr->end()) {
 			if (itProxy != ptr->end()) {
 				ptr->erase(itProxy);
 				break;
@@ -69,6 +69,15 @@ bool RegistryCache::isEmpty(string name) {
 
 void RegistryCache::clear() {
 	return cache.clear();
+}
+
+vector<Registry>* RegistryCache::get(const string& name) {
+	map<string, vector<Registry> >::iterator it = cache.find(name);
+	vector<Registry> *ptr = NULL;
+	if (it != cache.end()) {
+		*ptr = it->second;
+	}
+	return ptr;
 }
 
 } /* namespace frp */

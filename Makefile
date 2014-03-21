@@ -20,7 +20,6 @@ INCLUDES= \
 	-I/usr/local/include \
 	-I/usr/local/include/thrift \
 	-I/usr/local/include/zookeeper \
-	-I/usr/local/include/jsoncpp \
 	-I/home/asdf/downloads/gtest-1.7.0/include
 	
 	#-I/usr/include/c++/4.4.4 \
@@ -28,7 +27,7 @@ INCLUDES= \
 	-I/usr/include/c++/4.4.4/x86_64-redhat-linux \
 	-I/usr/lib/gcc/x86_64-redhat-linux/4.4.4/include \
 
-LIBS    := thrift pthread zookeeper_mt json_linux-gcc-4.4.7_libmt
+LIBS    := thrift pthread zookeeper_mt
 # thriftnb
 CFLAGS=-D_LINUX_ -DTHREADED
 
@@ -41,21 +40,35 @@ $(TARGET1): $(TARGET1).o
 	test -z $(BIN_PATH) || $(MKDIR) -- $(BIN_PATH)
 	
 	$(CC) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
-		frproxy.o \
+		proxy_constants.o \
+		proxy_types.o \
+		RegistryProxy.o \
 		Registry.o \
 		RegistryCache.o \
 		ZkClient.o \
+		RequestPool.o \
+		ClientPool.o \
+		ServerHandler.o \
 		RegistryCacheTest.o \
 		ZkClientTest.o \
+		frproxy.o \
 		-o $(BIN_PATH)/$(TARGET1)
 		
 	#g++ -lthrift -L/usr/local/lib server.o RegistryProxy.o proxy_constants.o proxy_types.o -o server 
 	echo '---------------link done ---------------'
 		 
 $(TARGET1).o: $(OBJS) 
+	$(CC) -Wall $(INCLUDES) -c thrift/proxy_constants.cpp -o proxy_constants.o
+	$(CC) -Wall $(INCLUDES) -c thrift/proxy_types.cpp -o proxy_types.o	
+	$(CC) -Wall $(INCLUDES) -c thrift/RegistryProxy.cpp -o RegistryProxy.o
+
 	$(CC) -Wall $(INCLUDES) -c core/Registry.cpp -o Registry.o
 	$(CC) -Wall $(INCLUDES) -c core/RegistryCache.cpp -o RegistryCache.o
 	$(CC) -Wall $(INCLUDES) -c core/ZkClient.cpp -o ZkClient.o
+	$(CC) -Wall $(INCLUDES) -c core/RequestPool.cpp -o RequestPool.o
+	$(CC) -Wall $(INCLUDES) -c core/ClientPool.cpp -o ClientPool.o
+	$(CC) -Wall $(INCLUDES) -c core/ServerHandler.cpp -o ServerHandler.o
+	
 	$(CC) -Wall $(INCLUDES) -c test/RegistryCacheTest.cpp -o RegistryCacheTest.o
 	$(CC) -Wall $(INCLUDES) -c test/ZkClientTest.cpp -o ZkClientTest.o
 
@@ -91,3 +104,5 @@ clean:
 	make clean -C thrift
 	$(RM) *.o $(BIN_PATH)/$(TARGET1) $(BIN_PATH)/$(TARGET2)
 	
+install:
+	echo "not support now."

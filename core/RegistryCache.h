@@ -29,13 +29,13 @@ public:
 	virtual ~RegistryCache();
 
 	void add(Registry& proxy);
-	void add(string name, Registry& proxy);
-	void remove(string name, Registry& proxy);
+	void add(string name, Registry& reg);
+	void remove(string name, Registry& reg);
 	void remove(string name);
 	void replace(string name, vector<Registry> l);
 	bool isEmpty(string name);
 	void clear();
-
+	vector<Registry>* get(const string& name);
 private:
 	map<string, vector<Registry> > cache;
 
