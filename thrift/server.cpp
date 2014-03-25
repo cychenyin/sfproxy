@@ -4,10 +4,11 @@
 #include <iostream>
 #include "RegistryProxy.h"
 #include <protocol/TBinaryProtocol.h>
-#include <server/TSimpleServer.h>
+#include <server/TNonblockingServer.h>
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
 
+#include "RegistryProxyHandler.cpp"
 
 using namespace std;
 using namespace ::apache::thrift;
@@ -19,37 +20,25 @@ using boost::shared_ptr;
 
 using namespace FinagleRegistryProxy;
 
-class RegistryProxyHandler : virtual public RegistryProxyIf {
- public:
-  RegistryProxyHandler() {
-    // Your initialization goes here
-  }
-
-  void get(std::string& _return, const std::string& serviceName) {
-    // Your implementation goes here
-    _return = serviceName;
-    // printf("get\n");
-	cout << "get req" << endl;
-  }
-
-  void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port) {
-    // Your implementation goes here
-    // printf("remove\n");
-	cout << "remove called" << endl;
-  }
-
-};
-
 int main(int argc, char **argv) {
-  int port = 9091;
-  shared_ptr<RegistryProxyHandler> handler(new RegistryProxyHandler());
-  shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
-  shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
-  shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
-  shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+	int port = 9091;
+	shared_ptr<RegistryProxyHandler> handler(new RegistryProxyHandler());
+	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
+	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+	shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
+	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
-  TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
-  server.serve();
-  return 0;
+
+//	// using thread pool with maximum 15 threads to handle incoming requests
+//	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(15);
+//	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+//	threadManager->threadFactory(threadFactory);
+//	threadManager->start();
+	TNonblockingServer server(processor, protocolFactory, port); // , threadManager
+
+	cout << "server started. port=" << port << endl;
+	server.serve();
+	cout << "server exited. port=" << port << endl;
+	return 0;
 }
 

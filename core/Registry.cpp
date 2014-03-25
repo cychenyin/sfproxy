@@ -42,6 +42,10 @@ bool Registry::operator==(Registry& r) {
 	return this == &r ? true : name == r.name && host == r.host && port == r.port;
 }
 
+bool Registry::operator!=(Registry& r) {
+	return  !(this == &r ? true : name == r.name && host == r.host && port == r.port);
+}
+
 string Registry::toJsonString(Registry& r) {
 	Document document;
 	Document::AllocatorType& allocator = document.GetAllocator();
@@ -57,10 +61,9 @@ string Registry::toJsonString(Registry& r) {
 	Value root(kObjectType);
 	{
 		Value jname(r.name.c_str());
-		Value jhost(r.name.c_str());
-		Value jport(r.name.c_str());
-		Value jweight(r.name.c_str());
-
+		Value jhost(r.host.c_str());
+		Value jport(r.port);
+		Value jweight(r.weight());
 		root.AddMember("name", jname, allocator);
 		root.AddMember("host", jhost, allocator);
 		root.AddMember("port", jport, allocator);
@@ -73,17 +76,20 @@ string Registry::toJsonString(Registry& r) {
 	return buffer.GetString();
 }
 
-string Registry::toJsonStringx(vector<Registry> v) {
-//static string Registry::toJsonString(vector<Registry> &v) {
+string Registry::toJsonString(vector<Registry> v) {
 	string ret;
+	ret += "[";
 	vector<Registry>::iterator it = v.begin();
 	while (it != v.end()) {
+		if(ret.size() > 2 ) {
+			ret += ",";
+		}
 		ret += Registry::toJsonString(*it);
+		++it;
 	}
+	ret += "]";
 	return ret;
 }
-
-
 
 } /* namespace FinagleRegistryProxy */
 

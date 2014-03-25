@@ -23,27 +23,35 @@ void RegistryCache::add(string name, Registry& reg) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it == cache.end()) {
-		*ptr = vector<Registry>();
+		ptr = &vector<Registry>();
 		cache.insert(pair<string, vector<Registry> >(name, *ptr));
 	} else {
-		*ptr = it->second;
+		ptr = &(it->second);
+		vector<Registry>::iterator itProxy = ptr->begin();
+		while (itProxy != ptr->end()) {
+			if (itProxy != ptr->end()) {
+				ptr->erase(itProxy);
+				break;
+			}
+		}
 	}
 
 	ptr->push_back(reg);
+	cout << "	::size=" << cache.size() << endl;
 }
 
 void RegistryCache::remove(string name, Registry& reg) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it != cache.end()) {
-		*ptr = it->second;
+		ptr = &(it->second);
 //		vector<Registry>::iterator itProxy = find(ptr->begin(), ptr->end(), proxy);
 //		if (itProxy != ptr->end()) {
 //			ptr->erase(itProxy);
 //		}
 		vector<Registry>::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
-			if (itProxy != ptr->end()) {
+			if ( (*itProxy) != reg ) {
 				ptr->erase(itProxy);
 				break;
 			}
@@ -71,11 +79,11 @@ void RegistryCache::clear() {
 	return cache.clear();
 }
 
-vector<Registry>* RegistryCache::get(const string& name) {
+vector<Registry>* RegistryCache::get(string& name) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it != cache.end()) {
-		*ptr = it->second;
+		ptr = &(it->second);
 	}
 	return ptr;
 }

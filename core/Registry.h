@@ -38,9 +38,10 @@ public:
 	int weight();
 	bool equals(Registry& r);
 	bool operator==(Registry& r);
+	bool operator!=(Registry& r);
 
 	static string toJsonString(Registry &r);
-	static string toJsonStringx(vector<Registry> v);
+	static string toJsonString(vector<Registry> v);
 };
 
 } /* namespace FinagleRegistryProxy */

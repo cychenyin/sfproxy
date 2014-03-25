@@ -2,23 +2,15 @@
 // You should copy it to another filename to avoid overwriting it.
 
 #include <iostream>
-#include <protocol/TBinaryProtocol.h>
-#include <server/TSimpleServer.h>
-#include <transport/TServerSocket.h>
-#include <transport/TBufferTransports.h>
+
 
 #include "../thrift/RegistryProxy.h"
 
 #include "ZkClient.h"
-//#include "RegistryCache.h"
+#include "RegistryCache.h"
 #include "RequestPool.h"
 
 using namespace std;
-using namespace ::apache::thrift;
-using namespace ::apache::thrift::protocol;
-using namespace ::apache::thrift::transport;
-using namespace ::apache::thrift::server;
-using boost::shared_ptr;
 //using namespace FinagleRegistryProxy;
 
 namespace FinagleRegistryProxy {
@@ -39,18 +31,33 @@ public:
 //	ClientPool cpool;
 
 	void get(std::string& _return, const std::string& serviceName) {
-		vector<Registry>* pvector = cache->get(serviceName);
-		if (pvector == 0 || pvector->size() == 0) {
-			client->UpdateServices(serviceName);
-			pvector = cache->get(serviceName);
-		}
-		if (pvector && pvector->size() > 0) {
-			_return = Registry::toJsonStringx(*pvector);
-		} else
-			_return = "";
+		cout << "frproxy get method called." << serviceName << endl;
+		_return = "asdf";
+//		vector<Registry>* pvector = cache->get(serviceName);
+//		if (pvector == 0 || pvector->size() == 0) {
+//			client->UpdateServices(serviceName);
+//			pvector = cache->get(serviceName);
+//		}
+//		if (pvector && pvector->size() > 0) {
+//			_return = Registry::toJsonStringx(*pvector);
+//		} else
+//			_return = "";
+		// cout << "	" << _return << endl;
+		Registry r;
+		r.name = "/soa/testserivce";
+		r.host = "127.0.0.1";
+		r.port = 9999;
+		r.ctime = time(NULL) / 1000;
+//		_return = Registry::toJsonString(r);
+		vector<Registry> v;
+		v.push_back(r);
+		v.push_back(Registry("/soa/testserivce", "localhost", 8888));
+
+		_return = Registry::toJsonString(v);
 	}
 
 	void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port) {
+
 		// Your implementation goes here
 		// printf("remove\n");
 		cout << "remove called" << endl;

@@ -35,7 +35,7 @@ public:
 	void replace(string name, vector<Registry> l);
 	bool isEmpty(string name);
 	void clear();
-	vector<Registry>* get(const string& name);
+	vector<Registry>* get(string& name);
 private:
 	map<string, vector<Registry> > cache;
 

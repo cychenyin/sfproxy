@@ -8,8 +8,11 @@
 #ifndef REGISTRYCACHETEST_H_
 #define REGISTRYCACHETEST_H_
 
+#include <iostream>
+
 #include "../core/RegistryCache.h"
 
+using namespace std;
 
 namespace ut {
 using namespace FinagleRegistryProxy;
