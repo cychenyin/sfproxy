@@ -1,6 +1,6 @@
 all: clean compile link
 #client.cpp  proxy_constants.cpp  proxy_types.cpp  RegistryProxy.cpp	server.cpp
-	
+	echo 'done....................................'	
 
 compile:
 	g++ -Wall -I/usr/local/include/thrift -c proxy_constants.cpp -o proxy_constants.o

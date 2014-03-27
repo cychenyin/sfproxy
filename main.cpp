@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "frpoxy.h"
-#include "test/RegistryCacheTest.h"
+#include "test/RegistryCacheTest.cpp"
 #include "test/ZkClientTest.h"
 
 #include "core/ServerHandler.cpp"
@@ -30,21 +30,24 @@ using namespace ::apache::thrift::protocol;
 using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 using namespace ::apache::thrift::concurrency;
-using boost::shared_ptr;
 
 using namespace std;
 using namespace ut;
+using boost::shared_ptr;
 
-int main2(int argc, char** argv) {
+int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
 
 	cout << "-----------------------" << endl;
 	ut::RegistryCacheTest a;
-	cout << "before addTest-----------------------" << endl;
-	a.addTest();
-	cout << "after addTest-----------------------" << endl;
-
-//	ZkClientTest clientTest;
+//	a.getTest();
+//	cout << "before addTest-----------------------" << endl;
+//	a.addTest();
+//	cout << "after addTest-----------------------" << endl;
+//	a.removeTest();
+//	a.removeTest1();
+	a.removeTest2();
+	//	ZkClientTest clientTest;
 //	clientTest.ConnecionTest();
 //	clientTest.RegistryEqualsTest();
 
@@ -53,10 +56,23 @@ int main2(int argc, char** argv) {
 
 int main(int argc, char **argv) {
 
-//	main2(argc, argv);
-//	return 0;
+#ifdef DEBUG_
+	for (int i = 0; i < argc; i++) {
+		cout << " arg[" << i << "]=" << argv[i];
+	}
+	cout << endl;
+#endif
+
+	if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--test") == 0)) {
+		testmain(argc, argv);
+		return 0;
+	}
 
 	int port = 9091;
+	if (argc > 1 && (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--debug") == 0)) {
+		port = 9090;
+	}
+
 	cout << "frproxy server starting at port " << port << endl;
 //	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
 //	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -84,8 +100,10 @@ int main(int argc, char **argv) {
 	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
 	threadManager->threadFactory(threadFactory);
 	threadManager->start();
-	 TNonblockingServer server(processor, protocolFactory, port, threadManager);
+
+	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 //	TThreadPoolServer server(processor, serverTransport,transportFactory, protocolFactory, threadManager);
+	handler.get()->warm();
 
 	server.serve();
 

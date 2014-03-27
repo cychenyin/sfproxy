@@ -6,6 +6,7 @@
  */
 
 #include "RegistryCache.h"
+#include <stdexcept>
 
 namespace FinagleRegistryProxy {
 
@@ -17,30 +18,75 @@ RegistryCache::~RegistryCache() {
 }
 
 void RegistryCache::add(Registry& reg) {
-	add(reg.name, reg);
-}
-void RegistryCache::add(string name, Registry& reg) {
+	string &name = reg.name;
+	if (name == "")
+		return;
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it == cache.end()) {
-		ptr = &vector<Registry>();
+		vector<Registry> v;
+		ptr = &v;
+		ptr->push_back(reg);
+		// attation: stl copy pair in their implement. so, vector in map this not really the input one.
 		cache.insert(pair<string, vector<Registry> >(name, *ptr));
+//		cout << "	add new vector " << &v ;
 	} else {
 		ptr = &(it->second);
+//		cout << "	add old vector " ;
 		vector<Registry>::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
-			if (itProxy != ptr->end()) {
+			if ((*itProxy).equals(reg)) {
 				ptr->erase(itProxy);
 				break;
 			}
+			++itProxy;
+		}
+		ptr->push_back(reg);
+	}
+
+//	cout << " vsize=" << ptr->size() << " point=" << &ptr << " ref=" << &(*ptr) << endl;
+}
+
+void RegistryCache::remove(string name, string ephemeral) {
+	if (name == "" || ephemeral == "")
+		return;
+	vector<Registry> *ptr = NULL;
+	try {
+		ptr = & (cache.at(name));
+	} catch (std::out_of_range &ex) {
+	} catch (std::exception &ex) {
+	} catch (std::string &ex) {
+	}
+	if(ptr) {
+		vector<Registry>::iterator itProxy = ptr->begin();
+		while (itProxy != ptr->end()) {
+			if ((*itProxy).ephemeral == ephemeral) {
+				ptr->erase(itProxy);
+				break;
+			}
+			++itProxy;
 		}
 	}
 
-	ptr->push_back(reg);
-	cout << "	::size=" << cache.size() << endl;
+//	const string n("" + name + "");
+//	 map<string, vector<Registry> >::iterator it = cache.find(n);
+//
+////		cout << "ffffffffffffffffffffffffffffffffffffffffff" << endl;
+//	if (it != cache.end()) {
+//		ptr = &(it->second);
+//		vector<Registry>::iterator itProxy = ptr->begin();
+//		while (itProxy != ptr->end()) {
+//			if ((*itProxy).ephemeral == ephemeral) {
+//				ptr->erase(itProxy);
+//				break;
+//			}
+//			++itProxy;
+//		}
+//	}
+
 }
 
-void RegistryCache::remove(string name, Registry& reg) {
+void RegistryCache::remove(const string& name, Registry& reg) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	vector<Registry> *ptr = NULL;
 	if (it != cache.end()) {
@@ -51,19 +97,20 @@ void RegistryCache::remove(string name, Registry& reg) {
 //		}
 		vector<Registry>::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
-			if ( (*itProxy) != reg ) {
+			if ((*itProxy) == reg) {
 				ptr->erase(itProxy);
 				break;
 			}
+			++itProxy;
 		}
 	}
 }
 
-void RegistryCache::remove(string name) {
+void RegistryCache::remove(const string& name) {
 	cache.erase(name);
 }
 
-void RegistryCache::replace(string name, vector<Registry> l) {
+void RegistryCache::replace(const string& name, vector<Registry>& l) {
 	map<string, vector<Registry> >::iterator it = cache.find(name);
 	if (it != cache.end()) {
 		it->second.clear();
@@ -71,7 +118,7 @@ void RegistryCache::replace(string name, vector<Registry> l) {
 	cache.insert(pair<string, vector<Registry> >(name, l));
 }
 
-bool RegistryCache::isEmpty(string name) {
+bool RegistryCache::isEmpty(const string& name) {
 	return cache.size() == 0;
 }
 
@@ -79,13 +126,22 @@ void RegistryCache::clear() {
 	return cache.clear();
 }
 
-vector<Registry>* RegistryCache::get(string& name) {
-	map<string, vector<Registry> >::iterator it = cache.find(name);
+vector<Registry>* RegistryCache::get(const string& name) {
 	vector<Registry> *ptr = NULL;
-	if (it != cache.end()) {
-		ptr = &(it->second);
+	try {
+		map<string, vector<Registry> >::iterator it = cache.find(name);
+		if (it != cache.end()) {
+			ptr = &(it->second);
+			return ptr;
+		}
+	} catch (const std::exception& ex) {
+		cout << "RegistryCache.get failure, message:" << ex.what() << endl;
 	}
 	return ptr;
+}
+
+int RegistryCache::size() {
+	return cache.size();
 }
 
 } /* namespace frp */

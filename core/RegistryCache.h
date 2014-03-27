@@ -17,11 +17,12 @@
 #include <list>
 #include <vector>
 #include <algorithm>
-
-
 using namespace std;
 
 namespace FinagleRegistryProxy {
+
+typedef vector<Registry> Rvector;
+typedef map<string, Rvector > Rmap;
 
 class RegistryCache {
 public:
@@ -29,13 +30,14 @@ public:
 	virtual ~RegistryCache();
 
 	void add(Registry& proxy);
-	void add(string name, Registry& reg);
-	void remove(string name, Registry& reg);
-	void remove(string name);
-	void replace(string name, vector<Registry> l);
-	bool isEmpty(string name);
+	void remove(string name, string ephemeral);
+	void remove(const string& name, Registry& reg);
+	void remove(const string& name);
+	void replace(const string& name, vector<Registry>& l);
+	bool isEmpty(const string& name);
 	void clear();
-	vector<Registry>* get(string& name);
+	int size();
+	vector<Registry>* get(const string& name);
 private:
 	map<string, vector<Registry> > cache;
 

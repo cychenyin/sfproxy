@@ -6,9 +6,14 @@
  */
 
 #include "ZkClient.h"
+#include <boost/shared_ptr.hpp>
+
+using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
-
+ZkClient::ZkClient() {
+	Init();
+}
 ZkClient::ZkClient(string hosts, RegistryCache* pcache) {
 	Init();
 	this->zk_hosts_ = hosts;
@@ -18,7 +23,10 @@ ZkClient::ZkClient(string hosts, RegistryCache* pcache) {
 ZkClient::~ZkClient() {
 	Close();
 }
-
+void ZkClient::Init(string hosts, RegistryCache *pcache) {
+	this->zk_hosts_ = hosts;
+	this->pcache = pcache;
+}
 //connect to zk server
 //#define EXPIRED_SESSION_STATE_DEF -112
 //#define AUTH_FAILED_STATE_DEF -113
@@ -57,10 +65,11 @@ void ZkClient::Init() {
 }
 
 // {"serviceEndpoint":{"host":"asdf-laptop","port":4794},"additionalEndpoints":{},"status":"ALIVE","shard":1}
-void ZkClient::UpdateService(string serviceName, string subNodeName) {
-
-	long start = time(NULL);
-	string path = serviceName + "/" + subNodeName;
+void ZkClient::UpdateService(string serviceZpath, string subNodeName) {
+#ifdef DEBUG_
+//	long start = clock();
+#endif
+	string path = serviceZpath + "/" + subNodeName;
 	ZkClientContext context = ZkClientContext(this, path);
 	if (zhandle_ == NULL) {
 		ConnectZK();
@@ -69,15 +78,15 @@ void ZkClient::UpdateService(string serviceName, string subNodeName) {
 	int buffer_len = 256;
 	char *buffer = new char[buffer_len];
 	Stat stat;
-	int ret = zoo_wget(zhandle_, path.c_str(), &this->GetWatcher, &context, buffer, &buffer_len, &stat);
+	int ret = zoo_wget(zhandle_, path.c_str(), &this->EphemeralWatcher, &context, buffer, &buffer_len, &stat);
 #ifdef DEBUG_
-	cout << "Update --> path:" << path << ", data:" << buffer << endl;
+	cout << "UpdateEphemaral. path:" << serviceZpath << ", data:" << buffer << endl;
 #endif
 	if (ret) {
 		cout << "UpdateService error, ret=" << ret << endl;
 	} else {
 		Registry reg;
-		reg.name = serviceName;
+		reg.name = serviceZpath;
 		reg.ctime = stat.ctime / 1000;
 
 		string str(buffer);
@@ -88,82 +97,136 @@ void ZkClient::UpdateService(string serviceName, string subNodeName) {
 			const Value &v = d["serviceEndpoint"];
 			if (v.IsObject() && v.HasMember("host")) {
 				reg.host = v["host"].GetString();
-//				cout << "	host: " << reg.host << endl;
 				if (v.HasMember("port")) {
 					reg.port = v["port"].GetInt();
-//					cout << "	port: " << reg.port << endl;
 				}
 			}
 		}
-		if(pcache) {
+		if (pcache) {
 			pcache->add(reg);
 		}
-//		cout << "now=" << time(NULL) << "\tctime=" << stat.ctime / 1000 << "\tinteval="
-//				<< time(NULL) - stat.ctime / 1000 << endl;
 	}
 	delete buffer;
-	cout << "update Service cost " << time(NULL) - start << "ms." << endl;
+#ifdef DEBUG_
+	// cout << "update Service cost " << clock() - start << "ms." << endl;
+#endif
 }
 
 //update servcie list
-void ZkClient::UpdateServices(string serviceName) {
+void ZkClient::UpdateServices(string serviceZpath) {
 	watcher_fn watcher = &this->ChildrenWatcher;
-	ZkClientContext context = ZkClientContext(this, serviceName);
-	cout << "ZkClient::Update =============================================================" << endl;
+//	ZkClientContext context = ZkClientContext(this, serviceZpath);
+
 	if (zhandle_ == NULL) {
 		ConnectZK();
 	}
 	//got service list
 	struct String_vector str_vec;
-	int ret = zoo_wget_children(zhandle_, context.serviceName.c_str(), watcher, &context, &str_vec);
-	if (ret) {
-		cout << str_vec.data << endl;
-		cout << "Update fail to read path:" << context.serviceName << " wrong code= " << ret << " msg=" << zerror(ret)
-				<< endl;
-	}
-#ifdef DEBUG_
-	cout << " UpdateServices " << serviceName << " result count =" << str_vec.count << endl;
-#endif
 
-	// get service stat which contains host:port info
-	for (int i = 0; i < str_vec.count; ++i) {
-		UpdateService(context.serviceName, str_vec.data[i]);
+// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
+//	int ret = zoo_wget_children(zhandle_, context.get()->serviceZpath.c_str(), watcher, context, &str_vec);
+	int ret = zoo_wget_children(zhandle_, serviceZpath.c_str(), watcher, this, &str_vec);
+#ifdef DEBUG_
+	if (ret) {
+		cout << "zk_wget_children fail :" << serviceZpath << " wrong code= " << ret << " msg=" << zerror(ret) << endl;
+	}
+	cout << " UpdateServices " << serviceZpath << " result count =" << str_vec.count << endl;
+#endif
+	if (ret == ZOK) {
+		// remove before get all children
+		if (pcache)
+			pcache->remove(serviceZpath);
+		// get service stat which contains host:port info
+		for (int i = 0; i < str_vec.count; ++i) {
+			UpdateService(serviceZpath, str_vec.data[i]);
+		}
 	}
 }
 
+// type
 //#define CREATED_EVENT_DEF 1
 //#define DELETED_EVENT_DEF 2
 //#define CHANGED_EVENT_DEF 3
 //#define CHILD_EVENT_DEF 4
 //#define SESSION_EVENT_DEF -1
 //#define NOTWATCHING_EVENT_DEF -2
-void ZkClient::GetWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
-	ZkClientContext *context = (ZkClientContext*) watcherCtx;
-	cout << "GetWatcher path:" << path << endl;
-	if (context && context->client) {
-		cout << "service name = " << context->serviceName << endl;
-		context->client->UpdateServices(context->serviceName);
+void ZkClient::EphemeralWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+//	ZkClientContext *context = (ZkClientContext*) watcherCtx;
+	ZkClient *client = (ZkClient*) watcherCtx;
+#ifdef DEBUG_
+	cout << "EphemeralWatcher type=" << type << " state=" << state << " path:" << path << endl;
+#endif
+	if (client && path) {
+		if (state == ZOO_EXPIRED_SESSION_STATE) {
+			client->ConnectZK();
+		}
+
+		string serviceZpath(path);
+		unsigned index = serviceZpath.find_last_of('/');
+		const string spath = "" + serviceZpath.substr(0, index);
+		const string ename = "" + serviceZpath.substr(index + 1);
+		cout << "spath & ename =" << spath << "                " << ename << endl;
+
+		switch (type) {
+		case CREATED_EVENT_DEF:
+		case CHANGED_EVENT_DEF:
+		case CHILD_EVENT_DEF:
+			client->UpdateService(spath, ename);
+			break;
+		case DELETED_EVENT_DEF:
+			client->pcache->remove(spath, ename);
+			break;
+		default:
+
+			break;
+		}
 	}
 }
 
 // callback method for zookeeper notifier
 void ZkClient::ChildrenWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
-	cout << "ChildrenWatcher type:" << type << "	watcher ZOO_CHILD_EVENT:" << ZOO_CHILD_EVENT << endl;
-	cout << "ChildrenWatcher state:" << state << endl;
-	cout << "ChildrenWatcher path:" << path << endl;
 
-	ZkClientContext *context = (ZkClientContext*) watcherCtx;
-	if (context && context->client) {
-		cout << "service name = " << context->serviceName << endl;
-		context->client->UpdateServices(context->serviceName);
+#ifdef DEBUG_
+	cout << "ChildrenWatcher type=" << type << " state=" << state << " path:" << path << endl;
+#endif
+//	 ZkClientContext *context = (ZkClientContext*)watcherCtx;
+//	ZkClientContext *context = ((shared_ptr<ZkClientContext> ) watcherCtx).px;
+	ZkClient *client = (ZkClient*) watcherCtx;
+
+	if (client && path) {
+		if (state == ZOO_EXPIRED_SESSION_STATE) {
+			client->ConnectZK();
+		}
+
+		switch (type) {
+		case CREATED_EVENT_DEF:
+		case CHANGED_EVENT_DEF:
+		case CHILD_EVENT_DEF: {
+			client->UpdateServices(path);
+			break;
+		}
+		case DELETED_EVENT_DEF:
+			client->pcache->remove(path);
+			break;
+		default:
+			if (state == ZOO_EXPIRED_SESSION_STATE) {
+				client->ConnectZK();
+			}
+			break;
+		}
 	}
-//	if (ZOO_CHILD_EVENT == type) {
-//	}
 }
+
 void ZkClient::GlobalWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+#ifdef DEBUG_
+	cout << "GlobalWatcher type=" << type << " state=" << state << " path:" << path << endl;
+#endif
+
 	if (type == ZOO_SESSION_EVENT) {
 		if (state == ZOO_CONNECTED_STATE) {
+#ifdef DEBUG_
 			cout << "Connected to zookeeper service successfully!" << endl;
+#endif
 		} else if (state == ZOO_EXPIRED_SESSION_STATE) {
 			cout << "Zookeeper session expired!" << endl;
 			// reconnect
@@ -172,6 +235,7 @@ void ZkClient::GlobalWatcher(zhandle_t *zh, int type, int state, const char *pat
 		}
 	}
 }
+
 void ZkClient::DumpStat(struct Stat *stat) {
 	char tctimes[40];
 	char tmtimes[40];
@@ -200,16 +264,23 @@ void ZkClient::Close() {
 	this->zhandle_ = NULL;
 }
 
-ZkClientContext::ZkClientContext() {
-	client = NULL;
-}
-ZkClientContext::ZkClientContext(ZkClient *client, string serviceName) {
-	this->client = client;
-	this->serviceName = serviceName;
-}
+vector<string> ZkClient::getChildren(string root) {
+	vector<string> ret;
+	if (zhandle_ == NULL) {
+		ConnectZK();
+	}
+	//got service list
+	struct String_vector str_vec;
 
-ZkClientContext::~ZkClientContext() {
-	this->client = NULL;
+	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
+	int rc = zoo_wget_children(zhandle_, root.c_str(), NULL, NULL, &str_vec);
+	if (rc == ZOK) {
+		for (int i = 0; i < str_vec.count; ++i) {
+			UpdateServices(root + "/" + str_vec.data[i]);
+		}
+	}
+
+	return ret;
 }
 
 } /* namespace FinagleRegistryProxy */

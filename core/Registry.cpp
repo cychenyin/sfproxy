@@ -31,8 +31,8 @@ bool Registry::check() {
 }
 
 int Registry::weight() {
-	int elapse = time(0) / 1000 - ctime;
-	return elapse < 3600 ? elapse : 3600;
+	long elapse = time(0) - ctime;
+	return elapse < 3600 && elapse > 0 ? elapse : 3600;
 }
 
 bool Registry::equals(Registry& r) {

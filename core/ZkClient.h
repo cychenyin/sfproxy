@@ -23,6 +23,7 @@ int zookeeper_close(zhandle_t *zh)
 #include <iostream>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include <zookeeper/zookeeper.h>
 #include <zookeeper/zk_adaptor.h>
@@ -41,21 +42,25 @@ const int ZK_MAX_CONNECT_RETRY_TIMES = 10;
 class ZkClient {
 public:
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
+	ZkClient();
 	ZkClient(string hosts, RegistryCache *pcache);
+	void Init(string hosts, RegistryCache *pcache);
 
 	virtual ~ZkClient();
 	void ConnectZK();
-	void UpdateServices(string serviceName);
-	void UpdateService(string serviceName, string subNodeName);
+	void UpdateServices(string serviceZpath);
+	void UpdateService(string serviceZpath, string subNodeName);
 	static void ChildrenWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	static void GetWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	static void EphemeralWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void GlobalWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	vector<string> getChildren(string root="/aha/services");
 	void Close();
 //	void InitWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctx);
 	void DumpStat(struct Stat *stat);
 	void parse(string json);
 
 private:
+	string root;
 	RegistryCache *pcache;
 	zhandle_t *zhandle_;
 	string zk_hosts_;
@@ -66,11 +71,24 @@ private:
 class ZkClientContext {
 public:
 	ZkClient *client;
-	string serviceName;
+	string serviceZpath;
+	string ephemeralNode;
 
-	ZkClientContext();
-	ZkClientContext(ZkClient *client, string serviceName);
-	virtual ~ZkClientContext();
+	ZkClientContext() {
+		client = NULL;
+	}
+	ZkClientContext(ZkClient *client, string serviceZpath) {
+		this->client = client;
+		this->serviceZpath = serviceZpath;
+	}
+	ZkClientContext(ZkClient *client, string serviceZpath, string ephemeralNodeName) {
+		this->client = client;
+		this->serviceZpath = serviceZpath;
+		this->ephemeralNode = ephemeralNodeName;
+	}
+	virtual ~ZkClientContext() {
+		client = NULL;
+	}
 };
 
 } /* namespace FinagleRegistryProxy */

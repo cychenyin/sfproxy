@@ -16,6 +16,7 @@
 #include "../rapidjson/filestream.h"
 #include "../rapidjson/stringbuffer.h"
 
+#include "../frpoxy.h"
 #include "JsonUtil.h"
 
 namespace FinagleRegistryProxy {
@@ -27,6 +28,8 @@ public:
 	std::string host;
 	int port;
 	int ctime;
+	std::string ephemeral;
+
 	Registry();
 	Registry(string name , string host, int port);
 	virtual ~Registry();

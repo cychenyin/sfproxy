@@ -3,64 +3,88 @@
 
 #include <iostream>
 
-
 #include "../thrift/RegistryProxy.h"
 
 #include "ZkClient.h"
 #include "RegistryCache.h"
 #include "RequestPool.h"
+#include "time.h"
 
 using namespace std;
 //using namespace FinagleRegistryProxy;
 
 namespace FinagleRegistryProxy {
 
-
 class ServerHandler: virtual public RegistryProxyIf {
 
 private:
 	RegistryCache *cache;
 	ZkClient *client;
+	string root;
+
 public:
 	ServerHandler(string zkhosts) {
-		cache = &RegistryCache();
-		client = &ZkClient(zkhosts, cache);
+		root = "/aha/services";
+		cache = new RegistryCache();
+		client = new ZkClient(zkhosts, cache);
+		cout << " init " << cache->size() << endl;
 	}
-
-//	RequestPool rpool;
-//	ClientPool cpool;
-
+	~ServerHandler() {
+		delete cache;
+		delete client;
+		cache = 0;
+		client = 0;
+	}
 	void get(std::string& _return, const std::string& serviceName) {
-		cout << "frproxy get method called." << serviceName << endl;
-		_return = "asdf";
-//		vector<Registry>* pvector = cache->get(serviceName);
-//		if (pvector == 0 || pvector->size() == 0) {
-//			client->UpdateServices(serviceName);
-//			pvector = cache->get(serviceName);
-//		}
-//		if (pvector && pvector->size() > 0) {
-//			_return = Registry::toJsonStringx(*pvector);
-//		} else
-//			_return = "";
-		// cout << "	" << _return << endl;
-		Registry r;
-		r.name = "/soa/testserivce";
-		r.host = "127.0.0.1";
-		r.port = 9999;
-		r.ctime = time(NULL) / 1000;
-//		_return = Registry::toJsonString(r);
-		vector<Registry> v;
-		v.push_back(r);
-		v.push_back(Registry("/soa/testserivce", "localhost", 8888));
+		cout << "frproxy get method called. " << serviceName << endl;
+		vector<Registry>* pvector = cache->get(serviceName);
 
-		_return = Registry::toJsonString(v);
+		if (pvector == 0 || pvector->size() == 0) {
+			client->UpdateServices(serviceName);
+			pvector = cache->get(serviceName);
+		}
+
+		if (pvector && pvector->size() > 0) {
+			_return = Registry::toJsonString(*pvector);
+		} else
+			_return = "";
+		cout << "	handler get return:" << _return << endl;
+
+//		Registry r;
+//		r.name = "/soa/testserivce";
+//		r.host = "127.0.0.1";
+//		r.port = 9999;
+//		r.ctime = time(NULL) / 1000;
+//		//		_return = Registry::toJsonString(r);
+//		vector<Registry> v;
+//		v.push_back(r);
+//		v.push_back(Registry("/soa/testserivce", "localhost", 8888));
+//
+//		_return = Registry::toJsonString(v);
 	}
 
 	void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port) {
+		cout << "remove called. not supported now." << endl;
+	}
 
-		// Your implementation goes here
-		// printf("remove\n");
-		cout << "remove called" << endl;
+	void warm() {
+#ifdef DEBUG_
+		long start = clock(); // CLOCKS_PER_SEC
+		cout << start << " =start " << CLOCKS_PER_SEC << "CLOCKS_PER_SEC " << endl;
+#endif
+		vector<string> names = client->getChildren(root);
+		vector<string>::iterator it = names.begin();
+		while (it != names.end()) {
+			client->UpdateServices(root + "/" + (*it));
+			++it;
+		}
+//		for(int i = 0;i<100000000; i++) {
+//			i +=10;
+//			i -=10;
+//		}
+#ifdef DEBUG_
+		cout << "warm " << names.size() << " serives cost " << (double)(clock() - start) / CLOCKS_PER_SEC * 1000  << "ms. " << start << endl;
+#endif
 	}
 };
 

@@ -7,6 +7,7 @@
 #ifndef RegistryProxy_H
 #define RegistryProxy_H
 
+#include <thrift/TProcessor.h>
 #include <thrift/TDispatchProcessor.h>
 #include "proxy_types.h"
 
