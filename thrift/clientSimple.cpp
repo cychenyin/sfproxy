@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 	int i;
 	transport->open();
 	for (i = 0; i < 100; i++) {
-		std::string serverName = "/aha/service/testservice";
+		std::string serverName = "/soa/service/testservice";
 		std::string ret;
 		client.get(ret, serverName);
 		cout << "result:" << endl;

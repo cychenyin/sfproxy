@@ -46,7 +46,7 @@ bool Registry::operator!=(Registry& r) {
 	return  !(this == &r ? true : name == r.name && host == r.host && port == r.port);
 }
 
-string Registry::toJsonString(Registry& r) {
+string Registry::to_json_string(Registry& r) {
 	Document document;
 	Document::AllocatorType& allocator = document.GetAllocator();
 
@@ -62,11 +62,13 @@ string Registry::toJsonString(Registry& r) {
 	{
 		Value jname(r.name.c_str());
 		Value jhost(r.host.c_str());
+		Value je(r.ephemeral.c_str());
 		Value jport(r.port);
 		Value jweight(r.weight());
 		root.AddMember("name", jname, allocator);
 		root.AddMember("host", jhost, allocator);
 		root.AddMember("port", jport, allocator);
+		root.AddMember("e", je, allocator);
 		root.AddMember("weight", jweight, allocator);
 	}
 
@@ -76,7 +78,7 @@ string Registry::toJsonString(Registry& r) {
 	return buffer.GetString();
 }
 
-string Registry::toJsonString(vector<Registry> v) {
+string Registry::to_json_string(vector<Registry> v) {
 	string ret;
 	ret += "[";
 	vector<Registry>::iterator it = v.begin();
@@ -84,7 +86,7 @@ string Registry::toJsonString(vector<Registry> v) {
 		if(ret.size() > 2 ) {
 			ret += ",";
 		}
-		ret += Registry::toJsonString(*it);
+		ret += Registry::to_json_string(*it);
 		++it;
 	}
 	ret += "]";

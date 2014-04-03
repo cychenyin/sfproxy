@@ -19,21 +19,20 @@ RegistryCache::~RegistryCache() {
 
 void RegistryCache::add(Registry& reg) {
 	string &name = reg.name;
-	if (name == "")
+	if (name == "" || reg.host == "" || reg.ephemeral == "")
 		return;
-	map<string, vector<Registry> >::iterator it = cache.find(name);
-	vector<Registry> *ptr = NULL;
+	mutex.lock();
+	RMap::iterator it = cache.find(name);
+	RVector *ptr = NULL;
 	if (it == cache.end()) {
-		vector<Registry> v;
+		RVector v;
 		ptr = &v;
 		ptr->push_back(reg);
 		// attation: stl copy pair in their implement. so, vector in map this not really the input one.
-		cache.insert(pair<string, vector<Registry> >(name, *ptr));
-//		cout << "	add new vector " << &v ;
+		cache.insert(pair<string, RVector >(name, *ptr));
 	} else {
 		ptr = &(it->second);
-//		cout << "	add old vector " ;
-		vector<Registry>::iterator itProxy = ptr->begin();
+		RVector::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
 			if ((*itProxy).equals(reg)) {
 				ptr->erase(itProxy);
@@ -43,22 +42,22 @@ void RegistryCache::add(Registry& reg) {
 		}
 		ptr->push_back(reg);
 	}
-
-//	cout << " vsize=" << ptr->size() << " point=" << &ptr << " ref=" << &(*ptr) << endl;
+	mutex.unlock();
 }
 
-void RegistryCache::remove(string name, string ephemeral) {
+void RegistryCache::remove(const string name, const string ephemeral) {
 	if (name == "" || ephemeral == "")
 		return;
-	vector<Registry> *ptr = NULL;
+	RVector *ptr = NULL;
+	mutex.lock();
 	try {
-		ptr = & (cache.at(name));
+		ptr = &(cache.at(name));
 	} catch (std::out_of_range &ex) {
 	} catch (std::exception &ex) {
 	} catch (std::string &ex) {
 	}
-	if(ptr) {
-		vector<Registry>::iterator itProxy = ptr->begin();
+	if (ptr) {
+		RVector::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
 			if ((*itProxy).ephemeral == ephemeral) {
 				ptr->erase(itProxy);
@@ -67,14 +66,13 @@ void RegistryCache::remove(string name, string ephemeral) {
 			++itProxy;
 		}
 	}
-
+	mutex.unlock();
 //	const string n("" + name + "");
-//	 map<string, vector<Registry> >::iterator it = cache.find(n);
+//	 Rmap::iterator it = cache.find(n);
 //
-////		cout << "ffffffffffffffffffffffffffffffffffffffffff" << endl;
 //	if (it != cache.end()) {
 //		ptr = &(it->second);
-//		vector<Registry>::iterator itProxy = ptr->begin();
+//		Rvector::iterator itProxy = ptr->begin();
 //		while (itProxy != ptr->end()) {
 //			if ((*itProxy).ephemeral == ephemeral) {
 //				ptr->erase(itProxy);
@@ -86,16 +84,17 @@ void RegistryCache::remove(string name, string ephemeral) {
 
 }
 
-void RegistryCache::remove(const string& name, Registry& reg) {
-	map<string, vector<Registry> >::iterator it = cache.find(name);
-	vector<Registry> *ptr = NULL;
+void RegistryCache::remove(const string name, Registry& reg) {
+	mutex.lock();
+	RMap::iterator it = cache.find(name);
+	RVector *ptr = NULL;
 	if (it != cache.end()) {
 		ptr = &(it->second);
-//		vector<Registry>::iterator itProxy = find(ptr->begin(), ptr->end(), proxy);
+//		Rvector::iterator itProxy = find(ptr->begin(), ptr->end(), proxy);
 //		if (itProxy != ptr->end()) {
 //			ptr->erase(itProxy);
 //		}
-		vector<Registry>::iterator itProxy = ptr->begin();
+		RVector::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
 			if ((*itProxy) == reg) {
 				ptr->erase(itProxy);
@@ -104,32 +103,41 @@ void RegistryCache::remove(const string& name, Registry& reg) {
 			++itProxy;
 		}
 	}
+	mutex.unlock();
 }
 
-void RegistryCache::remove(const string& name) {
+void RegistryCache::remove(const string name) {
+	mutex.lock();
 	cache.erase(name);
+	mutex.unlock();
 }
 
-void RegistryCache::replace(const string& name, vector<Registry>& l) {
-	map<string, vector<Registry> >::iterator it = cache.find(name);
+void RegistryCache::replace(const string name, RVector& l) {
+	mutex.lock();
+	RMap::iterator it = cache.find(name);
 	if (it != cache.end()) {
 		it->second.clear();
 	}
-	cache.insert(pair<string, vector<Registry> >(name, l));
+	cache.insert(pair<string, RVector >(name, l));
+	mutex.unlock();
 }
 
-bool RegistryCache::isEmpty(const string& name) {
+bool RegistryCache::empty(const string name) {
 	return cache.size() == 0;
 }
 
 void RegistryCache::clear() {
+	mutex.lock();
 	return cache.clear();
+	mutex.unlock();
 }
 
-vector<Registry>* RegistryCache::get(const string& name) {
-	vector<Registry> *ptr = NULL;
+RVector* RegistryCache::get(const string name) {
+	RVector *ptr = NULL;
 	try {
-		map<string, vector<Registry> >::iterator it = cache.find(name);
+		mutex.lock();
+		RMap::iterator it = cache.find(name);
+		mutex.unlock();
 		if (it != cache.end()) {
 			ptr = &(it->second);
 			return ptr;

@@ -11,10 +11,11 @@
 #include <iostream>
 
 
-#include "frpoxy.h"
+#include "../frpoxy.h"
 
 #include "RegistryCacheTest.h"
 #include "ZkClientTest.h"
+#include "ListTest.h"
 
 #include "../core/ServerHandler.cpp"
 
@@ -32,10 +33,5 @@ int main(int argc, char** argv) {
 	clientTest.ConnecionTest();
 	clientTest.RegistryEqualsTest();
 
-	return 0;
-}
-
-int main(void) {
-	cout << "test entry ....." << endl;
 	return 0;
 }

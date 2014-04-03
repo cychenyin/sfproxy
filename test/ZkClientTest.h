@@ -21,13 +21,24 @@ public:
 	ZkClientTest();
 	virtual ~ZkClientTest();
 
-	void ConnecionTest();
+	void ConnecionTest(){
+		// "192.168.117.19"
+		ZkClient client("yz-cdc-wrk-02.dns.ganji.com:2181", 0);
+		client.connect_zk();
+
+	// 	client.Update("/aha/services/testservice/"); // bad arguments
+	//	client.Update("/aha");
+	//	client.Update("/aha/services");
+		client.get_children("/aha/services/testservice");
+	//	client.Update("/aha/services/testservice/member_0000000084");
+
+	}
 
 
 	void RegistryEqualsTest() {
 		Registry r = Registry("a", "b", 2);
 
-		cout << Registry::toJsonString(r) << endl;
+		cout << Registry::to_json_string(r) << endl;
 		Registry &r1 = r;
 		Registry *p = &r;
 

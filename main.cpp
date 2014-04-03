@@ -11,10 +11,13 @@
 #include <iostream>
 
 #include "frpoxy.h"
-#include "test/RegistryCacheTest.cpp"
+#include "test/RegistryCacheTest.h"
 #include "test/ZkClientTest.h"
 
 #include "core/ServerHandler.cpp"
+
+#include "ganji/util/time/time.h"
+//#include "ganji/util/thread/mutex.h"
 
 #include <thrift/concurrency/PosixThreadFactory.h>
 #include <thrift/concurrency/ThreadManager.h>
@@ -34,6 +37,8 @@ using namespace ::apache::thrift::concurrency;
 using namespace std;
 using namespace ut;
 using boost::shared_ptr;
+//using namespace ::ganji::util::thread;
+//using namespace ganji::util::thread;
 
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
@@ -41,12 +46,13 @@ int testmain(int argc, char** argv) {
 	cout << "-----------------------" << endl;
 	ut::RegistryCacheTest a;
 //	a.getTest();
-//	cout << "before addTest-----------------------" << endl;
-//	a.addTest();
-//	cout << "after addTest-----------------------" << endl;
+	cout << "before addTest-----------------------" << endl;
+	a.addTest();
+	cout << "after addTest-----------------------" << endl;
 //	a.removeTest();
 //	a.removeTest1();
-	a.removeTest2();
+//	a.removeTest2();
+
 	//	ZkClientTest clientTest;
 //	clientTest.ConnecionTest();
 //	clientTest.RegistryEqualsTest();
@@ -55,6 +61,9 @@ int testmain(int argc, char** argv) {
 }
 
 int main(int argc, char **argv) {
+
+//	cout << ganji::util::time::GetCurTimeUs() << endl;
+//	cout << ganji::util::time::GetCurTimeMs() << endl;
 
 #ifdef DEBUG_
 	for (int i = 0; i < argc; i++) {
@@ -65,15 +74,17 @@ int main(int argc, char **argv) {
 
 	if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--test") == 0)) {
 		testmain(argc, argv);
+		cout << "end..." << endl;
 		return 0;
 	}
 
 	int port = 9091;
-	if (argc > 1 && (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--debug") == 0)) {
+	if (argc > 2 && (strcmp(argv[2], "-d") == 0 || strcmp(argv[2], "--debug") == 0)) {
 		port = 9090;
 	}
 
 	cout << "frproxy server starting at port " << port << endl;
+
 //	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
 //	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 //
@@ -103,9 +114,17 @@ int main(int argc, char **argv) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 //	TThreadPoolServer server(processor, serverTransport,transportFactory, protocolFactory, threadManager);
+#ifdef DEBUG_
+	long start = ganji::util::time::GetCurTimeUs();
+#endif
 	handler.get()->warm();
 
+	#ifdef DEBUG_
+	long elapse = ganji::util::time::GetCurTimeUs() - start;
+	cout << "frproxy server warm cost " << (double)elapse / 1000 << "ms" << endl;
+#endif
 	server.serve();
+
 
 	cout << "frproxy server exiting." << endl;
 	threadManager->stop();

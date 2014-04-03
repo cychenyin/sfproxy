@@ -9,13 +9,13 @@ compile:
 	g++ -Wall -I/usr/local/include/thrift -c RegistryProxyHandler.cpp -o RegistryProxyHandler.o
 	g++ -Wall -I/usr/local/include/thrift -c server.cpp -o server.o
 	g++ -Wall -I/usr/local/include/thrift -c serverSimple.cpp -o serverSimple.o
-	g++ -Wall -I/usr/local/include/thrift -c client.cpp -o client.o
-	g++ -Wall -I/usr/local/include/thrift -c clientSimple.cpp -o clientSimple.o	
+	g++ -Wall -I/usr/local/include/thrift -I/home/asdf/workspace/cc_dev/trunk/include -c client.cpp -o client.o
+	g++ -Wall -I/usr/local/include/thrift -I/home/asdf/workspace/cc_dev/trunk/include -c clientSimple.cpp -o clientSimple.o	
 link:
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o server.o -o server
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o serverSimple.o -o sserver 
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o client.o -o client 
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o clientSimple.o -o sclient 
+	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o server.o -o server
+	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o serverSimple.o -o sserver 
+	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o client.o -o client 
+	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o clientSimple.o -o sclient 
 
 clean:
 	rm -f *.o

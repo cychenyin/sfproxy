@@ -43,8 +43,8 @@ public:
 	bool operator==(Registry& r);
 	bool operator!=(Registry& r);
 
-	static string toJsonString(Registry &r);
-	static string toJsonString(vector<Registry> v);
+	static string to_json_string(Registry &r);
+	static string to_json_string(vector<Registry> v);
 };
 
 } /* namespace FinagleRegistryProxy */

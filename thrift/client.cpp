@@ -5,6 +5,8 @@
 #include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
 
+#include "ganji/util/time/time.h"
+
 using namespace std;
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;
@@ -25,16 +27,21 @@ int main(int argc, char **argv) {
 	boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
 	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
+
+	long start = ganji::util::time::GetCurTimeUs();
 	RegistryProxyClient client(protocol);
 	int i;
 	transport->open();
+	long open = ganji::util::time::GetCurTimeUs();
+
 	try {
 		for (i = 0; i < 1; i++) {
-			std::string serverName = "/aha/services/testservice";
+			std::string serverName = "/soa/services/testservice";
 			std::string ret;
 			client.get(ret, serverName);
-			cout << "result:" << endl;
-			cout << "	" << ret << endl;
+			long get = ganji::util::time::GetCurTimeUs();
+			cout << "open cost=" << (double)(open-start)/1000 << " get cost=" << (double)(get-open)/1000 << endl;
+			cout << "result:	" << ret << endl;
 		}
 	} catch (const apache::thrift::transport::TTransportException& ex) {
 		//transport->close();
