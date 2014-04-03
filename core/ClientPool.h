@@ -61,18 +61,18 @@ public:
 	int id() {
 		return id_;
 	}
-protected:
 	// should be accessed by derived children; used in close & open method in implement of this abstract class.
 	void set_connected(bool connected) {
 		if (this->connected_ == connected)
 			return;
 		mutex.lock();
 		this->connected_ = connected;
+		mutex.unlock();
 		if (pool_event_) {
 			pool_event_->invoke(this, ClientBase::EVENT_TYPE_CONNECTION_STATE);
 		}
-		mutex.unlock();
 	}
+protected:
 	// can be accessed only by friend ClientPool when open
 	void set_in_using(bool state) {
 		bool origin = this->in_using_;
@@ -81,9 +81,9 @@ protected:
 		if (!origin && state) {
 			this->use_times_++;
 		}
+		mutex.unlock();
 		if (origin != in_using_ && pool_event_)
 			pool_event_->invoke(this, ClientBase::EVENT_TYPE_USE_STATE);
-		mutex.unlock();
 	}
 private:
 	int use_times_;
@@ -132,7 +132,7 @@ public:
 	int conn_timeout;
 	int max_usetimes;
 	ClientFactory* factory;
-	const static int MAX_CLIENT_DEF = 2;
+	const static int MAX_CLIENT_DEF = 100;
 	const static int CONN_TIMEOUT_DEF = 86400; // 1 day
 private:
 	CColl using_;

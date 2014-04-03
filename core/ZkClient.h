@@ -79,12 +79,13 @@ public: // interface imple
 public:
 	string* root;
 	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
+	const static int RCEV_TIME_OUT_DEF = 10 * 1000 * 1000; // in microsecond
 
 private:
 	RegistryCache *pcache;
 	zhandle_t *zhandle_;
 	string zk_hosts_;
-	int timeout_;
+	int timeout_; // zk recv_timeout in microsecond
 	void Init();
 	// apache::thrift::concurrency::Mutex mutex;
 

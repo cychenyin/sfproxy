@@ -37,13 +37,18 @@ public:
 	}
 
 	~ServerHandler() {
-		delete pool;
-		delete cache;
-		//delete client;
-		delete root;
-		pool = 0;
-		cache = 0;
-		root = 0;
+		if (pool) {
+			delete pool;
+			pool = 0;
+		}
+		if (cache) {
+			delete cache;
+			cache = 0;
+		}
+		if (root) {
+			delete root;
+			root = 0;
+		}
 	}
 	void get(std::string& _return, const std::string& serviceName) {
 #ifdef DEBUG_
@@ -56,7 +61,7 @@ public:
 #endif
 		if (!client) {
 			_return = "";
-			cout << " get error, fail to open zk client." << endl;
+			cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
 			return;
 		}
 		vector<Registry>* pvector = cache->get(serviceName.c_str());
@@ -79,7 +84,8 @@ public:
 		} else
 			_return = "";
 #ifdef DEBUG_
-		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << id << endl;
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< id << endl;
 		long serial = ganji::util::time::GetCurTimeUs();
 		cout << " get total cost=" << DiffMs(serial, start) << " open=" << DiffMs(open, start) << " get="
 				<< DiffMs(get, open) << " close" << DiffMs(close, get) << " serial=" << DiffMs(serial, close) << endl;

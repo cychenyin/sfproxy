@@ -29,11 +29,12 @@ int main(int argc, char** argv) {
 //	a.addTest();
 
 	ZkClientTest c;
-//	c.ConnecionTest();
-//	c.RegistryEqualsTest();
-//	c.poolIncTest();
-	c.poolTimeoutTest();
-
+//	c.ConnecionTest(); // done
+//	c.RegistryEqualsTest(); //done
+//	c.poolIncTest(); // done
+//	c.poolMemReleaseTest(); // done
+//	c.poolTimeoutTest();
+	c.clientDestoryOnDisconnectTest();
 	cout << "end........................................................................." << endl;
 	return 0;
 }

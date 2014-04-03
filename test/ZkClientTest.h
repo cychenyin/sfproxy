@@ -31,25 +31,68 @@ public:
 	}
 
 	virtual ~ZkClientTest() {
-		delete root;
-		delete pool;
-		delete cache;
-		root = 0;
-		pool = 0;
-		cache = 0;
+		if (root) {
+			delete root;
+			root = 0;
+		}
+		if (pool) {
+			delete pool;
+			pool = 0;
+		}
+		if (cache) {
+			delete cache;
+			cache = 0;
+		}
 	}
 
+	void clientDestoryOnDisconnectTest() {
+
+		ZkClient *c = (ZkClient *) pool->open();
+
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< c->id() << endl;
+		c->set_connected(false);
+
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< c->id() << endl;
+		if (c == 0) {
+			cout << " crazy, client  destroied " << endl;
+		}
+		c->close();
+
+		cout << " done......." << endl;
+
+	}
+
+	void poolMemReleaseTest() {
+		ZkClient *c = (ZkClient *) pool->open();
+		c->get_children("/soa/services/testservice");
+
+		sleep(2);
+		cout << "waked. deleting" << endl;
+		if (root) {
+			delete root;
+			root = 0;
+		}
+		if (pool) {
+			delete pool;
+			pool = 0;
+		}
+		if (cache) {
+			delete cache;
+			cache = 0;
+		}
+		cout << "delete done." << endl;
+	}
 	void poolTimeoutTest() {
 		ZkClient *c = (ZkClient *) pool->open();
 		c->get_children("/soa/services/testservice");
-//		cout << " sleeping 20ms" << endl;
-//		cout << " week" << endl;
-		int i = 100;
+		int i = 30;
 		while (--i > 0) {
 			//usleep(20  * 1000 * 000); // us
-			sleep(5);
+			sleep(2);
 			// c->get_children("/soa/services/testservice");
-			cout << i << endl;;
+			cout << i << endl;
 			cache->dump();
 		}
 		cout << " before close" << endl;
@@ -70,8 +113,10 @@ public:
 				<< client->id() << endl;
 		cout << " 2pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
 				<< c1->id() << endl;
-
-//		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << c2->id() << endl;
+		// use to test pool exhaust
+		// cout << "c2 should be 0; =" << (c2 == 0) << endl;
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< c2->id() << endl;
 //		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << c3->id() << endl;
 //		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << c4->id() << endl;
 

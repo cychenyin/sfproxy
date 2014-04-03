@@ -60,17 +60,16 @@ ClientBase* ClientPool::open() {
 	return client;
 }
 
+// when disconn or not using then mv to idle;
 void ClientPool::on_client_changed(ClientBase* client, int state) {
 	if (client == 0)
 		return;
 	mutex.lock();
 	if (state == ClientBase::EVENT_TYPE_CONNECTION_STATE) {
-		if (client->connected_) {
+		if (!client->connected_) {
 			// make sure in idle list
 			using_.erase(client);
 			idle_.insert(client);
-		} else {
-			destroy(client);
 		}
 	} else if (state == ClientBase::EVENT_TYPE_USE_STATE) {
 		if (client->in_using_) {
@@ -85,21 +84,13 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 }
 
 void ClientPool::reset() {
-	mutex.lock();
-
-	CColl::iterator it = using_.begin();
-	while (it != using_.end()) {
-		ClientBase *client = *it;
+	while (using_.size() > 0) {
+		ClientBase *client = *using_.begin();
 		destroy(client);
-		// use_list.erase(it);
-		it++;
 	}
-	it = idle_.begin();
-	while (it != idle_.end()) {
-		ClientBase *client = *it;
+	while (idle_.size() > 0) {
+		ClientBase *client = *idle_.begin();
 		destroy(client);
-		//idle_.erase(it);
-		it++;
 	}
 
 //	while (use_list.size() > 0) {
@@ -112,12 +103,10 @@ void ClientPool::reset() {
 //		destroy(client);
 //		idle_.remove(client);
 //	}
-	mutex.unlock();
 }
 
 void ClientPool::destroy(ClientBase* client) {
 	if (client) {
-		client->close();
 		using_.erase(client);
 		idle_.erase(client);
 

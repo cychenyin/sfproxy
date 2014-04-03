@@ -20,16 +20,22 @@ ZkClient::ZkClient(string hosts, RegistryCache* pcache) {
 }
 
 ZkClient::~ZkClient() {
-	mutex.lock();
 	if (zhandle_) {
 		zookeeper_close(zhandle_);
 	}
 	this->zhandle_ = NULL;
-	mutex.unlock();
-
 	pcache = 0;
-
 }
+
+void ZkClient::Init() {
+	zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+	this->root = NULL;
+	this->zhandle_ = NULL;
+	// this->zk_hosts_ = "";
+	// session timeout in ms. value may change after a server re-connect.
+	this->timeout_ = ZkClient::RCEV_TIME_OUT_DEF;
+}
+
 void ZkClient::init(string hosts, RegistryCache *pcache) {
 	zhandle_ = 0;
 	this->zk_hosts_ = hosts;
@@ -67,8 +73,8 @@ void ZkClient::connect_zk() {
 		//sleep(1 * 1000);
 	} while (zhandle_ == 0 && count < ZK_MAX_CONNECT_RETRY_TIMES);
 #ifdef DEBUG_
-	if (count > 1) { // count >= ZK_MAX_CONNECT_RETRY_TIMES) {
-		cout << "ZkClient::ConnectZK connecting to zk host: " << zk_hosts_ << " retry times: " << count << " result:"
+	if (count >= ZK_MAX_CONNECT_RETRY_TIMES) {
+		cout << "ZkClient connect to zk error: " << zk_hosts_ << " retry times: " << count << " result:"
 				<< (zhandle_ != 0) << endl;
 	}
 #endif
@@ -76,16 +82,9 @@ void ZkClient::connect_zk() {
 	if (zhandle_ != 0) {
 		set_connected(true);
 		set_in_using(true);
+	} else {
+		set_connected(false);
 	}
-}
-
-void ZkClient::Init() {
-	zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
-	this->root = NULL;
-	this->zhandle_ = NULL;
-	// this->zk_hosts_ = "";
-	// session timeout in ms. value may change after a server re-connect.
-	this->timeout_ = 100;
 }
 
 // {"serviceEndpoint":{"host":"asdf-laptop","port":4794},"additionalEndpoints":{},"status":"ALIVE","shard":1}
@@ -145,10 +144,8 @@ void ZkClient::get_children(string serviceZpath) {
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
 	int ret = zoo_wget_children(zhandle_, serviceZpath.c_str(), watcher, this, &str_vec);
 	mutex.unlock();
+
 #ifdef DEBUG_
-	if (ret != ZOK) {
-		cout << "zk_wget_children fail :" << serviceZpath << " wrong code= " << ret << " msg=" << zerror(ret) << endl;
-	}
 	cout << " get_children " << serviceZpath << " result count =" << str_vec.count << endl;
 #endif
 	if (ret == ZOK) {
@@ -163,7 +160,7 @@ void ZkClient::get_children(string serviceZpath) {
 		set_connected(false);
 	} else {
 		// TODO log it.
-		cout << " get_children call zoo_wget_children error, ret=" << ret << " msg=" << zerror(ret) << endl;
+		cout << " get_children zoo_wget_children error, ret=" << ret << " msg=" << zerror(ret) << endl;
 	}
 }
 
@@ -224,8 +221,7 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 // callback method for zookeeper notifier
 void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
 #ifdef DEBUG_
-	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << " client id="
-			<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
+	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << " client id=" << (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
 #endif
 	ZkClient *client = (ZkClient*) watcherCtx;
 	if (!client) {
