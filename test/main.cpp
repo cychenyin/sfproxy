@@ -23,15 +23,17 @@ using namespace std;
 using namespace ut;
 
 int main(int argc, char** argv) {
-	cout << "welcome to finagle regsitry proxy" << endl;
+	cout << "welcome to finagle regsitry proxy tester" << endl;
 
-	ut::RegistryCacheTest a;
+//	ut::RegistryCacheTest a;
 //	a.addTest();
 
+	ZkClientTest c;
+//	c.ConnecionTest();
+//	c.RegistryEqualsTest();
+//	c.poolIncTest();
+	c.poolTimeoutTest();
 
-	ZkClientTest clientTest;
-	clientTest.ConnecionTest();
-	clientTest.RegistryEqualsTest();
-
+	cout << "end........................................................................." << endl;
 	return 0;
 }

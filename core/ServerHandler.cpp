@@ -68,6 +68,7 @@ public:
 		}
 #ifdef DEBUG_
 		long get = ganji::util::time::GetCurTimeUs();
+		int id = client->id();
 #endif
 		client->close(); // must
 #ifdef DEBUG_
@@ -78,7 +79,7 @@ public:
 		} else
 			_return = "";
 #ifdef DEBUG_
-		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << id << endl;
 		long serial = ganji::util::time::GetCurTimeUs();
 		cout << " get total cost=" << DiffMs(serial, start) << " open=" << DiffMs(open, start) << " get="
 				<< DiffMs(get, open) << " close" << DiffMs(close, get) << " serial=" << DiffMs(serial, close) << endl;
@@ -115,7 +116,9 @@ public:
 		cout << "warm " << names.size() << " serives cost "
 				<< (double) (ganji::util::time::GetCurTimeUs() - start) / CLOCKS_PER_SEC * 1000 << "ms. " << start
 				<< endl;
+		cache->dump();
 #endif
+
 	}
 };
 

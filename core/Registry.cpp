@@ -6,6 +6,8 @@
  */
 
 #include "Registry.h"
+#include <sstream>
+#include <boost/format.hpp>
 
 namespace FinagleRegistryProxy {
 
@@ -43,10 +45,51 @@ bool Registry::operator==(Registry& r) {
 }
 
 bool Registry::operator!=(Registry& r) {
-	return  !(this == &r ? true : name == r.name && host == r.host && port == r.port);
+	return !(this == &r ? true : name == r.name && host == r.host && port == r.port);
 }
 
+// 67us
+// use stringstream, perfermance import 100% than using rapidJson
 string Registry::to_json_string(Registry& r) {
+	// string ret = "{";
+	stringstream ss;
+	ss << "{\"name\"=\"" << r.name;
+	ss << "\",\"host\"=\"" << r.host;
+	ss << "\",\"port\"=" << r.port;
+	ss << ",\"e\"=\"" << r.ephemeral;
+	ss << "\",\"weight\"=\"" << r.weight();
+	ss << " }";
+	return ss.str();
+}
+
+// 80-100us
+// use stringstream, perfermance import 100% than using rapidJson
+string Registry::to_json_string2(Registry& r) {
+
+	stringstream s;
+	s << r.port;
+	stringstream w;
+	w << r.weight();
+
+	string ss;
+	ss += "{";
+	ss += "\"name\"=\"";
+	ss += r.name;
+	ss += "\",\"host\"=\"";
+	ss += r.host;
+	ss += "\",\"port\"=";
+	ss += s.str();
+	ss += ",\"e\"=\"";
+	ss += r.ephemeral;
+	ss += "\",\"weight\"=\"";
+	ss += w.str();
+	ss += "}";
+	return ss;
+}
+
+
+// 120us
+string Registry::to_json_string3(Registry& r) {
 	Document document;
 	Document::AllocatorType& allocator = document.GetAllocator();
 
@@ -78,12 +121,19 @@ string Registry::to_json_string(Registry& r) {
 	return buffer.GetString();
 }
 
+//210us
+string Registry::to_json_string4(Registry& r) {
+	boost::format fmt("{\"name\"=\"%s\",\"host\"=\"%s\",\"port\"=%i,\"e\"=\"%s\",\"weight\"=%i}");
+	fmt % r.name % r.host % r.port % r.ephemeral % r.weight();
+	return fmt.str();
+}
+
 string Registry::to_json_string(vector<Registry> v) {
 	string ret;
 	ret += "[";
 	vector<Registry>::iterator it = v.begin();
 	while (it != v.end()) {
-		if(ret.size() > 2 ) {
+		if (ret.size() > 2) {
 			ret += ",";
 		}
 		ret += Registry::to_json_string(*it);

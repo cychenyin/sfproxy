@@ -10,6 +10,7 @@
 
 #include <iostream>
 
+//#include "../core/ClientPool.h"
 #include "../core/ZkClient.h"
 
 namespace ut {
@@ -17,23 +18,89 @@ namespace ut {
 using namespace FinagleRegistryProxy;
 
 class ZkClientTest {
+private:
+	RegistryCache *cache;
+	ClientPool *pool;
+	string *root;
+
 public:
-	ZkClientTest();
-	virtual ~ZkClientTest();
-
-	void ConnecionTest(){
-		// "192.168.117.19"
-		ZkClient client("yz-cdc-wrk-02.dns.ganji.com:2181", 0);
-		client.connect_zk();
-
-	// 	client.Update("/aha/services/testservice/"); // bad arguments
-	//	client.Update("/aha");
-	//	client.Update("/aha/services");
-		client.get_children("/aha/services/testservice");
-	//	client.Update("/aha/services/testservice/member_0000000084");
-
+	ZkClientTest() {
+		root = new string("/soa/services");
+		cache = new RegistryCache();
+		pool = new ClientPool(new ZkClientFactory("yz-cdc-wrk-02.dns.ganji.com:2181", cache));
 	}
 
+	virtual ~ZkClientTest() {
+		delete root;
+		delete pool;
+		delete cache;
+		root = 0;
+		pool = 0;
+		cache = 0;
+	}
+
+	void poolTimeoutTest() {
+		ZkClient *c = (ZkClient *) pool->open();
+		c->get_children("/soa/services/testservice");
+//		cout << " sleeping 20ms" << endl;
+//		cout << " week" << endl;
+		int i = 100;
+		while (--i > 0) {
+			//usleep(20  * 1000 * 000); // us
+			sleep(5);
+			// c->get_children("/soa/services/testservice");
+			cout << i << endl;;
+			cache->dump();
+		}
+		cout << " before close" << endl;
+		c->close();
+		cout << " closed" << endl;
+	}
+	void poolIncTest() {
+
+		ZkClient *client = (ZkClient *) pool->open();
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< client->id() << endl;
+
+		ZkClient *c1 = (ZkClient *) pool->open();
+		ZkClient *c2 = (ZkClient *) pool->open();
+		ZkClient *c3 = (ZkClient *) pool->open();
+		ZkClient *c4 = (ZkClient *) pool->open();
+		cout << " 1pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< client->id() << endl;
+		cout << " 2pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< c1->id() << endl;
+
+//		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << c2->id() << endl;
+//		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << c3->id() << endl;
+//		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id=" << c4->id() << endl;
+
+		client->close();
+		cout << " 3pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< client->id() << endl;
+		c1->close();
+		c2->close();
+		cout << " 4pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< client->id() << endl;
+		c3->close();
+		c4->close();
+		cout << " 5pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
+				<< client->id() << endl;
+		cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaa" << endl;
+
+	}
+	void ConnecionTest() {
+		// "192.168.117.19"
+		ZkClient client("yz-cdc-wrk-02.dns.ganji.com:2181", 0);
+		cout << " before conn" << endl;
+		client.connect_zk();
+		cout << " after conn" << endl;
+		// 	client.Update("/aha/services/testservice/"); // bad arguments
+		//	client.Update("/aha");
+		//	client.Update("/aha/services");
+		client.get_children("/soa/services/testservice");
+		//	client.Update("/aha/services/testservice/member_0000000084");
+	}
 
 	void RegistryEqualsTest() {
 		Registry r = Registry("a", "b", 2);
@@ -53,10 +120,11 @@ public:
 
 		Registry l = Registry("a", "b", 2);
 		cout << (l == r) << endl;
-		r.name  = "a";
+		r.name = "a";
 		cout << (l == r) << endl;
 		cout << (&l == &r) << endl;
-	};
+	}
+	;
 };
 } /* namespace ut */
 

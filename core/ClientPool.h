@@ -81,7 +81,7 @@ protected:
 		if (!origin && state) {
 			this->use_times_++;
 		}
-		if (origin != in_using_)
+		if (origin != in_using_ && pool_event_)
 			pool_event_->invoke(this, ClientBase::EVENT_TYPE_USE_STATE);
 		mutex.unlock();
 	}

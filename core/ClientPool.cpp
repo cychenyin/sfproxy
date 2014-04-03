@@ -26,7 +26,7 @@ ClientBase* ClientPool::create() {
 	if (factory) {
 		mutex.lock();
 		ClientBase *c = factory->create();
-
+		c->id_ = ++ last_id_;
 		mutex.unlock();
 
 		c->pool_event_ = new SEvent<ClientPool, ClientBase, int>(this, &ClientPool::on_client_changed);

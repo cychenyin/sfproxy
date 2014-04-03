@@ -46,8 +46,7 @@ public:
 
 	void dump() {
 		RMap::iterator mit = cache.begin();
-		cout << "cache dump. size=" << &cache ;
-		cout << " size" << cache.size() << endl;
+		cout << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
 		string s;
 		while(mit != cache.end()) {
 			RVector &v = mit->second;

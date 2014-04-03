@@ -33,7 +33,7 @@ CFLAGS=-D_LINUX_ -DTHREADED
 TARGET1=frproxy
 TARGET2=testproxy
 
-all: clean preexec $(TARGET1) afterexec
+all: clean preexec $(TARGET1) $(TARGET2) afterexec
 	echo '---------------all done ---------------'
 $(TARGET1): $(TARGET1).o
 	test -z $(BIN_PATH) || $(MKDIR) -- $(BIN_PATH)
@@ -76,6 +76,22 @@ $(TARGET1).o: #$(OBJS)
 $(TARGET2): #$(OBJS)
 #	ar r $(TARGET2) client/frproxy_client.o
 #	ranlib $(TARGET2)
+	$(CC) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
+		proxy_constants.o \
+		proxy_types.o \
+		RegistryProxy.o \
+		Registry.o \
+		RegistryCache.o \
+		ZkClient.o \
+		RequestPool.o \
+		ClientPool.o \
+		ServerHandler.o \
+		test.o \
+		-o $(BIN_PATH)/$(TARGET2)
+		
+	#g++ -lthrift -L/usr/local/lib server.o RegistryProxy.o proxy_constants.o proxy_types.o -o server 
+	echo '---------------link done ---------------'
+
 
 .SUFFIXES: .o .cc
 .cc.o:

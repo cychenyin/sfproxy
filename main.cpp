@@ -85,19 +85,6 @@ int main(int argc, char **argv) {
 
 	cout << "frproxy server starting at port " << port << endl;
 
-//	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
-//	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
-//
-//	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-//
-//	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(15);
-//	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory > (new PosixThreadFactory());
-//	threadManager->threadFactory(threadFactory);
-//	threadManager->start();
-//
-//	TNonblockingServer server(processor, protocolFactory, port, threadManager);
-////	TNonblockingServer server(processor, port);
-//	server.serve();
 
 	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -113,7 +100,6 @@ int main(int argc, char **argv) {
 	threadManager->start();
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
-//	TThreadPoolServer server(processor, serverTransport,transportFactory, protocolFactory, threadManager);
 #ifdef DEBUG_
 	long start = ganji::util::time::GetCurTimeUs();
 #endif
@@ -132,3 +118,18 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+void threadServer() {
+	//	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
+	//	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
+	//
+	//	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+	//
+	//	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(15);
+	//	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory > (new PosixThreadFactory());
+	//	threadManager->threadFactory(threadFactory);
+	//	threadManager->start();
+	//	TThreadPoolServer server(processor, serverTransport,transportFactory, protocolFactory, threadManager);
+	//	TNonblockingServer server(processor, protocolFactory, port, threadManager);
+	////	TNonblockingServer server(processor, port);
+	//	server.serve();
+}

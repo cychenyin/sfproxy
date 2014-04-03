@@ -62,9 +62,10 @@ public:
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	vector<string> get_all(string root = "/soa/services");
 //	void InitWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctx);
-	void DumpStat(struct Stat *stat);
+	void dump_stat(struct Stat *stat);
 	void parse(string json);
 
+	void close_handle();
 public: // interface imple
 	//ClientBase::open
 	void open() {
