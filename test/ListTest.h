@@ -36,6 +36,49 @@ public:
 		cout << str << endl;
 	}
 
+	void itoratorTest2() {
+//		l.push_back("1");
+//		l.push_back("1");
+//
+//		for(list<string>::iterator it = l.begin(); it != l.end(); it++ ){
+//			list<string>::iterator tmp = it;
+//			cout << (&tmp == &it) << endl;
+//			cout << *it << endl;
+//			l.erase(tmp) ;
+//		}
+
+		cout << "endddddddddddddddddddddddddddddddd" << endl;
+		// result: throw exception when ++ after erase
+	}
+	void itoratorTest() {
+		l.push_back("1"); // one
+		l.push_back("2"); // two one
+		l.push_back("3"); // two one
+		l.push_back("4"); // two one
+		l.push_back("5"); // two one
+		l.push_back("6"); // two one
+		l.push_back("7"); // two one
+		l.push_back("8"); // two one
+		l.push_back("9"); // two one
+		l.push_back("10"); // two one
+		list<string>::iterator it = l.begin();
+
+		while (it != l.end()) {
+			cout << *it << endl;
+			list<string>::iterator t = it;
+			++it;
+			cout << "it == t :" << (it == t) << endl;
+			l.erase(t);
+		}
+
+		cout << "--------------------------------------------- be " << l.size()  << endl;
+		while (it != l.end()) {
+			cout << *it << endl;
+			++it;
+		}
+		cout << "--------------------------------------------- end" << endl;
+		// result: iterator will work if list changed while iterator in use.
+	}
 	void listTest() {
 		l.push_back("one"); // one
 		l.push_back("two"); // two one

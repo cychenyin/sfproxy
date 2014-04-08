@@ -1,4 +1,4 @@
-namespace java com.ganji.arch.wangle.thrift
+namespace java com.ganji.arch.sf.thrift
 namespace php RegistryProxy
 namespace py RegistryProxy
 namespace cpp FinagleRegistryProxy

@@ -13,7 +13,7 @@ ClientPool::ClientPool(ClientFactory* factory) :
 		factory(factory) {
 	this->max_client_ = MAX_CLIENT_DEF;
 	this->conn_timeout = CONN_TIMEOUT_DEF; // 1 * 3600 * 1000
-	this->max_used_times = MAX_USED_TIMES;
+	this->max_used_times = MAX_USED_TIMES_DEF;
 	this->last_id_ = 0;
 }
 
@@ -45,7 +45,7 @@ ClientBase* ClientPool::open() {
 	while (it != idle_.end()) {
 		client = *it;
 		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
-			// how could this happen, a conn open, then left it alone for enough time, could happen? doute about that, cause of in zk client scenario watcher callback happens in unknown future.
+			// how could this happen. a conn open, then left it alone for enough time, could happen? doute about that, cause of in zk client scenario watcher callback happens in unknown future.
 			if(!destroy_list) {
 				destroy_list = new CList();
 			}

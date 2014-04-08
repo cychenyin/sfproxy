@@ -25,6 +25,10 @@ using namespace ut;
 int main(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy tester" << endl;
 
+	TestList lt;
+	// lt.itoratorTest();
+	lt.itoratorTest2();
+
 //	ut::RegistryCacheTest a;
 //	a.addTest();
 
