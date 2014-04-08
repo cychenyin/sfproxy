@@ -99,9 +99,11 @@ public:
 	void warm() {
 #ifdef DEBUG_
 		long start = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
-		cout << "server starting=" << start << " CLOCKS_PER_SEC=" << CLOCKS_PER_SEC << endl;
 #endif
 		ZkClient *client = (ZkClient*) pool->open();
+#ifdef DEBUG_
+		long open = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
+#endif
 		if (!client) {
 			cout << " warm error, fail to open zk client." << endl;
 			return;
@@ -119,9 +121,9 @@ public:
 //			i -=10;
 //		}
 #ifdef DEBUG_
-		cout << "warm " << names.size() << " serives cost "
-				<< (double) (ganji::util::time::GetCurTimeUs() - start) / CLOCKS_PER_SEC * 1000 << "ms. " << start
-				<< endl;
+		long end = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
+		cout << "warm " << names.size() << " proxy cost=" << DiffMs(end, start) << "ms. open client cost="
+				<< DiffMs(open, start) << endl;
 		cache->dump();
 #endif
 

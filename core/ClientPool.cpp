@@ -13,7 +13,8 @@ ClientPool::ClientPool(ClientFactory* factory) :
 		factory(factory) {
 	this->max_client_ = 100;
 	this->conn_timeout = 1 * 3600 * 1000;
-	this->max_usetimes = 10;
+	this->max_used_times = 10;
+	this->last_id_ = 0;
 }
 
 ClientPool::~ClientPool() {
@@ -26,7 +27,7 @@ ClientBase* ClientPool::create() {
 	if (factory) {
 		mutex.lock();
 		ClientBase *c = factory->create();
-		c->id_ = ++ last_id_;
+		c->id_ = ++last_id_;
 		mutex.unlock();
 
 		c->pool_event_ = new SEvent<ClientPool, ClientBase, int>(this, &ClientPool::on_client_changed);
@@ -39,19 +40,32 @@ ClientBase* ClientPool::create() {
 ClientBase* ClientPool::open() {
 	ClientBase *client = 0;
 	mutex.lock();
-	CColl::iterator it = idle_.begin();
+	CSet::iterator it = idle_.begin();
+
+	CList *destroy_list = 0;
 	while (it != idle_.end()) {
 		client = *it;
-		if (!(*it)->connected_ || (*it)->use_times_ >max_usetimes) { // how could this happen, a conn open , then left alone enough time, could happen? doute about it in zk client scenario cause of watch.
+		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
+			// how could this happen, a conn open , then left it alone for enough time, could happen? doute about that. but in zk client scenario cause of watcher callback in unknown furture.
+			if(!destroy_list) {
+				destroy_list = new CList();
+			}
+			destroy_list->push_back(client);
 			++it;
-			destroy(*it);
 		} else
 			break;
 	}
 	mutex.unlock();
-
-	if (client == 0 &&  size() < max_client_) {
-		client = create(); // will be add to use_list when connected state is ready through poolevent which callback to onClientChanged method.
+	if(destroy_list) {
+		CList::iterator i =destroy_list->begin();
+		while(i != destroy_list->end()){
+			destroy(*i);
+		}
+		delete destroy_list();
+	}
+	if (client == 0 && size() < max_client_) {
+		// will be add to use_list when connected state is ready through poolevent which callback to onClientChanged method.
+		client = create();
 	}
 
 	if (client) {
@@ -60,7 +74,7 @@ ClientBase* ClientPool::open() {
 	return client;
 }
 
-// when disconn or not using then mv to idle;
+// when disconn or not used then mv to idle;
 void ClientPool::on_client_changed(ClientBase* client, int state) {
 	if (client == 0)
 		return;
@@ -92,17 +106,6 @@ void ClientPool::reset() {
 		ClientBase *client = *idle_.begin();
 		destroy(client);
 	}
-
-//	while (use_list.size() > 0) {
-//		ClientBase* client = use_list.front();
-//		destroy(client);
-//		use_list.remove(client);
-//	}
-//	while (idle_.size() > 0) {
-//		ClientBase* client = idle_.front();
-//		destroy(client);
-//		idle_.remove(client);
-//	}
 }
 
 void ClientPool::destroy(ClientBase* client) {

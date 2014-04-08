@@ -6,8 +6,6 @@
  */
 
 #include "ZkClient.h"
-//#include <boost/shared_ptr.hpp>
-//using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
 ZkClient::ZkClient() {

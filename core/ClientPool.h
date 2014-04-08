@@ -61,6 +61,8 @@ public:
 	int id() {
 		return id_;
 	}
+
+protected:
 	// should be accessed by derived children; used in close & open method in implement of this abstract class.
 	void set_connected(bool connected) {
 		if (this->connected_ == connected)
@@ -72,7 +74,6 @@ public:
 			pool_event_->invoke(this, ClientBase::EVENT_TYPE_CONNECTION_STATE);
 		}
 	}
-protected:
 	// can be accessed only by friend ClientPool when open
 	void set_in_using(bool state) {
 		bool origin = this->in_using_;
@@ -103,7 +104,9 @@ public:
 };
 
 // client collection
-typedef set<ClientBase*> CColl;
+typedef set<ClientBase*> CSet;
+// client collection
+typedef list<ClientBase*> CList;
 
 /*
  * create client add to use_list, when client.close then mv to idle_client; when disconnect then destroy it.
@@ -130,15 +133,15 @@ public:
 	}
 public:
 	int conn_timeout;
-	int max_usetimes;
+	int max_used_times;
 	ClientFactory* factory;
 	const static int MAX_CLIENT_DEF = 100;
 	const static int CONN_TIMEOUT_DEF = 86400; // 1 day
 private:
-	CColl using_;
-	CColl idle_;
+	CSet using_;
+	CSet idle_;
 	int max_client_;
-	int last_id_;
+	long last_id_;
 	apache::thrift::concurrency::Mutex mutex;
 
 protected:

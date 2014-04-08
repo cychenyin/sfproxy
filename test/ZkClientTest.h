@@ -51,7 +51,8 @@ public:
 
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
 				<< c->id() << endl;
-		c->set_connected(false);
+		// before uncomment following code, you should set_connction method from protected to public firstly.
+		// c->set_connected(false);
 
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
 				<< c->id() << endl;
@@ -61,7 +62,6 @@ public:
 		c->close();
 
 		cout << " done......." << endl;
-
 	}
 
 	void poolMemReleaseTest() {

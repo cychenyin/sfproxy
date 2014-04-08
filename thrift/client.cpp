@@ -27,10 +27,9 @@ int main(int argc, char **argv) {
 	boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
 	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
-
-	long start = ganji::util::time::GetCurTimeUs();
 	RegistryProxyClient client(protocol);
 	int i;
+	long start = ganji::util::time::GetCurTimeUs();
 	transport->open();
 	long open = ganji::util::time::GetCurTimeUs();
 
@@ -39,8 +38,9 @@ int main(int argc, char **argv) {
 			std::string serverName = "/soa/services/testservice";
 			std::string ret;
 			client.get(ret, serverName);
-			long get = ganji::util::time::GetCurTimeUs();
-			cout << "open cost=" << (double)(open-start)/1000 << " get cost=" << (double)(get-open)/1000 << endl;
+			long done = ganji::util::time::GetCurTimeUs();
+			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost="
+					<< (double) (open - start) / 1000 << "ms. get cost=" << (double) (done - open) / 1000 << endl;
 			cout << "result:	" << ret << endl;
 		}
 	} catch (const apache::thrift::transport::TTransportException& ex) {
