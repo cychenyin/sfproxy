@@ -11,9 +11,9 @@ namespace FinagleRegistryProxy {
 
 ClientPool::ClientPool(ClientFactory* factory) :
 		factory(factory) {
-	this->max_client_ = 100;
-	this->conn_timeout = 1 * 3600 * 1000;
-	this->max_used_times = 10;
+	this->max_client_ = MAX_CLIENT_DEF;
+	this->conn_timeout = CONN_TIMEOUT_DEF; // 1 * 3600 * 1000
+	this->max_used_times = MAX_USED_TIMES;
 	this->last_id_ = 0;
 }
 
@@ -41,12 +41,11 @@ ClientBase* ClientPool::open() {
 	ClientBase *client = 0;
 	mutex.lock();
 	CSet::iterator it = idle_.begin();
-
 	CList *destroy_list = 0;
 	while (it != idle_.end()) {
 		client = *it;
 		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
-			// how could this happen, a conn open , then left it alone for enough time, could happen? doute about that. but in zk client scenario cause of watcher callback in unknown furture.
+			// how could this happen, a conn open, then left it alone for enough time, could happen? doute about that, cause of in zk client scenario watcher callback happens in unknown future.
 			if(!destroy_list) {
 				destroy_list = new CList();
 			}
@@ -61,7 +60,7 @@ ClientBase* ClientPool::open() {
 		while(i != destroy_list->end()){
 			destroy(*i);
 		}
-		delete destroy_list();
+		delete destroy_list;
 	}
 	if (client == 0 && size() < max_client_) {
 		// will be add to use_list when connected state is ready through poolevent which callback to onClientChanged method.

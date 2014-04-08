@@ -136,6 +136,7 @@ public:
 	int max_used_times;
 	ClientFactory* factory;
 	const static int MAX_CLIENT_DEF = 100;
+	const static int MAX_USED_TIMES = 1000000; // 1 million
 	const static int CONN_TIMEOUT_DEF = 86400; // 1 day
 private:
 	CSet using_;
