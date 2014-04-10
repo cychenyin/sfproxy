@@ -12,10 +12,10 @@ compile:
 	g++ -Wall -I/usr/local/include/thrift -I/home/asdf/workspace/cc_dev/trunk/include -c client.cpp -o client.o
 	g++ -Wall -I/usr/local/include/thrift -I/home/asdf/workspace/cc_dev/trunk/include -c clientSimple.cpp -o clientSimple.o	
 link:
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o server.o -o server
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o serverSimple.o -o sserver 
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o client.o -o client 
-	g++ -lthrift-0.9.1 -lthriftnb-0.9.1 -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o clientSimple.o -o sclient 
+	g++ -lthrift -lthriftnb -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o server.o -o server
+	g++ -lthrift -lthriftnb -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o serverSimple.o -o sserver 
+	g++ -lthrift -lthriftnb -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o client.o -o client 
+	g++ -lthrift -lthriftnb -levent -lutil_time -L/home/asdf/workspace/cc_dev/trunk/lib -L/usr/local/lib RegistryProxy.o proxy_constants.o proxy_types.o clientSimple.o -o sclient 
 
 clean:
 	rm -f *.o
