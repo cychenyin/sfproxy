@@ -82,11 +82,12 @@ int main(int argc, char **argv) {
 	if (argc > 2 && (strcmp(argv[2], "-d") == 0 || strcmp(argv[2], "--debug") == 0)) {
 		port = 9090;
 	}
-
+	string zkhosts = "192.168.2.202:2181";
 	cout << "frproxy server starting at port " << port << endl;
+	cout << "zk server " << zkhosts << endl;
 
-
-	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
+	// shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
+	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 
 	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
