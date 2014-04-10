@@ -28,12 +28,14 @@ private:
 	RegistryCache *cache;
 	ClientPool *pool;
 	string *root;
+	string split;
 
 public:
 	ServerHandler(string zkhosts) {
 		root = new string("/soa/services");
 		cache = new RegistryCache();
 		pool = new ClientPool(new ZkClientFactory(zkhosts, cache));
+		split = "/";
 	}
 
 	~ServerHandler() {
@@ -64,7 +66,10 @@ public:
 			cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
 			return;
 		}
-		vector<Registry>* pvector = cache->get(serviceName.c_str());
+
+		string path = *root + split + serviceName;
+
+		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) {
 			cache->dump();
 			client->get_children(serviceName);

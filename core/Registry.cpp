@@ -57,7 +57,7 @@ string Registry::to_json_string(Registry& r) {
 	ss << "\",\"host\"=\"" << r.host;
 	ss << "\",\"port\"=" << r.port;
 	ss << ",\"e\"=\"" << r.ephemeral;
-	ss << "\",\"weight\"=\"" << r.weight();
+	ss << "\",\"weight\"=" << r.weight();
 	ss << " }";
 	return ss.str();
 }
