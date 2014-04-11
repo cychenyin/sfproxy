@@ -49,7 +49,7 @@ all: clean preexec $(TARGET1) $(TARGET2) afterexec
 $(TARGET1): $(TARGET1).o
 	test -z $(BIN_PATH) || $(MKDIR) -- $(BIN_PATH)
 	
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
 		proxy_constants.o \
 		proxy_types.o \
 		RegistryProxy.o \
@@ -87,7 +87,7 @@ $(TARGET1).o: #$(OBJS)
 $(TARGET2): #$(OBJS)
 #	ar r $(TARGET2) client/frproxy_client.o
 #	ranlib $(TARGET2)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
 		proxy_constants.o \
 		proxy_types.o \
 		RegistryProxy.o \
@@ -131,6 +131,6 @@ clean:
 	
 install:
 	#echo "not support now."
-	#test -z $(INSTALL_PATH) || test -d $(INSTALL_PATH) || $(MKDIR) -- $(INSTALL_PATH)
+	test -z $(INSTALL_PATH) || test -d $(INSTALL_PATH) || $(MKDIR) -- $(INSTALL_PATH)
 	install -m 755 $(BIN_PATH)/frproxy $(INSTALL_PATH)/frproxy
 	
