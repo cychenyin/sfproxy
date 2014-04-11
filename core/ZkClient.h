@@ -29,7 +29,7 @@
 #include <zookeeper/zk_adaptor.h>
 #include <zookeeper/zookeeper_log.h>
 
-#include <thrift/concurrency/Mutex.h>
+#include "concurrency/Mutex.h"
 
 //#include "ganji/util/thread/mutex.h"
 #include "ClientPool.h"
