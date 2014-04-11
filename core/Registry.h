@@ -24,6 +24,7 @@ using namespace  std;
 
 class Registry {
 public:
+	// zk path really
 	std::string name;
 	std::string host;
 	int port;

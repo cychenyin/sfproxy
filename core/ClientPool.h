@@ -120,6 +120,7 @@ public:
 	virtual ~ClientPool();
 
 	virtual ClientBase* open();
+	virtual ClientBase* open1();
 	void on_client_changed(ClientBase* client, int state);
 
 	int size() {
@@ -135,7 +136,7 @@ public:
 	int conn_timeout;
 	int max_used_times;
 	ClientFactory* factory;
-	const static int MAX_CLIENT_DEF = 100;
+	const static int MAX_CLIENT_DEF = 1000;
 	const static int MAX_USED_TIMES_DEF = 1000000; // 1 million
 	const static int CONN_TIMEOUT_DEF = 86400; // 1 day
 private:

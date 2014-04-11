@@ -36,17 +36,43 @@ ClientBase* ClientPool::create() {
 	} else
 		return 0;
 }
-
 ClientBase* ClientPool::open() {
 	ClientBase *client = 0;
 	mutex.lock();
 	CSet::iterator it = idle_.begin();
+	while (it != idle_.end()) {
+		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
+			// how could this happen. a conn open, then left it alone for enough time, could happen?
+			// doute about that, cause of in zk client scenario watcher callback happens in unknown future.
+			CSet::iterator destroy_it = it;
+			++it;
+			delete *destroy_it;
+		} else {
+			client = *it;
+			break;
+		}
+	}
+	mutex.unlock();
+	if (client == 0 && size() < max_client_) {
+		// will be add to use_list when connected state is ready through poolevent which callback to onClientChanged method.
+		client = create();
+	}
+	if (client) {
+		client->open();
+	}
+	return client;
+}
+
+ClientBase* ClientPool::open1() {
+	ClientBase *client = 0;
 	CList *destroy_list = 0;
+	mutex.lock();
+	CSet::iterator it = idle_.begin();
 	while (it != idle_.end()) {
 		client = *it;
 		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
 			// how could this happen. a conn open, then left it alone for enough time, could happen? doute about that, cause of in zk client scenario watcher callback happens in unknown future.
-			if(!destroy_list) {
+			if (!destroy_list) {
 				destroy_list = new CList();
 			}
 			destroy_list->push_back(client);
@@ -55,9 +81,9 @@ ClientBase* ClientPool::open() {
 			break;
 	}
 	mutex.unlock();
-	if(destroy_list) {
-		CList::iterator i =destroy_list->begin();
-		while(i != destroy_list->end()){
+	if (destroy_list) {
+		CList::iterator i = destroy_list->begin();
+		while (i != destroy_list->end()) {
 			destroy(*i);
 		}
 		delete destroy_list;

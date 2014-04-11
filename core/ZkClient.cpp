@@ -191,8 +191,8 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 		client->set_connected(false);
 		return;
 	}
-
 	if (path) {
+		client->set_in_using(true);
 		string serviceZpath(path);
 		unsigned index = serviceZpath.find_last_of('/');
 		const string spath = "" + serviceZpath.substr(0, index);
@@ -212,6 +212,7 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 
 			break;
 		}
+		client->set_in_using(false);
 	}
 
 }
@@ -232,6 +233,7 @@ void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *
 	}
 
 	if (path) {
+		client->set_in_using(true);
 		switch (type) {
 		case CREATED_EVENT_DEF:
 		case CHANGED_EVENT_DEF:
@@ -245,6 +247,7 @@ void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *
 		default:
 			break;
 		}
+		client->set_in_using(false);
 	}
 }
 

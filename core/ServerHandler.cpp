@@ -2,8 +2,8 @@
 // You should copy it to another filename to avoid overwriting it.
 
 #ifndef GETMS_
-#define GetMs(start) (double) (ganji::util::time::GetCurTimeUs() - start) / CLOCKS_PER_SEC * 1000
-#define DiffMs(end, start) (double) (end - start) / CLOCKS_PER_SEC * 1000
+#define GetMs(start) ((double) (ganji::util::time::GetCurTimeUs() - start) / CLOCKS_PER_SEC * 1000)
+#define DiffMs(end, start) ((double) (end - start) / CLOCKS_PER_SEC * 1000)
 #endif
 
 #include <iostream>
@@ -52,53 +52,55 @@ public:
 			root = 0;
 		}
 	}
+
 	void get(std::string& _return, const std::string& serviceName) {
 #ifdef DEBUG_
-		// cout << "frproxy get method called. " << serviceName << endl;
+		cout << "frproxy get method called. " << serviceName << endl;
 		long start = ganji::util::time::GetCurTimeUs();
+		long open = start, get = start, id = start, close = start;
 #endif
-		ZkClient *client = (ZkClient*) pool->open();
-#ifdef DEBUG_
-		long open = ganji::util::time::GetCurTimeUs();
-#endif
-		if (!client) {
-			_return = "";
-			cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
-			return;
-		}
 
 		string path = *root + split + serviceName;
-
 		vector<Registry>* pvector = cache->get(path.c_str());
-		if (pvector == 0 || pvector->size() == 0) {
-			cache->dump();
-			client->get_children(serviceName);
-			pvector = cache->get(serviceName.c_str());
-			cout << " get cache miss." << endl;
+		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
+			ZkClient *client = (ZkClient*) pool->open();
+#ifdef DEBUG_
+			long open = ganji::util::time::GetCurTimeUs();
+#endif
+			if (client) {
+				client->get_children(path);
+				pvector = cache->get(path.c_str());
+#ifdef DEBUG_
+				cout << " get cache miss." << endl;
+				long get = ganji::util::time::GetCurTimeUs();
+				id = client->id();
+#endif
+				client->close(); // must
+			} else {
+				// TODO ... log it
+				cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
+				return;
+			}
+#ifdef DEBUG_
+			long close = ganji::util::time::GetCurTimeUs();
+#endif
 		}
-#ifdef DEBUG_
-		long get = ganji::util::time::GetCurTimeUs();
-		int id = client->id();
-#endif
-		client->close(); // must
-#ifdef DEBUG_
-		long close = ganji::util::time::GetCurTimeUs();
-#endif
 		if (pvector && pvector->size() > 0) {
 			_return = Registry::to_json_string(*pvector);
 		} else
 			_return = "";
 #ifdef DEBUG_
-		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << " client id="
-				<< id << endl;
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
 		long serial = ganji::util::time::GetCurTimeUs();
-		cout << " get total cost=" << DiffMs(serial, start) << " open=" << DiffMs(open, start) << " get="
-				<< DiffMs(get, open) << " close" << DiffMs(close, get) << " serial=" << DiffMs(serial, close) << endl;
+		cout << " client id=" << id << " get total cost=" << DiffMs(serial, start) << " open=" << DiffMs(open, start)
+				<< " get=" << DiffMs(get, open) << " close" << DiffMs(close, get) << " serial=" << DiffMs(serial, close)
+				<< endl;
+//		cache->dump();
 #endif
 	}
 
 	void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port) {
-		cout << "remove called. not supported now." << endl;
+		// cout << "remove called. not supported now." << endl;
 	}
 
 	void warm() {
@@ -121,15 +123,11 @@ public:
 		}
 		client->close();
 
-//		for(int i = 0;i<100000000; i++) {
-//			i +=10;
-//			i -=10;
-//		}
 #ifdef DEBUG_
 		long end = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
+		cache->dump();
 		cout << "warm " << names.size() << " proxy cost=" << DiffMs(end, start) << "ms. open client cost="
 				<< DiffMs(open, start) << endl;
-		cache->dump();
 #endif
 
 	}

@@ -15,12 +15,13 @@ using namespace apache::thrift::transport;
 using namespace FinagleRegistryProxy;
 
 int main(int argc, char **argv) {
-	// 9090 for test
-	// 9091 for debug
 	int port = 9091;
 	if (argc > 1 && (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--debug") == 0)) {
 		port = 9090;
 	}
+	if (argc > 2 && (strcmp(argv[1], "-p") == 0 || strcmp(argv[1], "--port") == 0)) {
+			port = atoi(argv[1]);
+		}
 	cout << "conn to port=" << port << endl;
 	boost::shared_ptr<TSocket> socket(new TSocket("localhost", port));
 
@@ -34,9 +35,12 @@ int main(int argc, char **argv) {
 	long open = ganji::util::time::GetCurTimeUs();
 
 	try {
+		std::string serverName = "testservice";
+		if (argc > 2) {
+			serverName = argv[2];
+		}
 		for (i = 0; i < 1; i++) {
 			// std::string serverName = "/soa/services/testservice";
-			std::string serverName = "testservice";
 			std::string ret;
 			client.get(ret, serverName);
 			long done = ganji::util::time::GetCurTimeUs();

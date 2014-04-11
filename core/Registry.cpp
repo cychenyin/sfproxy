@@ -51,7 +51,6 @@ bool Registry::operator!=(Registry& r) {
 // 67us
 // use stringstream, perfermance import 100% than using rapidJson
 string Registry::to_json_string(Registry& r) {
-	// string ret = "{";
 	stringstream ss;
 	ss << "{\"name\":\"" << r.name;
 	ss << "\",\"host\":\"" << r.host;
@@ -72,8 +71,7 @@ string Registry::to_json_string2(Registry& r) {
 	w << r.weight();
 
 	string ss;
-	ss += "{";
-	ss += "\"name\":\"";
+	ss += "{\"name\":\"";
 	ss += r.name;
 	ss += "\",\"host\":\"";
 	ss += r.host;
@@ -87,19 +85,10 @@ string Registry::to_json_string2(Registry& r) {
 	return ss;
 }
 
-
 // 120us
 string Registry::to_json_string3(Registry& r) {
 	Document document;
 	Document::AllocatorType& allocator = document.GetAllocator();
-
-//    Value contact(kArrayType);
-//    Value contact2(kArrayType);
-//    Value root(kArrayType);
-//    contact.PushBack("Lu//a\"", allocator).PushBack("Mio", allocator).PushBack("", allocator);
-//    contact2.PushBack("Lu// a", allocator).PushBack("Mio", allocator).PushBack("", allocator);
-//    root.PushBack(contact, allocator);
-//    root.PushBack(contact2, allocator);
 
 	Value root(kObjectType);
 	{

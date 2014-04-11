@@ -24,6 +24,8 @@
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TNonblockingServer.h>
 #include <thrift/server/TThreadPoolServer.h>
+#include <thrift/server/TThreadedServer.h>
+
 
 #include <thrift/transport/TServerSocket.h>
 #include <thrift/transport/TBufferTransports.h>
@@ -53,37 +55,14 @@ int testmain(int argc, char** argv) {
 //	a.removeTest1();
 //	a.removeTest2();
 
-	//	ZkClientTest clientTest;
+//	ZkClientTest clientTest;
 //	clientTest.ConnecionTest();
 //	clientTest.RegistryEqualsTest();
-
 	return 0;
 }
 
-int main(int argc, char **argv) {
-
-//	cout << ganji::util::time::GetCurTimeUs() << endl;
-//	cout << ganji::util::time::GetCurTimeMs() << endl;
-
-#ifdef DEBUG_
-	for (int i = 0; i < argc; i++) {
-		cout << " arg[" << i << "]=" << argv[i];
-	}
-	cout << endl;
-#endif
-
-	if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--test") == 0)) {
-		testmain(argc, argv);
-		cout << "end..." << endl;
-		return 0;
-	}
-
-	int port = 9091;
-	if (argc > 2 && (strcmp(argv[2], "-d") == 0 || strcmp(argv[2], "--debug") == 0)) {
-		port = 9090;
-	}
-	string zkhosts = "192.168.2.202:2181";
-	cout << "frproxy server starting at port " << port << endl;
+int nonblockingServer(string zkhosts, int port) {
+	cout << "frproxy nonblocking server starting at port " << port << endl;
 	cout << "zk server " << zkhosts << endl;
 
 	// shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
@@ -106,12 +85,11 @@ int main(int argc, char **argv) {
 #endif
 	handler.get()->warm();
 
-	#ifdef DEBUG_
+#ifdef DEBUG_
 	long elapse = ganji::util::time::GetCurTimeUs() - start;
-	cout << "frproxy server warm cost " << (double)elapse / 1000 << "ms" << endl;
+	cout << "frproxy server warm cost " << (double) elapse / 1000 << "ms" << endl;
 #endif
 	server.serve();
-
 
 	cout << "frproxy server exiting." << endl;
 	threadManager->stop();
@@ -119,18 +97,66 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-void threadServer() {
-	//	shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
-	//	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
-	//
-	//	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-	//
-	//	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(15);
-	//	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory > (new PosixThreadFactory());
-	//	threadManager->threadFactory(threadFactory);
-	//	threadManager->start();
-	//	TThreadPoolServer server(processor, serverTransport,transportFactory, protocolFactory, threadManager);
-	//	TNonblockingServer server(processor, protocolFactory, port, threadManager);
-	////	TNonblockingServer server(processor, port);
-	//	server.serve();
+void poolServer(string zkhosts, int port) {
+	cout << "frproxy pool server starting at port " << port << endl;
+	cout << "zk server " << zkhosts << endl;
+
+	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
+	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
+	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+	shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
+	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+
+	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(15);
+	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+	threadManager->threadFactory(threadFactory);
+	threadManager->start();
+	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
+	server.serve();
+}
+
+int threadedServer(string zkhosts, int port) {
+	cout << "frproxy threaded server starting at port " << port << endl;
+	cout << "zk server " << zkhosts << endl;
+
+	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
+	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
+
+	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+	shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
+	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+
+	// using thread pool with maximum 15 threads to handle incoming requests
+	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(10);
+	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+	threadManager->threadFactory(threadFactory);
+	threadManager->start();
+
+	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
+	handler.get()->warm();
+
+	server.serve();
+
+	cout << "frproxy server exiting." << endl;
+	threadManager->stop();
+	cout << "frproxy server exited." << endl;
+	return 0;
+}
+
+int main(int argc, char **argv) {
+	if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--test") == 0)) {
+		testmain(argc, argv);
+		cout << "end..." << endl;
+		return 0;
+	}
+	int port = 9091;
+	if (argc > 1 && (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--debug") == 0)) {
+		port = 9090;
+	}
+	if (argc > 2 && (strcmp(argv[1], "-p") == 0 || strcmp(argv[1], "--port") == 0)) {
+		port = atoi(argv[1]);
+	}
+	string zkhosts = "192.168.2.202:2181";
+
+	threadedServer(zkhosts, port);
 }

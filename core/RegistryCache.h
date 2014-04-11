@@ -48,7 +48,9 @@ public:
 		RMap::iterator mit = cache.begin();
 		cout << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
 		string s;
-		while(mit != cache.end()) {
+		int i = 0;
+		int max = 20;
+		while(mit != cache.end() && ++i < max) {
 			RVector &v = mit->second;
 			RVector::iterator vit = v.begin();
 			while(vit != v.end() ) {
@@ -59,6 +61,9 @@ public:
 			}
 			cout << s;
 			++mit;
+		}
+		if(i >= max) {
+			cout << "	......" << endl;
 		}
 	}
 	RMap cache;
