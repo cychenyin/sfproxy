@@ -19,16 +19,16 @@
 #include "ganji/util/time/time.h"
 //#include "ganji/util/thread/mutex.h"
 
-#include <thrift/concurrency/PosixThreadFactory.h>
-#include <thrift/concurrency/ThreadManager.h>
-#include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/server/TNonblockingServer.h>
-#include <thrift/server/TThreadPoolServer.h>
-#include <thrift/server/TThreadedServer.h>
+#include "concurrency/PosixThreadFactory.h"
+#include "concurrency/ThreadManager.h"
+#include "protocol/TBinaryProtocol.h"
+#include "server/TNonblockingServer.h"
+#include "server/TThreadPoolServer.h"
+#include "server/TThreadedServer.h"
 
 
-#include <thrift/transport/TServerSocket.h>
-#include <thrift/transport/TBufferTransports.h>
+#include "transport/TServerSocket.h"
+#include "transport/TBufferTransports.h"
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
