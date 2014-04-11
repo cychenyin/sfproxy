@@ -5,10 +5,10 @@
 #include <string>     // std::string, std::to_string
 
 #include "RegistryProxy.h"
-#include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/server/TSimpleServer.h>
-#include <thrift/transport/TServerSocket.h>
-#include <thrift/transport/TBufferTransports.h>
+#include <protocol/TBinaryProtocol.h>
+#include <server/TSimpleServer.h>
+#include <transport/TServerSocket.h>
+#include <transport/TBufferTransports.h>
 
 using namespace std;
 using namespace ::apache::thrift;
