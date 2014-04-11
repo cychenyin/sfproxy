@@ -12,7 +12,7 @@
 #include <string>
 #include <set>
 #include <list>
-#include <thrift/concurrency/Mutex.h>
+#include "concurrency/Mutex.h"
 
 #include "SEvent.h"
 
