@@ -11,19 +11,23 @@ CC=g++ -ggdb
 BIN_PATH=./bin
 INSTALL_PATH=/usr/local/bin
 INCLUDE_PATH=.
-LIB_PATH= /usr/local/lib \
-	./lib
+LIB_PATH= \
+	./lib/ganji \
+	./lib/zookeeper \
+	/usr/local/lib 
 	#/home/asdf/downloads/gtest-1.7.0/lib \
 	#/home/asdf/workspace/cc_dev/trunk/lib
 	
 #c++11# -std=c++0x
 INCLUDES= \
+	-I./include \
+	-I./include/zookeeper \
+	-I./include/ganji \
 	-I/usr/include \
 	-I/usr/local/include \
-	-I/usr/local/include/thrift \
-	-I/usr/local/include/zookeeper \
-	-I./includes
+	-I/usr/local/include/thrift 
 	
+	#-I/usr/local/include/zookeeper \
 	#-I/home/asdf/workspace/cc_dev/trunk/include
 
 #	-I/home/asdf/downloads/gtest-1.7.0/include \
@@ -45,7 +49,7 @@ all: clean preexec $(TARGET1) $(TARGET2) afterexec
 $(TARGET1): $(TARGET1).o
 	test -z $(BIN_PATH) || $(MKDIR) -- $(BIN_PATH)
 	
-	$(CC) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
 		proxy_constants.o \
 		proxy_types.o \
 		RegistryProxy.o \
@@ -64,30 +68,28 @@ $(TARGET1): $(TARGET1).o
 	echo '---------------link done ---------------'
 		 
 $(TARGET1).o: #$(OBJS) 
-	$(CC) -Wall $(INCLUDES) -c thrift/proxy_constants.cpp -o proxy_constants.o 
-	$(CC) -Wall $(INCLUDES) -c thrift/proxy_types.cpp -o proxy_types.o	
-	$(CC) -Wall $(INCLUDES) -c thrift/RegistryProxy.cpp -o RegistryProxy.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/proxy_constants.cpp -o proxy_constants.o 
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/proxy_types.cpp -o proxy_types.o	
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/RegistryProxy.cpp -o RegistryProxy.o
 
-	$(CC) -Wall $(INCLUDES) -c core/Registry.cpp -o Registry.o
-	$(CC) -Wall $(INCLUDES) -c core/RegistryCache.cpp -o RegistryCache.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/Registry.cpp -o Registry.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/RegistryCache.cpp -o RegistryCache.o
 	
-	$(CC) -Wall $(INCLUDES) -c core/ZkClient.cpp -o ZkClient.o
-	$(CC) -Wall $(INCLUDES) -c core/RequestPool.cpp -o RequestPool.o
-	$(CC) -Wall $(INCLUDES) -c core/ClientPool.cpp -o ClientPool.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ZkClient.cpp -o ZkClient.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/RequestPool.cpp -o RequestPool.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ClientPool.cpp -o ClientPool.o
 	
-	$(CC) -Wall $(INCLUDES) -c core/ServerHandler.cpp -o ServerHandler.o 
-#$(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH))
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ServerHandler.cpp -o ServerHandler.o 
 	
-	$(CC) -Wall $(INCLUDES) -c test/main.cpp -o test.o
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c test/main.cpp -o test.o
 
-	$(CC) -Wall $(INCLUDES) -c main.cpp -o frproxy.o 
-#$(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH))
+	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c main.cpp -o frproxy.o
 	echo ---------------compile done ---------------
 	
 $(TARGET2): #$(OBJS)
 #	ar r $(TARGET2) client/frproxy_client.o
 #	ranlib $(TARGET2)
-	$(CC) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
+	$(CC) $(LDFLAGS) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
 		proxy_constants.o \
 		proxy_types.o \
 		RegistryProxy.o \
