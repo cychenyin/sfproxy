@@ -26,7 +26,6 @@
 #include "server/TThreadPoolServer.h"
 #include "server/TThreadedServer.h"
 
-
 #include "transport/TServerSocket.h"
 #include "transport/TBufferTransports.h"
 
@@ -156,7 +155,35 @@ int main(int argc, char **argv) {
 	if (argc > 2 && (strcmp(argv[1], "-p") == 0 || strcmp(argv[1], "--port") == 0)) {
 		port = atoi(argv[1]);
 	}
+
 	string zkhosts = "192.168.2.202:2181";
 
-	threadedServer(zkhosts, port);
+	int type = 0;
+	for (int i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "-st")) {
+			// theaded
+			type = 0;
+			break;
+		} else if (strcmp(argv[i], "-sp")) {
+			// thread pool
+			type=1;
+			break;
+		} else if (strcmp(argv[i], "-sn")) {
+			// nonblocking
+			type=2;
+			break;
+		}
+	}
+	switch(type)
+	{
+	case 1:
+		poolServer(zkhosts, port);
+		break;
+	case 2:
+		nonblockingServer(zkhosts, port);
+		break;
+	default:
+		threadedServer(zkhosts, port);
+		break;
+	}
 }
