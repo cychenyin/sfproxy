@@ -53,11 +53,11 @@ bool Registry::operator!=(Registry& r) {
 string Registry::to_json_string(Registry& r) {
 	// string ret = "{";
 	stringstream ss;
-	ss << "{\"name\"=\"" << r.name;
-	ss << "\",\"host\"=\"" << r.host;
-	ss << "\",\"port\"=" << r.port;
+	ss << "{\"name\":\"" << r.name;
+	ss << "\",\"host\":\"" << r.host;
+	ss << "\",\"port\":" << r.port;
 	ss << ",\"e\"=\"" << r.ephemeral;
-	ss << "\",\"weight\"=" << r.weight();
+	ss << "\",\"weight\":" << r.weight();
 	ss << " }";
 	return ss.str();
 }
@@ -73,15 +73,15 @@ string Registry::to_json_string2(Registry& r) {
 
 	string ss;
 	ss += "{";
-	ss += "\"name\"=\"";
+	ss += "\"name\":\"";
 	ss += r.name;
-	ss += "\",\"host\"=\"";
+	ss += "\",\"host\":\"";
 	ss += r.host;
-	ss += "\",\"port\"=";
+	ss += "\",\"port\":";
 	ss += s.str();
-	ss += ",\"e\"=\"";
+	ss += ",\"e\":\"";
 	ss += r.ephemeral;
-	ss += "\",\"weight\"=\"";
+	ss += "\",\"weight\":";
 	ss += w.str();
 	ss += "}";
 	return ss;

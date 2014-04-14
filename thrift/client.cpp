@@ -35,7 +35,8 @@ int main(int argc, char **argv) {
 
 	try {
 		for (i = 0; i < 1; i++) {
-			std::string serverName = "/soa/services/testservice";
+			// std::string serverName = "/soa/services/testservice";
+			std::string serverName = "testservice";
 			std::string ret;
 			client.get(ret, serverName);
 			long done = ganji::util::time::GetCurTimeUs();
