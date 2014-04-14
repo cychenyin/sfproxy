@@ -56,7 +56,7 @@ string Registry::to_json_string(Registry& r) {
 	ss << "{\"name\":\"" << r.name;
 	ss << "\",\"host\":\"" << r.host;
 	ss << "\",\"port\":" << r.port;
-	ss << ",\"e\"=\"" << r.ephemeral;
+	ss << ",\"e\":\"" << r.ephemeral;
 	ss << "\",\"weight\":" << r.weight();
 	ss << " }";
 	return ss.str();
@@ -123,7 +123,7 @@ string Registry::to_json_string3(Registry& r) {
 
 //210us
 string Registry::to_json_string4(Registry& r) {
-	boost::format fmt("{\"name\"=\"%s\",\"host\"=\"%s\",\"port\"=%i,\"e\"=\"%s\",\"weight\"=%i}");
+	boost::format fmt("{\"name\":\"%s\",\"host\":\"%s\",\"port\":%i,\"e\":\"%s\",\"weight\":%i}");
 	fmt % r.name % r.host % r.port % r.ephemeral % r.weight();
 	return fmt.str();
 }
