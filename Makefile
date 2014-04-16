@@ -49,7 +49,7 @@ all: clean preexec $(TARGET1) $(TARGET2) afterexec
 $(TARGET1): $(TARGET1).o
 	test -z $(BIN_PATH) || $(MKDIR) -- $(BIN_PATH)
 	
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
 		proxy_constants.o \
 		proxy_types.o \
 		RegistryProxy.o \
@@ -60,8 +60,6 @@ $(TARGET1): $(TARGET1).o
 		ClientPool.o \
 		ServerHandler.o \
 		frproxy.o \
-		/usr/local/lib/libthrift.a \
-		/usr/local/lib/libthriftnb.a \
 		-o $(BIN_PATH)/$(TARGET1)
 		
 	#g++ -lthrift -L/usr/local/lib server.o RegistryProxy.o proxy_constants.o proxy_types.o -o server 
