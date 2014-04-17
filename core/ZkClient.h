@@ -65,7 +65,6 @@ public:
 	void dump_stat(struct Stat *stat);
 	void parse(string json);
 
-	void close_handle();
 public: // interface imple
 	//ClientBase::open
 	void open() {
@@ -88,6 +87,7 @@ private:
 	int timeout_; // zk recv_timeout in microsecond
 	void Init();
 	// apache::thrift::concurrency::Mutex mutex;
+	void close_handle();
 
 };
 

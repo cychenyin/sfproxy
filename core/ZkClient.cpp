@@ -18,10 +18,11 @@ ZkClient::ZkClient(string hosts, RegistryCache* pcache) {
 }
 
 ZkClient::~ZkClient() {
-	if (zhandle_) {
-		zookeeper_close(zhandle_);
-	}
-	this->zhandle_ = NULL;
+//	if (zhandle_) {
+//		zookeeper_close(zhandle_);
+//	}
+//	this->zhandle_ = NULL;
+	close_handle();
 	pcache = 0;
 }
 
@@ -187,7 +188,6 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 		return;
 
 	if (state == ZOO_EXPIRED_SESSION_STATE) {
-		client->close_handle();
 		client->set_connected(false);
 		return;
 	}
@@ -227,8 +227,8 @@ void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *
 		return;
 	}
 	if (state == ZOO_EXPIRED_SESSION_STATE) {
-		client->close_handle();
 		client->set_connected(false);
+//		client->close_handle();
 		return;
 	}
 
@@ -266,8 +266,8 @@ void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *pa
 			cout << " Zookeeper session expired!" << endl;
 			ZkClient *client = (ZkClient*) watcherCtx;
 			if (client) {
-				client->close_handle();
 				client->set_connected(false);
+//				client->close_handle();
 			}
 		}
 	}

@@ -55,8 +55,7 @@ string Registry::to_json_string(Registry& r) {
 	ss << "{\"name\":\"" << r.name;
 	ss << "\",\"host\":\"" << r.host;
 	ss << "\",\"port\":" << r.port;
-	ss << ",\"e\":\"" << r.ephemeral;
-	ss << "\",\"weight\":" << r.weight();
+	ss << ",\"weight\":" << r.weight();
 	ss << " }";
 	return ss.str();
 }
@@ -77,9 +76,7 @@ string Registry::to_json_string2(Registry& r) {
 	ss += r.host;
 	ss += "\",\"port\":";
 	ss += s.str();
-	ss += ",\"e\":\"";
-	ss += r.ephemeral;
-	ss += "\",\"weight\":";
+	ss += ",\"weight\":";
 	ss += w.str();
 	ss += "}";
 	return ss;
@@ -100,7 +97,7 @@ string Registry::to_json_string3(Registry& r) {
 		root.AddMember("name", jname, allocator);
 		root.AddMember("host", jhost, allocator);
 		root.AddMember("port", jport, allocator);
-		root.AddMember("e", je, allocator);
+//		root.AddMember("e", je, allocator);
 		root.AddMember("weight", jweight, allocator);
 	}
 
@@ -112,8 +109,8 @@ string Registry::to_json_string3(Registry& r) {
 
 //210us
 string Registry::to_json_string4(Registry& r) {
-	boost::format fmt("{\"name\":\"%s\",\"host\":\"%s\",\"port\":%i,\"e\":\"%s\",\"weight\":%i}");
-	fmt % r.name % r.host % r.port % r.ephemeral % r.weight();
+	boost::format fmt("{\"name\":\"%s\",\"host\":\"%s\",\"port\":%i,\"weight\":%i}");
+	fmt % r.name % r.host % r.port % r.weight();
 	return fmt.str();
 }
 

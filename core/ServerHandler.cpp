@@ -54,6 +54,8 @@ public:
 	}
 
 	void get(std::string& _return, const std::string& serviceName) {
+//		_return = "";
+//		return;
 #ifdef DEBUG_
 		cout << "frproxy get method called. " << serviceName << endl;
 		long start = ganji::util::time::GetCurTimeUs();

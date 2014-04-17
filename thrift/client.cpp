@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 			port = atoi(argv[1]);
 		}
 	cout << "conn to port=" << port << endl;
-	boost::shared_ptr<TSocket> socket(new TSocket("localhost", port));
+	boost::shared_ptr<TSocket> socket(new TSocket("127.0.0.1", port));
 
 	boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
 	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
