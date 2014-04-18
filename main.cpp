@@ -151,7 +151,7 @@ void version() {
 	cout << "service frameword registry proxy server 1.0.0" << endl;
 }
 // return index if exists, or return 0
-int option_exists(int argc, char **argv, char *option) {
+int option_exists(int argc, char **argv, const char *option) {
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], option) == 0)
 			return i;
@@ -159,9 +159,10 @@ int option_exists(int argc, char **argv, char *option) {
 	return 0;
 }
 
-char* option_value(int argc, char **argv, char *option, char* long_name_option, char *default_value) {
+char* option_value(int argc, char **argv, const char *option, const char* long_name_option, const char *default_value) {
 	int index = option_exists(argc, argv, option);
-	char *ret = default_value;
+	//char *ret = default_value;
+	char *ret = const_cast<char *>(default_value);
 	if (index && argc > index + 1) {
 		ret = argv[index + 1];
 	} else {
@@ -175,7 +176,7 @@ char* option_value(int argc, char **argv, char *option, char* long_name_option, 
 	return ret;
 }
 
-int option_value(int argc, char **argv, char *option, char *long_name_option, int default_value) {
+int option_value(int argc, char **argv, const char *option, const  char *long_name_option, int default_value) {
 	int index = option_exists(argc, argv, option);
 	int ret = default_value;
 	if (index && argc > index + 1) {

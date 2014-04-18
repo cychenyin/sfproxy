@@ -18,7 +18,7 @@ LIB_PATH= \
 	#/home/asdf/downloads/gtest-1.7.0/lib \
 	#/home/asdf/workspace/cc_dev/trunk/lib
 	
-#c++11# -std=c++0x
+
 INCLUDES= \
 	-I./include \
 	-I./include/zookeeper \
@@ -39,7 +39,8 @@ INCLUDES= \
 LIBS    := thrift thriftnb event pthread zookeeper_mt util_time util_config ganji_util_log ganji_util_thread ganji_util_thread_log
 # thriftnb
 #THREADED used in zk cli_mt
-CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED 
+CFLAGS= -D_LINUX_ -D_GNU_SOURCE -DTHREADED 
+#-Wall #c++11# -std=c++0x
 
 TARGET1=frproxy
 TARGET2=testproxy
@@ -66,22 +67,22 @@ $(TARGET1): $(TARGET1).o
 	echo '---------------link done ---------------'
 		 
 $(TARGET1).o: #$(OBJS) 
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/proxy_constants.cpp -o proxy_constants.o 
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/proxy_types.cpp -o proxy_types.o	
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/RegistryProxy.cpp -o RegistryProxy.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/proxy_constants.cpp -o proxy_constants.o 
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/proxy_types.cpp -o proxy_types.o	
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c thrift/RegistryProxy.cpp -o RegistryProxy.o
 
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/Registry.cpp -o Registry.o
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/RegistryCache.cpp -o RegistryCache.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/Registry.cpp -o Registry.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/RegistryCache.cpp -o RegistryCache.o
 	
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ZkClient.cpp -o ZkClient.o
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/RequestPool.cpp -o RequestPool.o
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ClientPool.cpp -o ClientPool.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ZkClient.cpp -o ZkClient.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/RequestPool.cpp -o RequestPool.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ClientPool.cpp -o ClientPool.o
 	
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ServerHandler.cpp -o ServerHandler.o 
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c core/ServerHandler.cpp -o ServerHandler.o 
 	
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c test/main.cpp -o test.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c test/main.cpp -o test.o
 
-	$(CC) -Wall $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c main.cpp -o frproxy.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c main.cpp -o frproxy.o
 	echo ---------------compile done ---------------
 	
 $(TARGET2): #$(OBJS)

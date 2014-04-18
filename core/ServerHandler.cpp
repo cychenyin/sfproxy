@@ -10,6 +10,10 @@
 // #include <time.h>
 // #include <sys/time.h>
 
+#include "concurrency/PosixThreadFactory.h"
+#include "concurrency/Thread.h"
+#include "concurrency/ThreadManager.h"
+
 #include "../thrift/RegistryProxy.h"
 #include "ganji/util/time/time.h"
 
@@ -19,8 +23,63 @@
 #include "ClientPool.h"
 
 using namespace std;
+using namespace apache::thrift::concurrency;
+using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
+
+// safe to insert & erase
+class SimpleSafeSet: public set<string> {
+private:
+	Mutex mutex;
+public:
+	SimpleSafeSet() {
+	}
+	~SimpleSafeSet() {
+	}
+	std::pair<iterator, bool> insert(const value_type& __x) {
+		mutex.lock();
+		pair<iterator, bool> ret = set<string>::insert(__x);
+		mutex.unlock();
+		return ret;
+	}
+
+	void erase(iterator __position) {
+		mutex.lock();
+		set<string>::erase(__position);
+		mutex.unlock();
+	}
+};
+// SimpleSafeSet
+
+class ServerHandlerTask: public Runnable {
+private:
+	ClientPool *pool;
+	string zkpath;
+	set<string> *skip_set;
+public:
+	ServerHandlerTask(ClientPool *pool, string zkpath, set<string> *skip_set) :
+			pool(pool), zkpath(zkpath), skip_set(skip_set) {
+	}
+
+	~ServerHandlerTask() {
+	}
+
+	void run() {
+		ZkClient *client = (ZkClient*) pool->open();
+		if (client) {
+			client->get_children(zkpath);
+			client->close(); // must
+			set<string>::iterator it = skip_set->find(zkpath);
+			if (it != skip_set->end())
+				skip_set->erase(it);
+		} else {
+			cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
+			return;
+		}
+	}
+};
+// class serverHandler::Task
 
 class ServerHandler: virtual public RegistryProxyIf {
 
@@ -29,15 +88,18 @@ private:
 	ClientPool *pool;
 	string *root;
 	string split;
-	set<string> *skip_set;
-	apache::thrift::concurrency::Mutex mutex;
+	SimpleSafeSet *skip_set;
+	shared_ptr<ThreadManager> threadManager;
+	int async_timeout; // in ms
 public:
 	ServerHandler(string zkhosts) {
 		root = new string("/soa/services");
 		cache = new RegistryCache();
 		pool = new ClientPool(new ZkClientFactory(zkhosts, cache));
 		split = "/";
-		skip_set = new set<string>();
+		skip_set = new SimpleSafeSet();
+		init_pool();
+		async_timeout = 100;
 	}
 
 	~ServerHandler() {
@@ -55,6 +117,8 @@ public:
 		}
 		delete skip_set;
 		skip_set = 0;
+
+		threadManager->stop();
 	}
 
 	void get(std::string& _return, const std::string& serviceName) {
@@ -69,37 +133,14 @@ public:
 		string path = *root + split + serviceName;
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
-			// if getting from zk, then skip
+		// if getting from zk, then skip
 			set<string>::iterator found = skip_set->find(serviceName);
 			if (found == skip_set->end()) {
-				mutex.lock();
 				pair<set<string>::iterator, bool> insert = skip_set->insert(serviceName);
-				mutex.unlock();
 				if (insert.second) {
-					ZkClient *client = (ZkClient*) pool->open();
-#ifdef DEBUG_
-					open = ganji::util::time::GetCurTimeUs();
-#endif
-					if (client) {
-						client->get_children(path);
-						pvector = cache->get(path.c_str());
-#ifdef DEBUG_
-						cout << " get cache miss." << endl;
-						get = ganji::util::time::GetCurTimeUs();
-						id = client->id();
-#endif
-						client->close(); // must
-#ifdef DEBUG_
-						close = ganji::util::time::GetCurTimeUs();
-#endif
-						mutex.lock();
-						skip_set->erase(insert.first);
-						mutex.unlock();
-					} else {
-						// TODO ... log it
-						cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
-						return;
-					}
+					threadManager->add(
+							shared_ptr<ServerHandlerTask>(new ServerHandlerTask(pool, path, skip_set)),
+							async_timeout);
 				}
 			}
 		}
@@ -149,6 +190,22 @@ public:
 #endif
 
 	}
+private:
+	void read_zk(string svc_name) {
+		int i;
+		for (i = 0; i < 3; i++)
+			cout << svc_name << " " << i << endl;
+
+	}
+
+	void init_pool() {
+		threadManager = ThreadManager::newSimpleThreadManager(1);
+		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+		threadManager->threadFactory(threadFactory);
+		threadManager->start();
+	}
+
 };
+// class ServerHandler
 
 } /* namespace FinagleRegistryProxy  */
