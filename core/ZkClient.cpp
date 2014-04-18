@@ -144,10 +144,10 @@ void ZkClient::get_children(string serviceZpath) {
 	int ret = zoo_wget_children(zhandle_, serviceZpath.c_str(), watcher, this, &str_vec);
 	mutex.unlock();
 
-#ifdef DEBUG_
-	cout << " get_children " << serviceZpath << " result count =" << str_vec.count << endl;
-#endif
 	if (ret == ZOK) {
+#ifdef DEBUG_
+		cout << " get_children " << serviceZpath << " result count =" << str_vec.count << endl;
+#endif
 		// remove before get all children
 		if (pcache)
 			pcache->remove(serviceZpath.c_str());
@@ -220,7 +220,8 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 // callback method for zookeeper notifier
 void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
 #ifdef DEBUG_
-	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << " client id=" << (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
+	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << " client id="
+			<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
 #endif
 	ZkClient *client = (ZkClient*) watcherCtx;
 	if (!client) {

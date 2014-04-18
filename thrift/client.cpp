@@ -14,15 +14,54 @@ using namespace apache::thrift::transport;
 
 using namespace FinagleRegistryProxy;
 
-int main(int argc, char **argv) {
-	int port = 9091;
-	if (argc > 1 && (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--debug") == 0)) {
-		port = 9090;
+// return index if exists, or return 0
+int option_exists(int argc, char **argv, char *option) {
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], option) == 0)
+			return i;
 	}
-	if (argc > 2 && (strcmp(argv[1], "-p") == 0 || strcmp(argv[1], "--port") == 0)) {
-			port = atoi(argv[1]);
+	return 0;
+}
+
+char* option_value(int argc, char **argv, char *option, char* long_name_option, char *default_value) {
+	int index = option_exists(argc, argv, option);
+	char *ret = default_value;
+	if (index && argc > index + 1) {
+		ret = argv[index + 1];
+	} else {
+		if (long_name_option) {
+			index = option_exists(argc, argv, long_name_option);
+			if (index && argc > index + 1) {
+				ret = argv[index + 1];
+			}
 		}
+	}
+	return ret;
+}
+
+int option_value(int argc, char **argv, char *option, char *long_name_option, int default_value) {
+	int index = option_exists(argc, argv, option);
+	int ret = default_value;
+	if (index && argc > index + 1) {
+		ret = atoi(argv[index + 1]);
+	} else {
+		if (long_name_option) {
+			index = option_exists(argc, argv, long_name_option);
+			if (index && argc > index + 1) {
+				ret = atoi(argv[index + 1]);
+			}
+		}
+	}
+	return ret;
+}
+
+int main(int argc, char **argv) {
+
+	int port = option_value(argc, argv, "-p", "--port", 9091);;
+	string service_name = option_value(argc, argv, "-s", "--service", "testservice");
 	cout << "conn to port=" << port << endl;
+	cout << "service name=" << service_name << endl;
+
 	boost::shared_ptr<TSocket> socket(new TSocket("127.0.0.1", port));
 
 	boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
@@ -35,14 +74,10 @@ int main(int argc, char **argv) {
 	long open = ganji::util::time::GetCurTimeUs();
 
 	try {
-		std::string serverName = "testservice";
-		if (argc > 2) {
-			serverName = argv[2];
-		}
 		for (i = 0; i < 1; i++) {
 			// std::string serverName = "/soa/services/testservice";
 			std::string ret;
-			client.get(ret, serverName);
+			client.get(ret, service_name);
 			long done = ganji::util::time::GetCurTimeUs();
 			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost="
 					<< (double) (open - start) / 1000 << "ms. get cost=" << (double) (done - open) / 1000 << endl;
