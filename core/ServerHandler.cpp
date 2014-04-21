@@ -127,33 +127,39 @@ public:
 #ifdef DEBUG_
 		cout << "frproxy get method called. " << serviceName << endl;
 		long start = ganji::util::time::GetCurTimeUs();
-		long open = start, get = start, close = start;
-		int id = 0;
+		long got = start, got_try_start, get_try_end, serial = start;
 #endif
 		string path = *root + split + serviceName;
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
-		// if getting from zk, then skip
+#ifdef DEBUG_
+			got_try_start = ganji::util::time::GetCurTimeUs();
+#endif
+			// if getting from zk, then skip
 			set<string>::iterator found = skip_set->find(serviceName);
 			if (found == skip_set->end()) {
 				pair<set<string>::iterator, bool> insert = skip_set->insert(serviceName);
 				if (insert.second) {
-					threadManager->add(
-							shared_ptr<ServerHandlerTask>(new ServerHandlerTask(pool, path, skip_set)),
+					threadManager->add(shared_ptr<ServerHandlerTask>(new ServerHandlerTask(pool, path, skip_set)),
 							async_timeout);
 				}
 			}
+#ifdef DEBUG_
+			get_try_end = ganji::util::time::GetCurTimeUs();
+#endif
 		}
+#ifdef DEBUG_
+		got = ganji::util::time::GetCurTimeUs();
+#endif
 		if (pvector && pvector->size() > 0) {
 			_return = Registry::to_json_string(*pvector);
 		} else
 			_return = "";
 #ifdef DEBUG_
+		serial = ganji::util::time::GetCurTimeUs();
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
-		long serial = ganji::util::time::GetCurTimeUs();
-		cout << " client id=" << id << " get total cost=" << DiffMs(serial, start) << " open=" << DiffMs(open, start)
-				<< " get=" << DiffMs(get, open) << " close" << DiffMs(close, get) << " serial=" << DiffMs(serial, close)
-				<< endl;
+		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " got's try="
+				<< DiffMs(get_try_end, got_try_start) << " serial=" << DiffMs(serial, got) << endl;
 //		cache->dump();
 #endif
 	}
