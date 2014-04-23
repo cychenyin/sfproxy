@@ -15,6 +15,7 @@
 #include "test/ZkClientTest.h"
 
 #include "core/ServerHandler.cpp"
+#include "log/logger.h"
 
 #include "concurrency/PosixThreadFactory.h"
 #include "concurrency/ThreadManager.h"
@@ -37,16 +38,11 @@ using namespace ut;
 using boost::shared_ptr;
 // using namespace ganji::util::log::ThriftLog;
 
-
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
-
-	cout << "-----------------------" << endl;
 	ut::RegistryCacheTest a;
 //	a.getTest();
-	cout << "before addTest-----------------------" << endl;
 	a.addTest();
-	cout << "after addTest-----------------------" << endl;
 //	a.removeTest();
 //	a.removeTest1();
 //	a.removeTest2();
@@ -60,7 +56,7 @@ int testmain(int argc, char** argv) {
 int nonblockingServer(string zkhosts, int port, int threadCount) {
 	cout << "frproxy nonblocking server starting at port " << port << endl;
 	cout << "zk server " << zkhosts << endl;
-
+	logger::warn("frproxy nonblocking server starting at port %d. zk server %s", port, zkhosts.c_str());
 	// shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -77,12 +73,12 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 #ifdef DEBUG_
-	uint64_t start = now_in_us();
+	uint64_t start = utils::now_in_us();
 #endif
 	handler.get()->warm();
 
 #ifdef DEBUG_
-	uint64_t elapse = now_in_us() - start;
+	uint64_t elapse = utils::now_in_us() - start;
 	cout << "frproxy server warm cost " << (double) elapse / 1000 << "ms" << endl;
 #endif
 	server.serve();
@@ -96,6 +92,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 void poolServer(string zkhosts, int port, int poolSize) {
 	cout << "frproxy pool server starting at port " << port << endl;
 	cout << "zk server " << zkhosts << endl;
+	logger::warn("frproxy pool server starting at port %d. zk server %s", port, zkhosts.c_str());
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -114,7 +111,7 @@ void poolServer(string zkhosts, int port, int poolSize) {
 int threadedServer(string zkhosts, int port) {
 	cout << "frproxy threaded server starting at port " << port << endl;
 	cout << "zk server " << zkhosts << endl;
-
+	logger::warn("frproxy threaded server starting at port %d. zk server %s", port, zkhosts.c_str());
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 
@@ -131,17 +128,22 @@ int threadedServer(string zkhosts, int port) {
 }
 
 void usage() {
-	cout << "service frameword registry proxy server." << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC." << endl;
 	cout << "Usage: frproxy [options [option value]]" << endl;
-	cout << "	" << "-d, --debug:\t\trun test main for debugging only" << endl;
-	cout << "	" << "-p, --port:\t\tuse definited port. default 9091. eg. -p 9090" << endl;
+	cout << "	" << "-d,  --debug:\t\trun test main for debugging only" << endl;
+	cout << "	" << "-p,  --port:\t\tuse definited port. default 9091. eg. -p 9090" << endl;
 	cout << "	" << "-st, --threaded:\trun server as TTreadedServer" << endl;
 	cout << "	" << "-sp, --threadpool:\trun server as TTreadPoolServer" << endl;
 	cout << "	" << "-sn, --nonblocking:\trun server as TNonblockingServer. default server type" << endl;
-	cout << "	" << "-t, --thread_count:\tthread pool size or max thread count. default 16. eg. -t 20" << endl;
-	cout << "	" << "-h, --help:\t\tshow help" << endl;
-	cout << "	" << "-v, --version:\t\tshow version" << endl;
-	cout << "	" << "-z, --zkhosts:\t\tzookeeper hosts. default 127.0.0.1. eg. -z 192.168.2.202" << endl;
+	cout << "	"
+			<< "-t,  --thread_count:\tthread pool size or max thread count. used in NoblockingServer & ThreadpoolServer. default 16. eg. -t 20"
+			<< endl;
+	cout << "	" << "-h,  --help:\t\tshow help" << endl;
+	cout << "	" << "-v,  --version:\t\tshow version" << endl;
+	cout << "	" << "-z,  --zkhosts:\t\tzookeeper hosts. default 127.0.0.1. eg. -z 192.168.2.202" << endl;
+	cout << "	" << "-lh, --scribehost:\t\tscribe hosts. default 127.0.0.1. eg. -lg localhost" << endl;
+	cout << "	" << "-lp, --scribeport:\t\tscribe port. default 11463. eg. -lp 11463" << endl;
+	cout << "	" << "-l,  --enable:\t\tenable scribe log" << endl;
 }
 
 void version() {
@@ -173,7 +175,7 @@ char* option_value(int argc, char **argv, const char *option, const char* long_n
 	return ret;
 }
 
-int option_value(int argc, char **argv, const char *option, const  char *long_name_option, int default_value) {
+int option_value(int argc, char **argv, const char *option, const char *long_name_option, int default_value) {
 	int index = option_exists(argc, argv, option);
 	int ret = default_value;
 	if (index && argc > index + 1) {
@@ -189,22 +191,24 @@ int option_value(int argc, char **argv, const char *option, const  char *long_na
 	return ret;
 }
 
-
 int main(int argc, char **argv) {
 	if (option_exists(argc, argv, "-d") || option_exists(argc, argv, "--debug")) {
 		testmain(argc, argv);
-		cout << "end..." << endl;
+//		cout << "end..." << endl;
 		return 0;
 	}
-	FinagleRegistryProxy::logger_init("127.0.0.1", 11463, 999999);
-	//	ganji::util::log::ThriftLog::LogInit();
-//	::ganji::util::log::ThriftLog::LogInit("127.0.0.1", 11463, 999999);
-//	::ganji::util::log::ThriftLog::LogWrite("", "");
-//	::ganji::util::log::ThriftLog::LogWrite("", "");
-//	::ganji::util::log::ThriftLog::LogUninit();
-	int port = option_value(argc, argv, "-p", "--port", 9091);;
+
+	int port = option_value(argc, argv, "-p", "--port", 9091);
+	;
 	int thread_count = option_value(argc, argv, "-t", "--thread_count", 16);
 	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "localhost:2181");
+
+	if (option_exists(argc, argv, "-l") || option_exists(argc, argv, "--enablelog")) {
+		logger::enable();
+	}
+	char* log_host = option_value(argc, argv, "-lh", "--scribehost", "127.0.0.1");
+	int log_port = option_value(argc, argv, "-lp", "--scribeport", 11463);
+	logger::init(log_host, log_port, 999999);
 
 	int type = 2; // nonblocking
 	for (int i = 1; i < argc; i++) {
@@ -226,25 +230,28 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
+
 #ifdef DEBUG_
-	cout << "port " << port << endl;
-	cout << "thread count " << thread_count << endl;
-	cout << "zkhosts " << zkhosts << endl;
-	cout << "server type  " << type << endl;
+	if (type > 0) {
+		cout << "port " << port << endl;
+		cout << "thread count " << thread_count << endl;
+		cout << "zkhosts " << zkhosts << endl;
+		cout << "server type  " << type << endl;
+	}
 #endif
 
 	switch (type) {
 	case 1:
 		poolServer(zkhosts, port, thread_count);
-		FinagleRegistryProxy::logger_destory();
+		logger::destory();
 		break;
 	case 2:
 		nonblockingServer(zkhosts, port, thread_count);
-		FinagleRegistryProxy::logger_destory();
+		logger::destory();
 		break;
 	case 3:
 		threadedServer(zkhosts, port);
-		FinagleRegistryProxy::logger_destory();
+		logger::destory();
 		break;
 	case 0:
 		usage();

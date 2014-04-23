@@ -52,3 +52,23 @@ testing env:
 deployment：
 ----------------
 deploy on every php server. work with finagle-php & fingle raw in java services.
+
+
+----------------
+usage：
+----------------
+Proxy Server of Service Framework of Ganji RPC.
+Usage: frproxy [options [option value]]
+	-d,  --debug:		run test main for debugging only
+	-p,  --port:		use definited port. default 9091. eg. -p 9090
+	-st, --threaded:	run server as TTreadedServer
+	-sp, --threadpool:	run server as TTreadPoolServer
+	-sn, --nonblocking:	run server as TNonblockingServer. default server type
+	-t,  --thread_count:	thread pool size or max thread count. used in NoblockingServer & ThreadpoolServer. default 16. eg. -t 20
+	-h,  --help:		show help
+	-v,  --version:		show version
+	-z,  --zkhosts:		zookeeper hosts. default 127.0.0.1. eg. -z 192.168.2.202
+	-lh, --scribehost:		scribe hosts. default 127.0.0.1. eg. -lg localhost
+	-lp, --scribeport:		scribe port. default 11463. eg. -lp 11463
+	-l,  --enable:		enable scribe log
+eg. ./frproxy -l -sn -t 20

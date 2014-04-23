@@ -28,16 +28,16 @@
 #include <zookeeper/zookeeper.h>
 #include <zookeeper/zk_adaptor.h>
 #include <zookeeper/zookeeper_log.h>
+#include <concurrency/Mutex.h>
 
-#include "concurrency/Mutex.h"
-
-//#include "ganji/util/thread/mutex.h"
 #include "ClientPool.h"
 #include "JsonUtil.h"
 #include "RegistryCache.h"
 #include "SEvent.h"
+#include "../log/logger.h"
 
 using namespace std;
+using FinagleRegistryProxy::logger;
 //using namespace ganji::util::thread;
 
 namespace FinagleRegistryProxy {

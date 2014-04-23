@@ -33,8 +33,8 @@ LIBS    := thrift thriftnb event pthread zookeeper_mt
 #TARGET=$(BIN_PATH)/frproxy
 TARGET=frproxy
 #TARGET2=testproxy
-LOG_CXXFILES=./log/scribe_log.cpp ./log/gen-cpp/fb303_constants.cpp ./log/gen-cpp/fb303_types.cpp ./log/gen-cpp/scribe_constants.cpp ./log/gen-cpp/scribe_types.cpp ./log/gen-cpp/scribe.cpp ./log/gen-cpp/FacebookService.cpp
-TARGET_CXXFILES=thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp main.cpp
+LOG_CXXFILES=log/logger.cpp ./log/scribe_log.cpp ./log/gen-cpp/fb303_constants.cpp ./log/gen-cpp/fb303_types.cpp ./log/gen-cpp/scribe_constants.cpp ./log/gen-cpp/scribe_types.cpp ./log/gen-cpp/scribe.cpp ./log/gen-cpp/FacebookService.cpp
+TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp main.cpp
 # test/main.cpp
 TEST_CXXFILES=$(LOG_CXXFILES) a.xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -42,7 +42,7 @@ OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
 
 #all: clean preexec $(TARGET) $(TARGET2) afterexec
-all: clean preexec $(TARGET) afterexec
+all: clean preexec gen $(TARGET) afterexec
 	echo '---------------all done ---------------'
 
 $(TARGET): $(OBJS)
@@ -56,12 +56,11 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(INCLUDES) $< -o $@
 
 .PHONY: preexec
-preexec:
+preexec: gen
 	echo $(TARGET_CXXFILES)
 # gen thrift file
 #	make -C thrift
 #	$(MKDIR) $(BIN_PATH)/$(MODNAME)
-	test -d ./log/gen-cpp/ || $(THRIFT) -o ./log --gen cpp ./log/fb303.thrift && $(THRIFT) -o ./log --gen cpp ./log/scribe.thrift
 	
 .PHONY: afterexec
 afterexec:
@@ -89,6 +88,6 @@ install:
 	
 .PHONY: gen
 gen:
-	$(THRIFT) -o ./log --gen cpp fb303.thrift
-	$(THRIFT) -o ./log --gen cpp scribe.thrift
+	test -d ./log/fb303_types.h || $(THRIFT) -o ./log --gen cpp ./log/fb303.thrift
+	test -d ./log/scribe_types.h || $(THRIFT) -o ./log --gen cpp ./log/scribe.thrift
 	
