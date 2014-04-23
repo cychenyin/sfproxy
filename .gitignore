@@ -2,6 +2,7 @@ run
 *.o
 bin
 frproxy
+client
 t
 *.swp
 *.bak
