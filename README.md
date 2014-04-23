@@ -37,12 +37,15 @@ features：
 ----------------
 performance：
 ----------------
+testing env:
+	24 log processors Intel(R) Xeon(R) CPU E5-2620 0 @ 2.00GHz
+	tester & server run in same host to simulate online situation.		
 10000 request pre second use short connection. 
 16000 requests pre second using long connection.
 2000 connections asure successfully. 
 0.09% failure on 5000 connections.
 0.02ms cost server to handle whole biz when one host returned.
-
+	
 
 ----------------
 deployment：
