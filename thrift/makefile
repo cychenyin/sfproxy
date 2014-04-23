@@ -8,9 +8,9 @@ CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED
 #c++11# -std=c++0x  -Wall
 
 LIBS    := thrift thriftnb event
-LIB_PATH= ../lib/ganji /usr/local/lib 
-BIN_PATH= ../bin	
-INCLUDES= ../include /usr/include /usr/local/include /usr/local/include/thrift
+LIB_PATH=../lib/ganji /usr/local/lib 
+BIN_PATH=../bin
+INCLUDES=../include /usr/include /usr/local/include /usr/local/include/thrift
 
 MOD_NAME=client
 MOD_NAME2=server
@@ -23,11 +23,31 @@ MOD_NAME2_CXXFILES=$(COMMON_CXXFILES) server.cpp
 MOD_NAME3_CXXFILES=$(COMMON_CXXFILES) clientSimple.cpp
 MOD_NAME4_CXXFILES=$(COMMON_CXXFILES) serverSimple.cpp
 
-OBJS=$(TARGET_CXXFILES:.cpp=.o)
-	
-all: clean compile link
+OBJS=$(MOD_NAME_CXXFILES:.cpp=.o)
+OBJS2=$(MOD_NAME2_CXXFILES:.cpp=.o)
+OBJS3=$(MOD_NAME3_CXXFILES:.cpp=.o)
+OBJS4=$(MOD_NAME4_CXXFILES:.cpp=.o)
+
+all: clean $(MOD_NAME) $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
+# $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
 #client.cpp  proxy_constants.cpp  proxy_types.cpp  RegistryProxy.cpp	server.cpp
 	echo 'done....................................'	
+
+$(MOD_NAME): $(OBJS)
+	$(CC) -o $(BIN_PATH)/$(MOD_NAME) $(OBJS) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS)
+
+$(MOD_NAME2): $(OBJS2)
+	$(CC) -o $(BIN_PATH)/$(MOD_NAME2) $(OBJS2) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS)
+
+$(MOD_NAME3): $(OBJS3)
+	$(CC) -o $(BIN_PATH)/$(MOD_NAME3) $(OBJS3) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) 
+
+$(MOD_NAME4): $(OBJS4)
+	$(CC) -o $(BIN_PATH)/$(MOD_NAME4) $(OBJS4) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) 
+
+.SUFFIXES: .o .cpp
+.cpp.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(addprefix -I,$(INCLUDES)) $< -o $@
 
 compile:
 	g++ $(CFLAGS) $(CPPFLAGS) $(addprefix -I,$(INCLUDES)) -c proxy_constants.cpp -o proxy_constants.o
@@ -51,4 +71,8 @@ install:
 	echo "not support now"	
 clean:
 	rm -f *.o
-	rm -f sserver sclient server client
+	echo $(MOD_NAME)
+	$(RM) "$(BIN_PATH)/$(MOD_NAME)"
+#	test -z $(MOD_NAME2) && $(RM) "$(BIN_PATH)/$(MOD_NAME2)"
+#	test -z $(MOD_NAME3) && $(RM) "$(BIN_PATH)/$(MOD_NAME3)"
+#	test -z $(MOD_NAME4) && $(RM) "$(BIN_PATH)/$(MOD_NAME4)"

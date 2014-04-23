@@ -39,6 +39,7 @@ performance：
 ----------------
 testing env:
 	24 log processors Intel(R) Xeon(R) CPU E5-2620 0 @ 2.00GHz
+	Linux 2.6.18-194.el5 #1 SMP Tue Mar 16 21:52:39 EDT 2010 x86_64 x86_64 x86_64 GNU/Linux
 	tester & server run in same host to simulate online situation.		
 10000 request pre second use short connection. 
 16000 requests pre second using long connection.
