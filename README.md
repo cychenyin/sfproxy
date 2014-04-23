@@ -42,3 +42,9 @@ performance：
 2000 connections asure successfully. 
 0.09% failure on 5000 connections.
 0.02ms cost server to handle whole biz when one host returned.
+
+
+----------------
+deployment：
+----------------
+deploy on every php server. work with finagle-php & fingle raw in java services.
