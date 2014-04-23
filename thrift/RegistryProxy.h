@@ -9,6 +9,7 @@
 #include <TProcessor.h>
 #include "proxy_types.h"
 
+
 namespace FinagleRegistryProxy {
 
 class RegistryProxyIf {
@@ -279,9 +280,10 @@ class RegistryProxyProcessor : virtual public ::apache::thrift::TProcessor {
     processMap_["get"] = &RegistryProxyProcessor::process_get;
     processMap_["remove"] = &RegistryProxyProcessor::process_remove;
   }
-
   virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot);
+  //virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot){return true; }
   virtual ~RegistryProxyProcessor() {}
+
 };
 
 class RegistryProxyMultiface : virtual public RegistryProxyIf {

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "RegistryProxy.h"  // As an example
+#include "../frproxy.h"
 
 #include <transport/TSocket.h>
 #include <transport/TBufferTransports.h>

@@ -2,7 +2,7 @@
 // You should copy it to another filename to avoid overwriting it.
 
 #ifndef GETMS_
-#define GetMs(start) ((double) (ganji::util::time::GetCurTimeUs() - start) / CLOCKS_PER_SEC * 1000)
+#define GetMs(start) ((double) (now_in_us() - start) / CLOCKS_PER_SEC * 1000)
 #define DiffMs(end, start) ((double) (end - start) / CLOCKS_PER_SEC * 1000)
 #endif
 
@@ -15,11 +15,9 @@
 #include "concurrency/ThreadManager.h"
 
 #include "../thrift/RegistryProxy.h"
-#include "ganji/util/time/time.h"
 
 #include "ZkClient.h"
 #include "RegistryCache.h"
-#include "RequestPool.h"
 #include "ClientPool.h"
 
 using namespace std;
@@ -34,6 +32,7 @@ private:
 	Mutex mutex;
 public:
 	SimpleSafeSet() {
+
 	}
 	~SimpleSafeSet() {
 	}
@@ -45,6 +44,7 @@ public:
 	}
 
 	void erase(iterator __position) {
+
 		mutex.lock();
 		set<string>::erase(__position);
 		mutex.unlock();
@@ -52,17 +52,59 @@ public:
 };
 // SimpleSafeSet
 
-class ServerHandlerTask: public Runnable {
+class WarmTask: public Runnable {
+private:
+	ClientPool *pool;
+	string zk_root;
+
+public:
+	WarmTask(ClientPool *pool, string zkRoot) :
+			pool(pool), zk_root(zkRoot) {
+	}
+
+	~WarmTask() {
+	}
+
+	void run() {
+#ifdef DEBUG_
+		// long start = now_in_us(); // CLOCKS_PER_SEC
+		uint64_t start = now_in_us();
+#endif
+		ZkClient *client = (ZkClient*) pool->open();
+#ifdef DEBUG_
+		uint64_t open = now_in_us();
+#endif
+		if (!client) {
+			cout << " warm error, fail to open zk client." << endl;
+			return;
+		}
+		vector<string> names = client->get_all(zk_root);
+		vector<string>::iterator it = names.begin();
+		while (it != names.end()) {
+			client->get_children(zk_root + "/" + (*it));
+			++it;
+		}
+		client->close();
+
+#ifdef DEBUG_
+		uint64_t end = now_in_us();
+		cout << "warm " << names.size() << " proxy cost=" << DiffMs(end, start) << "ms. open client cost="
+				<< DiffMs(open, start) << endl;
+#endif
+	}
+};
+
+class GetZkTask: public Runnable {
 private:
 	ClientPool *pool;
 	string zkpath;
 	set<string> *skip_set;
 public:
-	ServerHandlerTask(ClientPool *pool, string zkpath, set<string> *skip_set) :
+	GetZkTask(ClientPool *pool, string zkpath, set<string> *skip_set) :
 			pool(pool), zkpath(zkpath), skip_set(skip_set) {
 	}
 
-	~ServerHandlerTask() {
+	~GetZkTask() {
 	}
 
 	void run() {
@@ -93,6 +135,7 @@ private:
 	int async_timeout; // in ms
 public:
 	ServerHandler(string zkhosts) {
+
 		root = new string("/soa/services");
 		cache = new RegistryCache();
 		pool = new ClientPool(new ZkClientFactory(zkhosts, cache));
@@ -103,6 +146,7 @@ public:
 	}
 
 	~ServerHandler() {
+
 		if (pool) {
 			delete pool;
 			pool = 0;
@@ -126,37 +170,39 @@ public:
 //		return;
 #ifdef DEBUG_
 		cout << "frproxy get method called. " << serviceName << endl;
-		long start = ganji::util::time::GetCurTimeUs();
-		long got = start, got_try_start, get_try_end, serial = start;
+		uint64_t start = now_in_us();
+		uint64_t got = start, got_try_start, get_try_end, serial = start;
+		warn("frproxy get method called. ", serviceName.c_str());
 #endif
 		string path = *root + split + serviceName;
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-			got_try_start = ganji::util::time::GetCurTimeUs();
+			cout << " async getting " << path << endl;
+			got_try_start = now_in_us();
 #endif
 			// if getting from zk, then skip
 			set<string>::iterator found = skip_set->find(serviceName);
 			if (found == skip_set->end()) {
 				pair<set<string>::iterator, bool> insert = skip_set->insert(serviceName);
 				if (insert.second) {
-					threadManager->add(shared_ptr<ServerHandlerTask>(new ServerHandlerTask(pool, path, skip_set)),
+					threadManager->add(shared_ptr<GetZkTask>(new GetZkTask(pool, path, skip_set)),
 							async_timeout);
 				}
 			}
 #ifdef DEBUG_
-			get_try_end = ganji::util::time::GetCurTimeUs();
+			get_try_end = now_in_us();
 #endif
 		}
 #ifdef DEBUG_
-		got = ganji::util::time::GetCurTimeUs();
+		got = now_in_us();
 #endif
 		if (pvector && pvector->size() > 0) {
 			_return = Registry::to_json_string(*pvector);
 		} else
 			_return = "";
 #ifdef DEBUG_
-		serial = ganji::util::time::GetCurTimeUs();
+		serial = now_in_us();
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
 		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " got's try="
 				<< DiffMs(get_try_end, got_try_start) << " serial=" << DiffMs(serial, got) << endl;
@@ -169,32 +215,8 @@ public:
 	}
 
 	void warm() {
-#ifdef DEBUG_
-		long start = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
-#endif
-		ZkClient *client = (ZkClient*) pool->open();
-#ifdef DEBUG_
-		long open = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
-#endif
-		if (!client) {
-			cout << " warm error, fail to open zk client." << endl;
-			return;
-		}
-		vector<string> names = client->get_all(*root);
-		vector<string>::iterator it = names.begin();
-		while (it != names.end()) {
-			client->get_children(*root + "/" + (*it));
-			++it;
-		}
-		client->close();
-
-#ifdef DEBUG_
-		long end = ganji::util::time::GetCurTimeUs(); // CLOCKS_PER_SEC
-		cache->dump();
-		cout << "warm " << names.size() << " proxy cost=" << DiffMs(end, start) << "ms. open client cost="
-				<< DiffMs(open, start) << endl;
-#endif
-
+		threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)),
+				async_timeout * 1000);
 	}
 private:
 	void read_zk(string svc_name) {
@@ -210,7 +232,6 @@ private:
 		threadManager->threadFactory(threadFactory);
 		threadManager->start();
 	}
-
 };
 // class ServerHandler
 

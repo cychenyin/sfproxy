@@ -11,7 +11,7 @@
 #include <iostream>
 
 
-#include "../frpoxy.h"
+#include "../frproxy.h"
 
 #include "RegistryCacheTest.h"
 #include "ZkClientTest.h"

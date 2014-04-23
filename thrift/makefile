@@ -4,21 +4,26 @@ MV=/bin/mv -f
 MKDIR=/bin/mkdir -p
 #CC=g++ -O2
 CC=g++ -ggdb
-CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wall
-#c++11# -std=c++0x
+CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED
+#c++11# -std=c++0x  -Wall
 
-LIBS    := thrift thriftnb event util_time
-LIB_PATH= \
-	../lib/ganji \
-	/usr/local/lib 
-	
-INCLUDES= \
-	../include \
-	/usr/include \
-	/usr/local/include \
-	/usr/local/include/thrift
-	
-#	../include/ganji \
+LIBS    := thrift thriftnb event
+LIB_PATH= ../lib/ganji /usr/local/lib 
+BIN_PATH= ../bin	
+INCLUDES= ../include /usr/include /usr/local/include /usr/local/include/thrift
+
+MOD_NAME=client
+MOD_NAME2=server
+MOD_NAME3=sclient
+MOD_NAME4=sserver
+
+COMMON_CXXFILES=proxy_constants.cpp RegistryProxy.cpp proxy_types.cpp RegistryProxyHandler.cpp 
+MOD_NAME_CXXFILES=$(COMMON_CXXFILES) client.cpp
+MOD_NAME2_CXXFILES=$(COMMON_CXXFILES) server.cpp
+MOD_NAME3_CXXFILES=$(COMMON_CXXFILES) clientSimple.cpp
+MOD_NAME4_CXXFILES=$(COMMON_CXXFILES) serverSimple.cpp
+
+OBJS=$(TARGET_CXXFILES:.cpp=.o)
 	
 all: clean compile link
 #client.cpp  proxy_constants.cpp  proxy_types.cpp  RegistryProxy.cpp	server.cpp
@@ -39,6 +44,8 @@ link:
 	g++ $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) RegistryProxy.o proxy_constants.o proxy_types.o RegistryProxyHandler.o serverSimple.o -o sserver 
 	g++ $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) RegistryProxy.o proxy_constants.o proxy_types.o client.o -o client 
 	g++ $(CFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) RegistryProxy.o proxy_constants.o proxy_types.o clientSimple.o -o sclient 
+	#ar r $(TARGET) $(OBJS) 
+    #ranlib $(TARGET)
 
 install:
 	echo "not support now"	

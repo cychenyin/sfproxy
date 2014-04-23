@@ -10,14 +10,11 @@
 
 #include <iostream>
 
-#include "frpoxy.h"
+#include "frproxy.h"
 #include "test/RegistryCacheTest.h"
 #include "test/ZkClientTest.h"
 
 #include "core/ServerHandler.cpp"
-
-#include "ganji/util/time/time.h"
-//#include "ganji/util/thread/mutex.h"
 
 #include "concurrency/PosixThreadFactory.h"
 #include "concurrency/ThreadManager.h"
@@ -38,8 +35,8 @@ using namespace ::apache::thrift::concurrency;
 using namespace std;
 using namespace ut;
 using boost::shared_ptr;
-//using namespace ::ganji::util::thread;
-//using namespace ganji::util::thread;
+// using namespace ganji::util::log::ThriftLog;
+
 
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
@@ -80,12 +77,12 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 #ifdef DEBUG_
-	long start = ganji::util::time::GetCurTimeUs();
+	uint64_t start = now_in_us();
 #endif
 	handler.get()->warm();
 
 #ifdef DEBUG_
-	long elapse = ganji::util::time::GetCurTimeUs() - start;
+	uint64_t elapse = now_in_us() - start;
 	cout << "frproxy server warm cost " << (double) elapse / 1000 << "ms" << endl;
 #endif
 	server.serve();
@@ -199,10 +196,15 @@ int main(int argc, char **argv) {
 		cout << "end..." << endl;
 		return 0;
 	}
-
+	FinagleRegistryProxy::logger_init("127.0.0.1", 11463, 999999);
+	//	ganji::util::log::ThriftLog::LogInit();
+//	::ganji::util::log::ThriftLog::LogInit("127.0.0.1", 11463, 999999);
+//	::ganji::util::log::ThriftLog::LogWrite("", "");
+//	::ganji::util::log::ThriftLog::LogWrite("", "");
+//	::ganji::util::log::ThriftLog::LogUninit();
 	int port = option_value(argc, argv, "-p", "--port", 9091);;
 	int thread_count = option_value(argc, argv, "-t", "--thread_count", 16);
-	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "192.168.2.202:2181");
+	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "localhost:2181");
 
 	int type = 2; // nonblocking
 	for (int i = 1; i < argc; i++) {
@@ -234,12 +236,15 @@ int main(int argc, char **argv) {
 	switch (type) {
 	case 1:
 		poolServer(zkhosts, port, thread_count);
+		FinagleRegistryProxy::logger_destory();
 		break;
 	case 2:
 		nonblockingServer(zkhosts, port, thread_count);
+		FinagleRegistryProxy::logger_destory();
 		break;
 	case 3:
 		threadedServer(zkhosts, port);
+		FinagleRegistryProxy::logger_destory();
 		break;
 	case 0:
 		usage();

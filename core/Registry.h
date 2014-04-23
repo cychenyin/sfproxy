@@ -16,7 +16,7 @@
 #include "../rapidjson/filestream.h"
 #include "../rapidjson/stringbuffer.h"
 
-#include "../frpoxy.h"
+#include "../frproxy.h"
 #include "JsonUtil.h"
 
 namespace FinagleRegistryProxy {

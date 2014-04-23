@@ -73,8 +73,11 @@ void ZkClient::connect_zk() {
 	} while (zhandle_ == 0 && count < ZK_MAX_CONNECT_RETRY_TIMES);
 #ifdef DEBUG_
 	if (count >= ZK_MAX_CONNECT_RETRY_TIMES) {
+		FinagleRegistryProxy::warn("ZkClient connect to zk error: , zk_hosts_=%s; retry times:=%d", zk_hosts_.c_str(), count);
+#ifdef DEBUG_
 		cout << "ZkClient connect to zk error: " << zk_hosts_ << " retry times: " << count << " result:"
 				<< (zhandle_ != 0) << endl;
+#endif
 	}
 #endif
 	mutex.unlock();
@@ -126,7 +129,10 @@ void ZkClient::update_service(string serviceZpath, string ephemeralName) {
 	} else if (ret == ZINVALIDSTATE) {
 		set_connected(false);
 	} else {
-		cout << "UpdateService zk_wget error, ret=" << ret << endl;
+		FinagleRegistryProxy::warn("update_service zk_wget epheramal node error, ret=%d; msg=%s", ret,zerror(ret));
+#ifdef DEBUG_
+		cout << "update_service zk_wget epheramal node error, ret=" << ret << endl;
+#endif
 	}
 	delete buffer;
 	buffer = 0;
@@ -158,8 +164,10 @@ void ZkClient::get_children(string serviceZpath) {
 	} else if (ret == ZINVALIDSTATE) {
 		set_connected(false);
 	} else {
-		// TODO log it.
-		cout << " get_children zoo_wget_children error, ret=" << ret << " msg=" << zerror(ret) << endl;
+		FinagleRegistryProxy::warn("get_children zoo_wget_children error, ret=%d; msg=%s", ret,zerror(ret));
+#ifdef DEBUG_
+		cout << "get_children zoo_wget_children error, ret=" << ret << " msg=" << zerror(ret) << endl;
+#endif
 	}
 }
 

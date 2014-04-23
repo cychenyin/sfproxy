@@ -1,11 +1,10 @@
 #include <iostream>
 #include "RegistryProxy.h"  // As an example
+#include "../frproxy.h"
 
 #include <transport/TSocket.h>
 #include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
-
-#include "ganji/util/time/time.h"
 
 using namespace std;
 using namespace apache::thrift;
@@ -69,16 +68,16 @@ int main(int argc, char **argv) {
 
 	RegistryProxyClient client(protocol);
 	int i;
-	long start = ganji::util::time::GetCurTimeUs();
+	long start = now_in_us();
 	transport->open();
-	long open = ganji::util::time::GetCurTimeUs();
+	long open = now_in_us();
 
 	try {
 		for (i = 0; i < 1; i++) {
 			// std::string serverName = "/soa/services/testservice";
 			std::string ret;
 			client.get(ret, service_name);
-			long done = ganji::util::time::GetCurTimeUs();
+			long done = now_in_us();
 			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost="
 					<< (double) (open - start) / 1000 << "ms. get cost=" << (double) (done - open) / 1000 << endl;
 			cout << "result:	" << ret << endl;
