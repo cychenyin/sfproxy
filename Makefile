@@ -110,6 +110,6 @@ install:
 .PHONY: gen
 gen:
 # gen thrift file
-	test -d log/fb303_types.h || $(THRIFT) -o ./log/ --gen cpp log/fb303.thrift
-	test -d log/scribe_types.h || $(THRIFT) -o ./log/ --gen cpp log/scribe.thrift
+	test -d $(THRIFT) && test -d log/fb303_types.h || $(THRIFT) -o ./log/ --gen cpp log/fb303.thrift
+	test -d $(THRIFT) && test -d log/scribe_types.h || $(THRIFT) -o ./log/ --gen cpp log/scribe.thrift
 	
