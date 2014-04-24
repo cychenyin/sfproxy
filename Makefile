@@ -80,7 +80,7 @@ preexecForDebug: preexec
 #	CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -DDEBUG_ 
 		
 .PHONY: preexec
-preexec: gen
+preexec:
 	
 	
 .PHONY: afterexec
