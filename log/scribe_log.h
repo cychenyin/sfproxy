@@ -18,6 +18,7 @@
 #ifndef _GANJI_UTIL_LOG_THRIFT_LOG_H_
 #define _GANJI_UTIL_LOG_THRIFT_LOG_H_
 #include <stdlib.h>
+#include <stdint.h>
 
 namespace ganji { namespace util { namespace log {
 namespace ThriftLog {

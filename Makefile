@@ -8,9 +8,12 @@ THRIFT=/usr/local/bin/thrift
 #CC=g++ -O2
 CC=g++ -ggdb
 # -fPIC -DPIC
-CFLAGS= -D_LINUX_ -D_GNU_SOURCE -DTHREADED 
+CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED 
+
+
 #-Wall #c++11# -std=c++0x
 #THREADED used in zk cli_mt
+#CFLAGS= -D_LINUX_ -D_GNU_SOURCE -DTHREADED -static
 
 BIN_PATH=./bin
 INSTALL_PATH=/usr/local/bin
@@ -26,41 +29,59 @@ INCLUDES= \
 	-I/usr/local/include \
 	-I/usr/local/include/thrift 
 	
-LIBS    := thrift thriftnb event pthread zookeeper_mt   
+LIBS    := thrift thriftnb event pthread zookeeper_mt rt   
 # thriftnb ganji_util_thread util_config util_time ganji_util_scribe_log
+EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
+lib/thrift/libthriftnb.a \
+lib/libevent/libevent.a \
+lib/zookeeper/libzookeeper_mt.a
 
 #TARGET=$(LIB_PATH)/$(MODNAME).a
 #TARGET=$(BIN_PATH)/frproxy
 TARGET=frproxy
 #TARGET2=testproxy
-LOG_CXXFILES=log/logger.cpp ./log/scribe_log.cpp ./log/gen-cpp/fb303_constants.cpp ./log/gen-cpp/fb303_types.cpp ./log/gen-cpp/scribe_constants.cpp ./log/gen-cpp/scribe_types.cpp ./log/gen-cpp/scribe.cpp ./log/gen-cpp/FacebookService.cpp
+LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp
 TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp main.cpp
 # test/main.cpp
-TEST_CXXFILES=$(LOG_CXXFILES) a.xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
+.PHONY: debug
+debug: clean preexecForDebug $(TARGET) afterexec
+	echo '---------------all done ---------------'
 
-#all: clean preexec $(TARGET) $(TARGET2) afterexec
-all: clean preexec gen $(TARGET) afterexec
+all: clean preexec $(TARGET) afterexec
 	echo '---------------all done ---------------'
 
 $(TARGET): $(OBJS)
-	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
-	$(CP) ./lib/zookeeper/libzookeeper_mt.so.2 ./lib/zookeeper/libzookeeper_mt.so $(BIN_PATH)/
+#static link
+#g++ -ggdb -o ./bin/frproxy  -D_LINUX_ -D_GNU_SOURCE -DTHREADED  -static-libgcc \
+-lrt -lpthread \
+-L./lib/zookeeper -L/usr/local/lib  log/logger.o log/scribe_log.o log/gen-cpp/fb303_constants.o log/gen-cpp/fb303_types.o log/gen-cpp/scribe_constants.o log/gen-cpp/scribe_types.o log/gen-cpp/scribe.o log/gen-cpp/FacebookService.o thrift/proxy_constants.o thrift/proxy_types.o thrift/RegistryProxy.o core/Registry.o core/RegistryCache.o core/ZkClient.o core/ClientPool.o core/ServerHandler.o main.o \
+lib/thrift/libthrift.a \
+lib/thrift/libthriftnb.a \
+lib/libevent/libevent.a \
+lib/zookeeper/libzookeeper_mt.a
+	$(CC) -static-libgcc -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
+		$(OBJS) \
+		$(EMBED_STATIC_LIBS)
+#shared lib link
+#	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_SHARED_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
+#	$(CP) ./lib/zookeeper/libzookeeper_mt.so.2 ./lib/zookeeper/libzookeeper_mt.so $(BIN_PATH)/
 #	ar r $(TARGET) $(OBJS) 
 #	ranlib $(TARGET)
 
 .SUFFIXES: .o .cpp
 .cpp.o:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(INCLUDES) $< -o $@
+	$(CC) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) -c $(INCLUDES) $< -o $@
 
+.PHONY: preexecForDebug
+preexecForDebug: preexec
+#	CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -DDEBUG_ 
+		
 .PHONY: preexec
 preexec: gen
-	echo $(TARGET_CXXFILES)
-# gen thrift file
-#	make -C thrift
-#	$(MKDIR) $(BIN_PATH)/$(MODNAME)
+	
 	
 .PHONY: afterexec
 afterexec:
@@ -76,7 +97,7 @@ test:
 	
 .PHONY: clean
 clean:
-	$(RM) *.o ./log/*.o ./core/*.o ./thrift/*.o t
+	$(RM) *.o log/*.o ./core/*.o ./thrift/*.o t
 	test -z $(TARGET) || $(RM) $(BIN_PATH)/$(TARGET) 
 	test -z $(TARGET1) || $(RM) $(BIN_PATH)/$(TARGET2)
 	test -z $(TARGET2) || $(RM) $(BIN_PATH)/$(TARGET2)
@@ -88,6 +109,7 @@ install:
 	
 .PHONY: gen
 gen:
-	test -d ./log/fb303_types.h || $(THRIFT) -o ./log --gen cpp ./log/fb303.thrift
-	test -d ./log/scribe_types.h || $(THRIFT) -o ./log --gen cpp ./log/scribe.thrift
+# gen thrift file
+	test -d log/fb303_types.h || $(THRIFT) -o ./log/ --gen cpp log/fb303.thrift
+	test -d log/scribe_types.h || $(THRIFT) -o ./log/ --gen cpp log/scribe.thrift
 	

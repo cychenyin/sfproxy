@@ -9,7 +9,7 @@
 #define FRPROXY_H_
 
 #ifndef DEBUG_
-#define DEBUG_
+//#define DEBUG_
 
 #endif
 
@@ -17,18 +17,19 @@
 #include <time.h>
 #include <string>
 #include <iostream>
+#include <stdint.h>
 
+//#ifndef INT32T
+//typedef int int32_t;
+//#endif
+//#ifndef UINT32T
+//typedef unsigned int uint32_t;
+//#endif
+//#ifndef UINT64T
+//typedef unsigned long uint64_t;
+//#endif
 
 using namespace std;
-#ifndef INT32T
-typedef int int32_t;
-#endif
-#ifndef UINT32T
-typedef unsigned int uint32_t;
-#endif
-#ifndef UINT64T
-typedef unsigned long uint64_t;
-#endif
 
 namespace FinagleRegistryProxy {
 

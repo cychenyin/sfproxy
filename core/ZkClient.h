@@ -24,6 +24,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <stdint.h>
 
 #include <zookeeper/zookeeper.h>
 #include <zookeeper/zk_adaptor.h>
