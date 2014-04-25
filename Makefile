@@ -9,18 +9,15 @@ THRIFT=/usr/local/bin/thrift
 CC=g++ -ggdb
 # -fPIC -DPIC
 CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED 
-
-
 #-Wall #c++11# -std=c++0x
 #THREADED used in zk cli_mt
 #CFLAGS= -D_LINUX_ -D_GNU_SOURCE -DTHREADED -static
 
 BIN_PATH=./bin
-INSTALL_PATH=/usr/local/bin
-LIB_PATH= \
-	./lib \
-	/usr/local/lib 
+INSTALL_PATH=/usr/local/webserver/frproxy
+LIB_PATH= ./lib  
 	#/home/asdf/downloads/gtest-1.7.0/lib \
+	#/usr/local/lib
 
 INCLUDES= \
 	-I./include \
@@ -32,14 +29,11 @@ INCLUDES= \
 LIBS		:= thrift thriftnb event pthread zookeeper_mt rt
 STATIC_LibS :=  pthread rt
 #thrift thriftnb event zookeeper_mt 
-# thriftnb ganji_util_thread util_config util_time ganji_util_scribe_log
 EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
 	lib/thrift/libthriftnb.a \
 	lib/libevent/libevent.a \
 	lib/zookeeper/libzookeeper_mt.a
 
-#TARGET=$(LIB_PATH)/$(MODNAME).a
-#TARGET=$(BIN_PATH)/frproxy
 TARGET=frproxy
 #TARGET2=testproxy
 LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp
@@ -70,11 +64,8 @@ lib/zookeeper/libzookeeper_mt.a
 		$(OBJS) \
 		$(EMBED_STATIC_LIBS) \
 		/usr/lib64/libpthread.a
-#shared lib link
+#shared link
 	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_SHARED_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
-#	$(CP) ./lib/zookeeper/libzookeeper_mt.so.2 ./lib/zookeeper/libzookeeper_mt.so $(BIN_PATH)/
-#	ar r $(TARGET) $(OBJS) 
-#	ranlib $(TARGET)
 
 .SUFFIXES: .o .cpp
 .cpp.o:
@@ -91,7 +82,8 @@ preexec:
 .PHONY: afterexec
 afterexec:
 	$(RM) *~ *.swp
-
+	$(CP) ./lib/* $(BIN_PATH)/
+	cp -f proxy.sh $(BIN_PATH)/
 .PHONY: client
 client:
 	make -C thrift
@@ -108,9 +100,14 @@ clean:
 	test -z $(TARGET2) || $(RM) $(BIN_PATH)/$(TARGET2)
 	
 install:
+#	ar r $(TARGET) $(OBJS) 
+#	ranlib $(TARGET)
+
 	#echo "not support now."
-	install -m 755 $(BIN_PATH)/frproxy $(INSTALL_PATH)/frproxy
 	test -z $(INSTALL_PATH) || $(MKDIR) -- $(INSTALL_PATH)
+	install -m 777 $(BIN_PATH)/frproxy $(INSTALL_PATH)/frproxy
+	install -m 777 $(BIN_PATH)/proxy.sh $(INSTALL_PATH)/proxy.sh
+	install lib/* $(INSTALL_PATH)/
 	
 .PHONY: gen
 gen:

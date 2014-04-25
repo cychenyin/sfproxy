@@ -1,4 +1,5 @@
 run
+tmp/
 *.o
 bin
 frproxy
