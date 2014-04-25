@@ -18,7 +18,7 @@ CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED
 BIN_PATH=./bin
 INSTALL_PATH=/usr/local/bin
 LIB_PATH= \
-	./lib/zookeeper \
+	./lib \
 	/usr/local/lib 
 	#/home/asdf/downloads/gtest-1.7.0/lib \
 
@@ -64,11 +64,14 @@ lib/thrift/libthrift.a \
 lib/thrift/libthriftnb.a \
 lib/libevent/libevent.a \
 lib/zookeeper/libzookeeper_mt.a
-	$(CC) -static-libgcc -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(STATIC_LibS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
+# -static-libgcc -gdwarf-2 -gstrict-dwarf 
+# -static-libstdc++ 
+#	$(CC) -lmaplec -Wl,--no-as-needed -static -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(STATIC_LibS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
 		$(OBJS) \
-		$(EMBED_STATIC_LIBS)
+		$(EMBED_STATIC_LIBS) \
+		/usr/lib64/libpthread.a
 #shared lib link
-#	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_SHARED_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
+	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_SHARED_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
 #	$(CP) ./lib/zookeeper/libzookeeper_mt.so.2 ./lib/zookeeper/libzookeeper_mt.so $(BIN_PATH)/
 #	ar r $(TARGET) $(OBJS) 
 #	ranlib $(TARGET)
@@ -83,7 +86,7 @@ preexecForDebug: preexec
 		
 .PHONY: preexec
 preexec:
-	
+	test -z $(BIN_PATH) || $(MKDIR) -- $(BIN_PATH)
 	
 .PHONY: afterexec
 afterexec:
@@ -106,8 +109,8 @@ clean:
 	
 install:
 	#echo "not support now."
-	test -z $(INSTALL_PATH) || test -d $(INSTALL_PATH) || $(MKDIR) -- $(INSTALL_PATH)
 	install -m 755 $(BIN_PATH)/frproxy $(INSTALL_PATH)/frproxy
+	test -z $(INSTALL_PATH) || $(MKDIR) -- $(INSTALL_PATH)
 	
 .PHONY: gen
 gen:

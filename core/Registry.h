@@ -11,10 +11,10 @@
 #include <string>
 #include <vector>
 
-#include "../rapidjson/document.h"
-#include "../rapidjson/prettywriter.h"
-#include "../rapidjson/filestream.h"
-#include "../rapidjson/stringbuffer.h"
+// #include "../rapidjson/document.h"
+// #include "../rapidjson/prettywriter.h"
+// #include "../rapidjson/filestream.h"
+// #include "../rapidjson/stringbuffer.h"
 
 #include "../frproxy.h"
 #include "JsonUtil.h"
@@ -45,10 +45,10 @@ public:
 	bool operator!=(Registry& r);
 
 	static string to_json_string(Registry &r);
-	static string to_json_string1(Registry &r);
-	static string to_json_string2(Registry &r);
-	static string to_json_string3(Registry &r);
-	static string to_json_string4(Registry &r);
+//	static string to_json_string1(Registry &r);
+//	static string to_json_string2(Registry &r);
+//	static string to_json_string3(Registry &r);
+//	static string to_json_string4(Registry &r);
 
 	static string to_json_string(vector<Registry> v);
 };

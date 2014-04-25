@@ -60,59 +60,59 @@ string Registry::to_json_string(Registry& r) {
 	return ss.str();
 }
 
-// 80-100us
-// use stringstream, perfermance import 100% than using rapidJson
-string Registry::to_json_string2(Registry& r) {
+// // 80-100us
+// // use stringstream, perfermance import 100% than using rapidJson
+// string Registry::to_json_string2(Registry& r) {
+// 
+// 	stringstream s;
+// 	s << r.port;
+// 	stringstream w;
+// 	w << r.weight();
+// 
+// 	string ss;
+// 	ss += "{\"name\":\"";
+// 	ss += r.name;
+// 	ss += "\",\"host\":\"";
+// 	ss += r.host;
+// 	ss += "\",\"port\":";
+// 	ss += s.str();
+// 	ss += ",\"weight\":";
+// 	ss += w.str();
+// 	ss += "}";
+// 	return ss;
+// }
+// 
+// // 120us
+// string Registry::to_json_string3(Registry& r) {
+// 	Document document;
+// 	Document::AllocatorType& allocator = document.GetAllocator();
+// 
+// 	Value root(kObjectType);
+// 	{
+// 		Value jname(r.name.c_str());
+// 		Value jhost(r.host.c_str());
+// 		Value je(r.ephemeral.c_str());
+// 		Value jport(r.port);
+// 		Value jweight(r.weight());
+// 		root.AddMember("name", jname, allocator);
+// 		root.AddMember("host", jhost, allocator);
+// 		root.AddMember("port", jport, allocator);
+// //		root.AddMember("e", je, allocator);
+// 		root.AddMember("weight", jweight, allocator);
+// 	}
+// 
+// 	StringBuffer buffer;
+// 	Writer<StringBuffer> writer(buffer);
+// 	root.Accept(writer);
+// 	return buffer.GetString();
+// }
 
-	stringstream s;
-	s << r.port;
-	stringstream w;
-	w << r.weight();
-
-	string ss;
-	ss += "{\"name\":\"";
-	ss += r.name;
-	ss += "\",\"host\":\"";
-	ss += r.host;
-	ss += "\",\"port\":";
-	ss += s.str();
-	ss += ",\"weight\":";
-	ss += w.str();
-	ss += "}";
-	return ss;
-}
-
-// 120us
-string Registry::to_json_string3(Registry& r) {
-	Document document;
-	Document::AllocatorType& allocator = document.GetAllocator();
-
-	Value root(kObjectType);
-	{
-		Value jname(r.name.c_str());
-		Value jhost(r.host.c_str());
-		Value je(r.ephemeral.c_str());
-		Value jport(r.port);
-		Value jweight(r.weight());
-		root.AddMember("name", jname, allocator);
-		root.AddMember("host", jhost, allocator);
-		root.AddMember("port", jport, allocator);
-//		root.AddMember("e", je, allocator);
-		root.AddMember("weight", jweight, allocator);
-	}
-
-	StringBuffer buffer;
-	Writer<StringBuffer> writer(buffer);
-	root.Accept(writer);
-	return buffer.GetString();
-}
-
-//210us
-string Registry::to_json_string4(Registry& r) {
-	boost::format fmt("{\"name\":\"%s\",\"host\":\"%s\",\"port\":%i,\"weight\":%i}");
-	fmt % r.name % r.host % r.port % r.weight();
-	return fmt.str();
-}
+// //210us
+// string Registry::to_json_string4(Registry& r) {
+// 	boost::format fmt("{\"name\":\"%s\",\"host\":\"%s\",\"port\":%i,\"weight\":%i}");
+// 	fmt % r.name % r.host % r.port % r.weight();
+// 	return fmt.str();
+// }
 
 string Registry::to_json_string(vector<Registry> v) {
 	string ret;
