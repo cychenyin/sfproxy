@@ -72,3 +72,4 @@ Usage: frproxy [options [option value]]
 	-lp, --scribeport:		scribe port. default 11463. eg. -lp 11463
 	-l,  --enable:		enable scribe log
 eg. ./frproxy -l -sn -t 20
+ 
