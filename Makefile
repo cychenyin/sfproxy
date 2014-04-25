@@ -29,12 +29,14 @@ INCLUDES= \
 	-I/usr/local/include \
 	-I/usr/local/include/thrift 
 	
-LIBS    := thrift thriftnb event pthread zookeeper_mt rt   
+LIBS		:= thrift thriftnb event pthread zookeeper_mt rt
+STATIC_LibS :=  pthread rt
+#thrift thriftnb event zookeeper_mt 
 # thriftnb ganji_util_thread util_config util_time ganji_util_scribe_log
 EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
-lib/thrift/libthriftnb.a \
-lib/libevent/libevent.a \
-lib/zookeeper/libzookeeper_mt.a
+	lib/thrift/libthriftnb.a \
+	lib/libevent/libevent.a \
+	lib/zookeeper/libzookeeper_mt.a
 
 #TARGET=$(LIB_PATH)/$(MODNAME).a
 #TARGET=$(BIN_PATH)/frproxy
@@ -62,7 +64,7 @@ lib/thrift/libthrift.a \
 lib/thrift/libthriftnb.a \
 lib/libevent/libevent.a \
 lib/zookeeper/libzookeeper_mt.a
-	$(CC) -static-libgcc -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
+	$(CC) -static-libgcc -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(STATIC_LibS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) \
 		$(OBJS) \
 		$(EMBED_STATIC_LIBS)
 #shared lib link
