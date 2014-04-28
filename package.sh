@@ -32,13 +32,7 @@ if [ -f $tmp/$pkgname.tar.gz ] ; then
     cp package.spec "$rpmb_root/SPECS/"
     set -xv
     rpmbuild -bb package.spec
-    if [ "$?" -eq 0 ]; then
-	cp -f $rpmb_root/RPMS/x86_64/$pkgname*.rpm $tmp/
-	echo package successfully.
-	ls -al $tmp/
-    else
-	echo fail to build $pkname, check it out please.
-    fi
+    STATUS=$?
 else
     echo failure. package source $pkgname.tar.gz not exists. 
 fi
@@ -49,3 +43,11 @@ test -f "$rpmb_root/RPMS/x86_64/$pkgname*.rpm" && rm -fr "$rpmb_root/RPMS/$pkgna
 
 rm -fr "$tmp/$pkgname/"
 
+if [ $STATUS -eq 0 ]; then
+    cp -f $rpmb_root/RPMS/x86_64/$pkgname*.rpm $tmp/
+    echo package successfully.
+    ls -ahl tmp/
+else
+
+    echo fail to build $pkname, check it out please.
+fi

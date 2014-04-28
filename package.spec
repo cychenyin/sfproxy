@@ -18,12 +18,15 @@ Proxy of Service Framework Registry of Ganji RPC.
 
 %prep
 #% setup -q %{buildroot}
-#echo ============================================================================ setup start1=
+echo ============================================================================ setup start1=
 %setup -c
 
-test -d %{buildroot} || mkdir -- %{buildroot}
-cp -a frproxy-1.0.0/* %{buildroot}
-#echo ============================================================================ setup end 1=
+    test -d %{buildroot} || mkdir -p -- %{buildroot}
+    ls %{buildroot}
+
+    #cp -a frproxy-1.0.0/* %{buildroot}
+
+echo ============================================================================ setup end 1=
 
 #%  build
 #%  configure
@@ -31,49 +34,40 @@ cp -a frproxy-1.0.0/* %{buildroot}
 
 
 %install
-#rm -rf %{buildroot}
-    #make install DESTDIR=%{buildroot}
-#    echo ============================================================================installation start=
-    PWD_BACKUP=$PWD
-    cd %{buildroot}
+    echo "installllllllllllllllllllllllllllllllllllll start"
+#    pwd
 
-    install -m 777 frproxy /usr/local/webserver/frproxy/
-    install -m 777 proxy.sh /usr/local/webserver/frproxy/
-    install -m 666 -t /usr/local/webserver/frproxy/ lib*
-    install -m 666 -t /usr/local/webserver/frproxy/ README.md
-    echo '!@#$%^&*()###########################################################################'
-    cd $PWD_BACKUP 
-#   echo ============================================================================installation start=
-#install -d $RPM_BUILD_ROOT%{userpath}
-#cp -a %{name}* $RPM_BUILD_ROOT%{userpath}
+    test -d %{buildroot}%{userpath} || mkdir -p -- %{buildroot}%{userpath}
+    ls %{buildroot}
+    cp -a frproxy-1.0.0/* %{buildroot}%{userpath}
 
+    ls %{buildroot}%{userpath}
+
+    echo "installllllllllllllllllllllllllllllllllllll end"
 
 %clean
-rm -rf %{buildroot}
-#rm -rf $RPM_BUILD_ROOT
-rm -rf $RPM_BUILD_DIR/%{name}-%{version}
+    rm -rf %{buildroot}
+    rm -rf $RPM_BUILD_DIR/%{name}-%{version}
 
 %files
 %defattr(-,root,root,-)
 %doc
-/frproxy
-/libevent.a
-/libevent.la
-/libevent.so
-/libthriftnb.so
-/libthriftnb.so.0
-/libthriftnb.so.0.0.0
-/libthrift.so
-/libthrift.so.0
-/libthrift.so.0.0.0
-/libzookeeper_mt.a
-/libzookeeper_mt.la
-/libzookeeper_mt.so
-/libzookeeper_mt.so.2
-/libzookeeper_mt.so.2.0.0
-/proxy.sh
-/README.md
+%{userpath}/frproxy
+%{userpath}/libevent.a
+%{userpath}/libevent.la
+%{userpath}/libevent.so
+%{userpath}/libthriftnb.so
+%{userpath}/libthriftnb.so.0
+%{userpath}/libthriftnb.so.0.0.0
+%{userpath}/libthrift.so
+%{userpath}/libthrift.so.0
+%{userpath}/libthrift.so.0.0.0
+%{userpath}/libzookeeper_mt.a
+%{userpath}/libzookeeper_mt.la
+%{userpath}/libzookeeper_mt.so
+%{userpath}/libzookeeper_mt.so.2
+%{userpath}/libzookeeper_mt.so.2.0.0
+%{userpath}/proxy.sh
+%{userpath}/README.md
 
 %changelog
-* Wed Jan 27 2010 Charles Channelman <channelman@stationX.example.com> - 1.0-1  
-- Initial build. 
