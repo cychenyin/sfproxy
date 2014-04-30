@@ -31,7 +31,7 @@ if [ -f $tmp/$pkgname.tar.gz ] ; then
     mv $tmp/$pkgname.tar.gz $rpmb_root/SOURCES/$pkgname.tar.gz
     cp package.spec "$rpmb_root/SPECS/"
     set -xv
-    rpmbuild -bb package.spec
+    rpmbuild -bb --define "_binary_filedigest_algorithm  1"  --define "_binary_payload 1" package.spec
     STATUS=$?
 else
     echo failure. package source $pkgname.tar.gz not exists. 

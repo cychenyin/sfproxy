@@ -131,7 +131,7 @@ void usage() {
 	cout << "Proxy Server of Service Framework of Ganji RPC." << endl;
 	cout << "Usage: frproxy [options [option value]]" << endl;
 	cout << "	" << "-d,  --debug:\t\trun test main for debugging only" << endl;
-	cout << "	" << "-p,  --port:\t\tuse definited port. default 9091. eg. -p 9090" << endl;
+	cout << "	" << "-p,  --port:\t\tuse definited port. default 9009. eg. -p 9009" << endl;
 	cout << "	" << "-st, --threaded:\trun server as TTreadedServer" << endl;
 	cout << "	" << "-sp, --threadpool:\trun server as TTreadPoolServer" << endl;
 	cout << "	" << "-sn, --nonblocking:\trun server as TNonblockingServer. default server type" << endl;
@@ -198,8 +198,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	int port = option_value(argc, argv, "-p", "--port", 9091);
-	;
+	int port = option_value(argc, argv, "-p", "--port", 9009);
 	int thread_count = option_value(argc, argv, "-t", "--thread_count", 16);
 	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "localhost:2181");
 
