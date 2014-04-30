@@ -76,7 +76,8 @@ eg. ./frproxy -l -sn -t 20
 ----------------
 release：
 ----------------
-
+ version 1.0.0 release 3
+	1. update default port from 9091 to 9009
  version 1.0.0 release 2
  	1. zoo_set_debug_level change from ZOO_LOG_LEVEL_WARN to ZOO_LOG_LEVEL_ERROR
  	2. proxy.sh run frproxy in background, and write stdout in file.
