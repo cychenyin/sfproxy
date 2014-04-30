@@ -27,7 +27,7 @@ ZkClient::~ZkClient() {
 }
 
 void ZkClient::Init() {
-	zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+	zoo_set_debug_level(ZOO_LOG_LEVEL_ERROR);
 	this->root = NULL;
 	this->zhandle_ = NULL;
 	// this->zk_hosts_ = "";

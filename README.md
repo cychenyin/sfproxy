@@ -73,3 +73,13 @@ Usage: frproxy [options [option value]]
 	-l,  --enable:		enable scribe log
 eg. ./frproxy -l -sn -t 20
  
+----------------
+release：
+----------------
+
+ version 1.0.0 release 2
+ 	1. zoo_set_debug_level change from ZOO_LOG_LEVEL_WARN to ZOO_LOG_LEVEL_ERROR
+ 	2. proxy.sh run frproxy in background, and write stdout in file.
+ 	3. fix usage zk eg bug about loss port
+version 1.0.0
+	init release.

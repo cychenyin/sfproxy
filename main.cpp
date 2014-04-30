@@ -140,7 +140,7 @@ void usage() {
 			<< endl;
 	cout << "	" << "-h,  --help:\t\tshow help" << endl;
 	cout << "	" << "-v,  --version:\t\tshow version" << endl;
-	cout << "	" << "-z,  --zkhosts:\t\tzookeeper hosts. default 127.0.0.1. eg. -z 192.168.2.202" << endl;
+	cout << "	" << "-z,  --zkhosts:\t\tzookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
 	cout << "	" << "-lh, --scribehost:\t\tscribe hosts. default 127.0.0.1. eg. -lg localhost" << endl;
 	cout << "	" << "-lp, --scribeport:\t\tscribe port. default 11463. eg. -lp 11463" << endl;
 	cout << "	" << "-l,  --enable:\t\tenable scribe log" << endl;
