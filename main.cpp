@@ -147,7 +147,7 @@ void usage() {
 }
 
 void version() {
-	cout << "service frameword registry proxy server 1.0.1" << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.0.1" << endl;
 }
 // return index if exists, or return 0
 int option_exists(int argc, char **argv, const char *option) {
@@ -197,6 +197,15 @@ int main(int argc, char **argv) {
 //		cout << "end..." << endl;
 		return 0;
 	}
+	// high priority args
+	if(option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help") ){
+		usage();
+		return 0;
+	}
+	if(option_exists(argc, argv, "-v") || option_exists(argc, argv, "--version") ){
+		version();
+		return 0;
+	}
 
 	int port = option_value(argc, argv, "-p", "--port", 9009);
 	int thread_count = option_value(argc, argv, "-t", "--thread_count", 16);
@@ -209,12 +218,11 @@ int main(int argc, char **argv) {
 	int log_port = option_value(argc, argv, "-lp", "--scribeport", 11463);
 	logger::init(log_host, log_port, 999999);
 
+
+
 	int type = 2; // nonblocking
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-			// theaded
-			type = 0;
-		}
+
 		if (strcmp(argv[i], "-st") == 0 || strcmp(argv[i], "--threaded") == 0) {
 			// theaded
 			type = 3;
