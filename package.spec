@@ -1,12 +1,12 @@
 Name:		frproxy
-Version:	1.0.0
-Release:	3
+Version:	1.0.1
+Release:	4
 Summary:	Proxy of Service Framework Registry of Ganji RPC.
 
 Group:		Ganji
 License:	GNU
 URL:		http://www.ganji.com
-Source0:	frproxy-1.0.0.tar.gz
+Source0:	frproxy-%{version}.tar.gz
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 #BuildRequires:	 
 #Requires:	
@@ -24,7 +24,7 @@ echo ===========================================================================
     test -d %{buildroot} || mkdir -p -- %{buildroot}
     ls %{buildroot}
 
-    #cp -a frproxy-1.0.0/* %{buildroot}
+    #cp -a frproxy-%{version}/* %{buildroot}
 
 echo ============================================================================ setup end 1=
 
@@ -39,7 +39,7 @@ echo ===========================================================================
 
     test -d %{buildroot}%{userpath} || mkdir -p -- %{buildroot}%{userpath}
     ls %{buildroot}
-    cp -a frproxy-1.0.0/* %{buildroot}%{userpath}
+    cp -a frproxy-%{version}/* %{buildroot}%{userpath}
 
     ls %{buildroot}%{userpath}
 

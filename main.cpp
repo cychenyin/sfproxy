@@ -147,7 +147,7 @@ void usage() {
 }
 
 void version() {
-	cout << "service frameword registry proxy server 1.0.0" << endl;
+	cout << "service frameword registry proxy server 1.0.1" << endl;
 }
 // return index if exists, or return 0
 int option_exists(int argc, char **argv, const char *option) {

@@ -76,6 +76,10 @@ eg. ./frproxy -l -sn -t 20
 ----------------
 release：
 ----------------
+ version 1.0.1 release 4
+	1. fix scribe_log make cpu keep load high bug.
+	2. update verion to 1.0.1 
+
  version 1.0.0 release 3
 	1. update default port from 9091 to 9009
  version 1.0.0 release 2
