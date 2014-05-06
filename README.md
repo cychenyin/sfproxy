@@ -76,6 +76,8 @@ eg. ./frproxy -l -sn -t 20
 ----------------
 release：
 ----------------
+ version 1.0.1 release 6
+    1. package client into rpm 
  version 1.0.1 release 5
 	1. fix -v --version start server bug
 	2. 

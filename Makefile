@@ -39,15 +39,16 @@ TARGET=frproxy
 LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp
 TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp main.cpp
 # test/main.cpp
+TEST_CXXFILES=
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
+all: clean preexec $(TARGET) afterexec client
+	@echo '---------------all done. can package now ---------------'
+
 .PHONY: debug
 debug: clean preexecForDebug $(TARGET) afterexec
-	echo '---------------all done ---------------'
-
-all: clean preexec $(TARGET) afterexec
-	echo '---------------all done ---------------'
+	@echo '---------------all debug make done ---------------'
 
 $(TARGET): $(OBJS)
 #static link
@@ -84,6 +85,8 @@ afterexec:
 	$(RM) *~ *.swp
 	$(CP) ./lib/* $(BIN_PATH)/
 	cp -f proxy.sh $(BIN_PATH)/
+	cp -f proxy_client.sh $(BIN_PATH)/
+
 .PHONY: client
 client:
 	make -C thrift
@@ -91,6 +94,7 @@ client:
 .PHONY: test
 test:
 	#make -C test
+	
 	
 .PHONY: clean
 clean:
@@ -107,6 +111,7 @@ install:
 	test -z $(INSTALL_PATH) || $(MKDIR) -- $(INSTALL_PATH)
 	install -m 777 $(BIN_PATH)/frproxy $(INSTALL_PATH)/frproxy
 	install -m 777 $(BIN_PATH)/proxy.sh $(INSTALL_PATH)/proxy.sh
+	install -m 777 $(BIN_PATH)/proxy_client.sh $(INSTALL_PATH)/proxy_client.sh
 	install lib/* $(INSTALL_PATH)/
 	
 .PHONY: gen

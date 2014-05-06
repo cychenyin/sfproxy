@@ -1,6 +1,6 @@
 Name:		frproxy
 Version:	1.0.1
-Release:	5
+Release:	6
 Summary:	Proxy of Service Framework Registry of Ganji RPC.
 
 Group:		Ganji
@@ -53,6 +53,7 @@ echo ===========================================================================
 %defattr(-,root,root,-)
 %doc
 %{userpath}/frproxy
+%{userpath}/client
 %{userpath}/libevent.a
 %{userpath}/libevent.la
 %{userpath}/libevent.so
@@ -68,6 +69,7 @@ echo ===========================================================================
 %{userpath}/libzookeeper_mt.so.2
 %{userpath}/libzookeeper_mt.so.2.0.0
 %{userpath}/proxy.sh
+%{userpath}/proxy_client.sh
 %{userpath}/README.md
 
 %changelog

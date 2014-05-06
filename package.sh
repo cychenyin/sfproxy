@@ -18,7 +18,9 @@ echo packaging $pkgname
 echo package dest $rpmb_root
 
 cp -f bin/frproxy $folder/
+cp -f bin/client $folder/
 cp -f proxy.sh $folder/
+cp -f proxy_client.sh $folder/
 cp -f lib/* $folder/
 
 cd $tmp/

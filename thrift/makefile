@@ -8,7 +8,7 @@ CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED
 #c++11# -std=c++0x  -Wall
 
 LIBS    := thrift thriftnb event
-LIB_PATH=../lib/ganji /usr/local/lib 
+LIB_PATH=../lib /usr/local/lib 
 BIN_PATH=../bin
 INCLUDES=../include /usr/include /usr/local/include /usr/local/include/thrift
 
@@ -31,7 +31,7 @@ OBJS4=$(MOD_NAME4_CXXFILES:.cpp=.o)
 all: clean $(MOD_NAME) $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
 # $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
 #client.cpp  proxy_constants.cpp  proxy_types.cpp  RegistryProxy.cpp	server.cpp
-	echo 'done....................................'	
+	@echo 'make client done....................................'	
 
 $(MOD_NAME): $(OBJS)
 	$(CC) -o $(BIN_PATH)/$(MOD_NAME) $(OBJS) $(CFLAGS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS)

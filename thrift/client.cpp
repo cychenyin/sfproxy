@@ -56,7 +56,7 @@ int option_value(int argc, char **argv, char *option, char *long_name_option, in
 
 int main(int argc, char **argv) {
 
-	int port = option_value(argc, argv, "-p", "--port", 9091);;
+	int port = option_value(argc, argv, "-p", "--port", 9009);;
 	string service_name = option_value(argc, argv, "-s", "--service", "testservice");
 	cout << "conn to port=" << port << endl;
 	cout << "service name=" << service_name << endl;
@@ -68,16 +68,16 @@ int main(int argc, char **argv) {
 
 	RegistryProxyClient client(protocol);
 	int i;
-	long start = now_in_us();
+	long start = utils::now_in_us();
 	transport->open();
-	long open = now_in_us();
+	long open = utils::now_in_us();
 
 	try {
 		for (i = 0; i < 1; i++) {
 			// std::string serverName = "/soa/services/testservice";
 			std::string ret;
 			client.get(ret, service_name);
-			long done = now_in_us();
+			long done = utils::now_in_us();
 			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost="
 					<< (double) (open - start) / 1000 << "ms. get cost=" << (double) (done - open) / 1000 << endl;
 			cout << "result:	" << ret << endl;
