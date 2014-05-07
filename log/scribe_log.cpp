@@ -124,7 +124,7 @@ public:
 	void worker() {
 		while (!b_exit) {
 			send_log();
-			sleep(10);
+			sleep(50);
 		}
 		send_log();
 	}

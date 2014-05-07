@@ -67,13 +67,13 @@ public:
 	}
 
 	void run() {
-#ifdef DEBUG_
 		// long start = utils::now_in_us(); // CLOCKS_PER_SEC
 		uint64_t start = utils::now_in_us();
+#ifdef DEBUG_
 #endif
 		ZkClient *client = (ZkClient*) pool->open();
-#ifdef DEBUG_
 		uint64_t open = utils::now_in_us();
+#ifdef DEBUG_
 #endif
 		if (!client) {
 			cout << " warm error, fail to open zk client." << endl;
@@ -87,10 +87,10 @@ public:
 		}
 		client->close();
 
-#ifdef DEBUG_
 		uint64_t end = utils::now_in_us();
 		cout << "warm " << names.size() << " proxy cost=" << DiffMs(end, start) << "ms. open client cost="
 				<< DiffMs(open, start) << endl;
+#ifdef DEBUG_
 #endif
 	}
 };

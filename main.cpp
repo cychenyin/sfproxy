@@ -40,9 +40,13 @@ using boost::shared_ptr;
 
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
-	ut::RegistryCacheTest a;
+
+	cout << utils::now() << endl;
+	return 0;
+
+//	ut::RegistryCacheTest a;
 //	a.getTest();
-	a.addTest();
+//	a.addTest();
 //	a.removeTest();
 //	a.removeTest1();
 //	a.removeTest2();
@@ -54,8 +58,8 @@ int testmain(int argc, char** argv) {
 }
 
 int nonblockingServer(string zkhosts, int port, int threadCount) {
-	cout << "frproxy nonblocking server starting at port " << port << endl;
-	cout << "zk server " << zkhosts << endl;
+	cout << utils::now() << " frproxy nonblocking server starting at port " << port << endl;
+	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy nonblocking server starting at port %d. zk server %s", port, zkhosts.c_str());
 	// shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
@@ -72,15 +76,9 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 	threadManager->start();
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
-#ifdef DEBUG_
-	uint64_t start = utils::now_in_us();
-#endif
-	handler.get()->warm();
 
-#ifdef DEBUG_
-	uint64_t elapse = utils::now_in_us() - start;
-	cout << "frproxy server warm cost " << (double) elapse / 1000 << "ms" << endl;
-#endif
+	handler.get()->warm();
+	cout << "warm server committed. server is getting up" << endl;
 	server.serve();
 
 	cout << "frproxy server exiting." << endl;
@@ -89,9 +87,9 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 	return 0;
 }
 
-void poolServer(string zkhosts, int port, int poolSize) {
-	cout << "frproxy pool server starting at port " << port << endl;
-	cout << "zk server " << zkhosts << endl;
+int poolServer(string zkhosts, int port, int poolSize) {
+	cout << utils::now() << " frproxy pool server starting at port " << port << endl;
+	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy pool server starting at port %d. zk server %s", port, zkhosts.c_str());
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
@@ -105,12 +103,17 @@ void poolServer(string zkhosts, int port, int poolSize) {
 	threadManager->threadFactory(threadFactory);
 	threadManager->start();
 	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
+
+	handler.get()->warm();
+	cout << "warm server committed. server is getting up" << endl;
 	server.serve();
+	cout << "frproxy server exited." << endl;
+	return 0;
 }
 
 int threadedServer(string zkhosts, int port) {
-	cout << "frproxy threaded server starting at port " << port << endl;
-	cout << "zk server " << zkhosts << endl;
+	cout << utils::now() << " frproxy threaded server starting at port " << port << endl;
+	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy threaded server starting at port %d. zk server %s", port, zkhosts.c_str());
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -120,8 +123,9 @@ int threadedServer(string zkhosts, int port) {
 	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
 	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
-	handler.get()->warm();
 
+	handler.get()->warm();
+	cout << "warm server committed. server is getting up" << endl;
 	server.serve();
 	cout << "frproxy server exited." << endl;
 	return 0;
@@ -198,11 +202,11 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	// high priority args
-	if(option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help") ){
+	if (option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help")) {
 		usage();
 		return 0;
 	}
-	if(option_exists(argc, argv, "-v") || option_exists(argc, argv, "--version") ){
+	if (option_exists(argc, argv, "-v") || option_exists(argc, argv, "--version")) {
 		version();
 		return 0;
 	}
@@ -217,8 +221,6 @@ int main(int argc, char **argv) {
 	char* log_host = option_value(argc, argv, "-lh", "--scribehost", "127.0.0.1");
 	int log_port = option_value(argc, argv, "-lp", "--scribeport", 11463);
 	logger::init(log_host, log_port, 999999);
-
-
 
 	int type = 2; // nonblocking
 	for (int i = 1; i < argc; i++) {
@@ -246,25 +248,28 @@ int main(int argc, char **argv) {
 		cout << "server type  " << type << endl;
 	}
 #endif
-
-	switch (type) {
-	case 1:
-		poolServer(zkhosts, port, thread_count);
-		logger::destory();
-		break;
-	case 2:
-		nonblockingServer(zkhosts, port, thread_count);
-		logger::destory();
-		break;
-	case 3:
-		threadedServer(zkhosts, port);
-		logger::destory();
-		break;
-	case 0:
-		usage();
-		break;
-	default:
-		break;
+	try {
+		switch (type) {
+		case 1:
+			poolServer(zkhosts, port, thread_count);
+			logger::destory();
+			break;
+		case 2:
+			nonblockingServer(zkhosts, port, thread_count);
+			logger::destory();
+			break;
+		case 3:
+			threadedServer(zkhosts, port);
+			logger::destory();
+			break;
+		case 0:
+			usage();
+			break;
+		default:
+			break;
+		}
+	} catch (...) {
+		logger::error("unknown fatel error occured! need to restart server.");
 	}
 	return 0;
 }

@@ -5,5 +5,5 @@ logdir=/data/log/frproxy
 #logdir=/home/asdf/log/frproxy
 test -d ${logdir}/ || mkdir -p -- ${logdir}/
 
-nohup ./frproxy $* >${logdir}/frproxy.stdout 2>&1 &
+nohup ./frproxy $* >>${logdir}/frproxy.stdout 2>&1 &
 

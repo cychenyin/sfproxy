@@ -15,9 +15,11 @@
 
 #include <sys/time.h>
 #include <time.h>
+#include <string.h>
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include <stdio.h>
 
 //#ifndef INT32T
 //typedef int int32_t;
@@ -54,7 +56,24 @@ inline uint32_t now_in_ms() {
 	uint32_t time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 	return time;
 }
+
+inline std::string TmToStr(const tm& tmTime) {
+	char buf[20];
+	snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d", tmTime.tm_year + 1900, tmTime.tm_mon + 1,
+			tmTime.tm_mday, tmTime.tm_hour, tmTime.tm_min, tmTime.tm_sec);
+	return buf;
 }
+
+inline std::string now() {
+	time_t timep;
+	time(&timep); // get utc time
+	struct tm *p;
+	p = gmtime(&timep); // convert to struct tm
+	std::string r = TmToStr(*p);
+	return r;
+}
+
+} // class utils
 
 } // namespace
 #endif /* FRPROXY_H_ */
