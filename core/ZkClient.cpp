@@ -76,7 +76,7 @@ void ZkClient::connect_zk() {
 		logger::warn("ZkClient connect to zk error: zk_hosts_=%s; retry times:=%d", zk_hosts_.c_str(), count);
 #ifdef DEBUG_
 		cout << "ZkClient connect to zk error: " << zk_hosts_ << " retry times: " << count << " result:"
-				<< (zhandle_ != 0) << endl;
+		<< (zhandle_ != 0) << endl;
 #endif
 	}
 #endif
@@ -129,7 +129,7 @@ void ZkClient::update_service(string serviceZpath, string ephemeralName) {
 	} else if (ret == ZINVALIDSTATE) {
 		set_connected(false);
 	} else {
-		logger::warn("update_service zk_wget epheramal node error, ret=%d; msg=%s", ret,zerror(ret));
+		logger::warn("update_service zk_wget epheramal node error, ret=%d; msg=%s", ret, zerror(ret));
 #ifdef DEBUG_
 		cout << "update_service zk_wget epheramal node error, ret=" << ret << endl;
 #endif
@@ -141,7 +141,7 @@ void ZkClient::update_service(string serviceZpath, string ephemeralName) {
 //update servcie list
 void ZkClient::get_children(string serviceZpath) {
 	watcher_fn watcher = &this->children_watcher;
-	if (this->get_connected()) {
+	if (!this->get_connected()) {
 		connect_zk();
 	}
 	struct String_vector str_vec;
@@ -164,11 +164,38 @@ void ZkClient::get_children(string serviceZpath) {
 	} else if (ret == ZINVALIDSTATE) {
 		set_connected(false);
 	} else {
-		logger::warn("get_children zoo_wget_children error, ret=%d; msg=%s", ret,zerror(ret));
+		logger::warn("get_children zoo_wget_children error, ret=%d; msg=%s", ret, zerror(ret));
 #ifdef DEBUG_
 		cout << "get_children zoo_wget_children error, ret=" << ret << " msg=" << zerror(ret) << endl;
 #endif
 	}
+}
+
+int ZkClient::create_enode(string name, string data) {
+	watcher_fn watcher = &this->global_watcher;
+	if (!this->get_connected()) {
+		connect_zk();
+	}
+	struct String_vector str_vec;
+	mutex.lock();
+	// return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
+	int ret = zoo_create(zhandle_, name.c_str(), data.c_str(), data.length(), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, 0, 0);
+	mutex.unlock();
+
+	if (ret == ZOK) {
+#ifdef DEBUG_
+		cout << " register self successfully. path:" << name << endl;
+#endif
+
+	} else if (ret == ZINVALIDSTATE) {
+		set_connected(false);
+	} else {
+#ifdef DEBUG_
+		logger::warn("zoo_create error, ret=%d; msg=%s path=%s", ret, zerror(ret), name.c_str());
+		cout << "zoo_create error, ret=" << ret << " msg=" << zerror(ret) << " path:" << name << endl;
+#endif
+	}
+	return ret;
 }
 
 // watcher args type
@@ -188,7 +215,7 @@ void ZkClient::get_children(string serviceZpath) {
 void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
 #ifdef DEBUG_
 	cout << "ephemeral_watcher type=" << type << " state=" << state << " path:" << path << " client id="
-			<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
+	<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
 #endif
 
 	ZkClient *client = (ZkClient*) watcherCtx;
@@ -228,7 +255,7 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
 #ifdef DEBUG_
 	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << " client id="
-			<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
+	<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
 #endif
 	ZkClient *client = (ZkClient*) watcherCtx;
 	if (!client) {
@@ -262,7 +289,7 @@ void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *
 void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
 #ifdef DEBUG_
 	cout << "global_watcher type=" << type << " state=" << state << " path:" << path << " client id="
-			<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
+	<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
 #endif
 
 	if (type == ZOO_SESSION_EVENT) {

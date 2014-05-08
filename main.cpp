@@ -78,6 +78,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 
 	handler.get()->warm();
+	handler.get()->register_self(port);
 	cout << "warm server committed. server is getting up" << endl;
 	server.serve();
 
@@ -105,6 +106,7 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
 
 	handler.get()->warm();
+	handler.get()->register_self(port);
 	cout << "warm server committed. server is getting up" << endl;
 	server.serve();
 	cout << "frproxy server exited." << endl;
@@ -125,6 +127,7 @@ int threadedServer(string zkhosts, int port) {
 	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
 	handler.get()->warm();
+	handler.get()->register_self(port);
 	cout << "warm server committed. server is getting up" << endl;
 	server.serve();
 	cout << "frproxy server exited." << endl;

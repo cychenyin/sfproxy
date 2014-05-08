@@ -7,9 +7,11 @@
 #endif
 
 #include <iostream>
+#include <sstream>
 // #include <time.h>
 // #include <sys/time.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 #include "concurrency/PosixThreadFactory.h"
 #include "concurrency/Thread.h"
 #include "concurrency/ThreadManager.h"
@@ -33,7 +35,6 @@ private:
 	Mutex mutex;
 public:
 	SimpleSafeSet() {
-
 	}
 	~SimpleSafeSet() {
 	}
@@ -134,6 +135,7 @@ private:
 	SimpleSafeSet *skip_set;
 	shared_ptr<ThreadManager> threadManager;
 	int async_timeout; // in ms
+	string hostname;
 public:
 	ServerHandler(string zkhosts) {
 
@@ -144,6 +146,7 @@ public:
 		skip_set = new SimpleSafeSet();
 		init_pool();
 		async_timeout = 100;
+		init_hostname();
 	}
 
 	~ServerHandler() {
@@ -178,8 +181,8 @@ public:
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-			cout << " async getting " << path << endl;
-			got_try_start = utils::now_in_us();
+				cout << " async getting " << path << endl;
+				got_try_start = utils::now_in_us();
 #endif
 			logger::warn("async getting %s", path.c_str());
 			// if getting from zk, then skip
@@ -187,8 +190,7 @@ public:
 			if (found == skip_set->end()) {
 				pair<set<string>::iterator, bool> insert = skip_set->insert(serviceName);
 				if (insert.second) {
-					threadManager->add(shared_ptr<GetZkTask>(new GetZkTask(pool, path, skip_set)),
-							async_timeout);
+					threadManager->add(shared_ptr<GetZkTask>(new GetZkTask(pool, path, skip_set)), async_timeout);
 				}
 			}
 #ifdef DEBUG_
@@ -206,7 +208,7 @@ public:
 		serial = utils::now_in_us();
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
 		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " got's try="
-				<< DiffMs(get_try_end, got_try_start) << " serial=" << DiffMs(serial, got) << endl;
+		<< DiffMs(get_try_end, got_try_start) << " serial=" << DiffMs(serial, got) << endl;
 //		cache->dump();
 #endif
 	}
@@ -216,8 +218,27 @@ public:
 	}
 
 	void warm() {
-		threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)),
-				async_timeout * 1000);
+		threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)), async_timeout * 1000);
+	}
+	void register_self(int port) {
+		ZkClient *client = (ZkClient *) pool->open();
+		stringstream ss;
+//		ss << "{\"name\":\"proxy\",\"host\":\"" << hostname << "\",\"port\":" << port << " }";
+//		string data = ss.str();
+//		char p[20];
+//		itoa(port, p, 10);
+		ss <<"/soa";
+		client->create_enode(ss.str(), "");
+		ss << "/proxies";
+		client->create_enode(ss.str(), "");
+		ss << "/" << hostname << ":" << port;
+		int res = client->create_enode(ss.str(), "");
+		if( res != 0) {
+			logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
+		}
+#ifdef DEBUG_
+		cout << "self register path:" << ss.str() << endl;
+#endif
 	}
 private:
 	void read_zk(string svc_name) {
@@ -232,6 +253,19 @@ private:
 		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
 		threadManager->threadFactory(threadFactory);
 		threadManager->start();
+	}
+	void init_hostname() {
+		//
+		int size = 128;
+		char *hostname = new char[size];
+		for (int i = 0; i < size; i++) {
+			hostname[i] = 0;
+		}
+		gethostname(hostname, size);
+		// copy to string
+		this->hostname = string(hostname);
+		delete hostname;
+		hostname = 0;
 	}
 };
 // class ServerHandler

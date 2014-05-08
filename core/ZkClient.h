@@ -39,12 +39,26 @@
 
 using namespace std;
 using FinagleRegistryProxy::logger;
-//using namespace ganji::util::thread;
 
 namespace FinagleRegistryProxy {
 
 typedef SEvent<ClientPool, ClientBase, int> WatchEvent; // client event
 
+class ZkWatchData {
+public:
+	const static int TYPE_CREATE_EPHERERAL = 0;
+	const static int TYPE_GET = 1;
+
+	long client_id;
+	bool type;
+	string path;
+	string data;
+public:
+	bool equals(ZkWatchData* c) {
+		if(!c) return false;
+		return c == 0 ? false : c->path == this->path && c->type == this->type;
+	}
+};
 
 class ZkClient: public ClientBase {
 public:
@@ -65,6 +79,7 @@ public:
 //	void InitWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctx);
 	void dump_stat(struct Stat *stat);
 	void parse(string json);
+	int create_enode(string name, string data);
 
 public: // interface imple
 	//ClientBase::open

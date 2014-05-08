@@ -34,12 +34,15 @@ bool Registry::check() {
 
 int Registry::weight() {
 	long elapse = time(0) - ctime;
-	return elapse < 3600 && elapse > 0 ? elapse : 3600;
+//	return elapse < 3600 && elapse > 0 ? elapse : 3600;
+	// python: return 1200 + x * x / 36 if x < 294 and x > 0 else 3600
+	return elapse < 294 && elapse > 0 ? 1200 + elapse * elapse / 36 : 3600;
 }
 
 bool Registry::equals(Registry& r) {
 	return this == &r ? true : name == r.name && host == r.host && port == r.port;
 }
+
 bool Registry::operator==(Registry& r) {
 	return this == &r ? true : name == r.name && host == r.host && port == r.port;
 }
