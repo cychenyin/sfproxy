@@ -44,20 +44,27 @@ namespace FinagleRegistryProxy {
 
 typedef SEvent<ClientPool, ClientBase, int> WatchEvent; // client event
 
-class ZkWatchData {
+class ZkState : public ClientState {
 public:
 	const static int TYPE_CREATE_EPHERERAL = 0;
-	const static int TYPE_GET = 1;
+	const static int TYPE_GET_CHILDREN = 1;
+	const static int TYPE_GET_NODE = 2;
 
-	long client_id;
-	bool type;
+	int type;
 	string path;
 	string data;
 public:
-	bool equals(ZkWatchData* c) {
+	ZkState() {
+		type = TYPE_GET_NODE;
+		data = path = "";
+	}
+	ZkState(string path, const int type): path(path), type(type) { data = "";}
+
+	bool equals(ZkState* c) {
 		if(!c) return false;
 		return c == 0 ? false : c->path == this->path && c->type == this->type;
 	}
+	~ZkState(){}
 };
 
 class ZkClient: public ClientBase {
@@ -66,45 +73,47 @@ public:
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
 	ZkClient();
 	ZkClient(string hosts, RegistryCache *pcache);
-	void init(string hosts, RegistryCache *pcache);
 
+	void init(string hosts, RegistryCache *pcache);
 	virtual ~ZkClient();
 	void connect_zk();
 	void get_children(string serviceZpath);
-	void update_service(string serviceZpath, string subNodeName);
+	void get_node(string path);
+	void get_node(string serviceZpath, string subNodeName);
 	static void children_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void ephemeral_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	vector<string> get_all(string root = "/soa/services");
-//	void InitWatcher(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctx);
 	void dump_stat(struct Stat *stat);
 	void parse(string json);
 	int create_enode(string name, string data);
+	int create_pnode(string abs_path);
 
 public: // interface imple
 	//ClientBase::open
-	void open() {
+	virtual void open() {
 		this->connect_zk();
 	}
 	//ClientBase::close
-	void close() {
+	virtual void close() {
 		this->set_in_using(false);
 	}
-
+	virtual int set_states(list<ClientState*> &states);
 public:
 	string* root;
 	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
-	const static int RCEV_TIME_OUT_DEF = 10 * 1000 * 1000; // in microsecond
+	const static int RCEV_TIME_OUT_DEF = 10 * 1000 * 1000; // in microsecond, us
 
 private:
-	RegistryCache *pcache;
+	RegistryCache *pcache_;
 	zhandle_t *zhandle_;
 	string zk_hosts_;
 	int timeout_; // zk recv_timeout in microsecond
 	void Init();
 	// apache::thrift::concurrency::Mutex mutex;
 	void close_handle();
-
+	void remove_state(ZkState *state);
 };
 
 class ZkClientContext {

@@ -20,6 +20,11 @@ using namespace std;
 
 namespace FinagleRegistryProxy {
 
+class ClientState {
+public:
+	long client_id;
+};
+
 class ClientPool;
 class ClientBase;
 
@@ -33,7 +38,7 @@ public:
 //	PoolEvent *poolEvent; // why fail to compile
 	const static int EVENT_TYPE_CONNECTION_STATE = 1;
 	const static int EVENT_TYPE_USE_STATE = 2;
-
+	list<ClientState*> states_;	// state about watch type, watch path etc..
 public:
 	ClientBase() {
 		use_times_ = 0;
@@ -50,6 +55,7 @@ public:
 	}
 	virtual void open() = 0;
 	virtual void close() = 0;
+	virtual int set_states(list<ClientState*> &states) {return 0; }
 
 	bool get_in_using() {
 		return in_using_;
@@ -63,6 +69,9 @@ public:
 	}
 
 protected:
+	void set_id(long id) {
+		this->id_ = id;
+	}
 	// should be accessed by derived children; used in close & open method in implement of this abstract class.
 	void set_connected(bool connected) {
 		if (this->connected_ == connected)
@@ -90,7 +99,7 @@ private:
 	int use_times_;
 	bool in_using_;
 	bool connected_;
-	int id_;
+	long id_;
 protected:
 	apache::thrift::concurrency::Mutex mutex;
 };
@@ -110,8 +119,6 @@ typedef list<ClientBase*> CList;
 
 /*
  * create client add to use_list, when client.close then mv to idle_client; when disconnect then destroy it.
- * usage: client
- *
  */
 class ClientPool {
 

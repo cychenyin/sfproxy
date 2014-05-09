@@ -36,6 +36,7 @@ ClientBase* ClientPool::create() {
 	} else
 		return 0;
 }
+
 ClientBase* ClientPool::open() {
 	ClientBase *client = 0;
 	mutex.lock();
@@ -109,6 +110,17 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 			// make sure in idle list
 			using_.erase(client);
 			idle_.insert(client);
+			if(client->states_.size() > 0) {
+				// ATTENTION: following code CAN NOT be reverted sequence.
+				// clone the list
+				list<ClientState*> clone;
+				for(list<ClientState*>::iterator it =  client->states_.begin(); it !=client->states_.end(); it++) {
+					clone.push_back(*it);
+				}
+				client->states_.clear();
+				ClientBase *client = this->open();
+				client->set_states(client->states_);
+			}
 		}
 	} else if (state == ClientBase::EVENT_TYPE_USE_STATE) {
 		if (client->in_using_) {

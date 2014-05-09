@@ -228,9 +228,9 @@ public:
 //		char p[20];
 //		itoa(port, p, 10);
 		ss <<"/soa";
-		client->create_enode(ss.str(), "");
+		client->create_pnode(ss.str());
 		ss << "/proxies";
-		client->create_enode(ss.str(), "");
+		client->create_pnode(ss.str());
 		ss << "/" << hostname << ":" << port;
 		int res = client->create_enode(ss.str(), "");
 		if( res != 0) {
