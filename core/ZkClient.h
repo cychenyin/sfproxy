@@ -21,6 +21,7 @@
 #define ZKCLIENT_H_
 
 #include <iostream>
+#include <sstream>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -44,7 +45,7 @@ namespace FinagleRegistryProxy {
 
 typedef SEvent<ClientPool, ClientBase, int> WatchEvent; // client event
 
-class ZkState : public ClientState {
+class ZkState: public ClientState {
 public:
 	const static int TYPE_CREATE_EPHERERAL = 0;
 	const static int TYPE_GET_CHILDREN = 1;
@@ -58,13 +59,34 @@ public:
 		type = TYPE_GET_NODE;
 		data = path = "";
 	}
-	ZkState(string path, const int type): path(path), type(type) { data = "";}
+	ZkState(string path, const int type) :
+			path(path), type(type) {
+		data = "";
+	}
 
 	bool equals(ZkState* c) {
-		if(!c) return false;
+		if (!c)
+			return false;
 		return c == 0 ? false : c->path == this->path && c->type == this->type;
 	}
-	~ZkState(){}
+	bool match_path(ZkState* c) {
+		if (!c)
+			return false;
+		return c == 0 ? false : c->path == this->path;
+	}
+	string key() {
+		stringstream ss;
+		ss << type << path;
+		return ss.str();
+	}
+	~ZkState() {
+	}
+public:
+	static string create_key(string &path, int type) {
+		stringstream ss;
+		ss << type << path;
+		return ss.str();
+	}
 };
 
 class ZkClient: public ClientBase {
@@ -89,8 +111,12 @@ public:
 	void parse(string json);
 	int create_enode(string name, string data);
 	int create_pnode(string abs_path);
-
-public: // interface imple
+	void debug() {
+		this->set_connected(false);
+	}
+	void save_state(string &path, int type);
+public:
+	// interface imple
 	//ClientBase::open
 	virtual void open() {
 		this->connect_zk();
@@ -99,7 +125,7 @@ public: // interface imple
 	virtual void close() {
 		this->set_in_using(false);
 	}
-	virtual int set_states(list<ClientState*> &states);
+	virtual int set_states(StateMap &states);
 public:
 	string* root;
 	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
@@ -110,7 +136,7 @@ private:
 	zhandle_t *zhandle_;
 	string zk_hosts_;
 	int timeout_; // zk recv_timeout in microsecond
-	void Init();
+	void init();
 	// apache::thrift::concurrency::Mutex mutex;
 	void close_handle();
 	void remove_state(ZkState *state);
@@ -144,7 +170,8 @@ private:
 	string zkhosts;
 	RegistryCache* cache;
 public:
-	ZkClientFactory(const string& zookeeperhosts, RegistryCache* cache_) : zkhosts(zookeeperhosts), cache(cache_) {
+	ZkClientFactory(const string& zookeeperhosts, RegistryCache* cache_) :
+			zkhosts(zookeeperhosts), cache(cache_) {
 //		zkhosts = zookeeperhosts;
 //		cache = cache_;
 	}

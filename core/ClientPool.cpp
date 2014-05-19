@@ -104,23 +104,22 @@ ClientBase* ClientPool::open1() {
 void ClientPool::on_client_changed(ClientBase* client, int state) {
 	if (client == 0)
 		return;
+	StateMap clone;
 	mutex.lock();
 	if (state == ClientBase::EVENT_TYPE_CONNECTION_STATE) {
 		if (!client->connected_) {
+			if(client->states_.size() > 0) {
+				cout << " watch state clone......................................." << endl;
+				// ATTENTION: sequence of following code CAN NOT be reverted , reversed or modified by any way.
+				// clone the list
+				for(StateMap::iterator it =  client->states_.begin(); it !=client->states_.end(); it++) {
+					clone.insert(pair<string, ClientState* >( it->first, it->second));
+				}
+				client->states_.clear();
+			}
 			// make sure in idle list
 			using_.erase(client);
 			idle_.insert(client);
-			if(client->states_.size() > 0) {
-				// ATTENTION: following code CAN NOT be reverted sequence.
-				// clone the list
-				list<ClientState*> clone;
-				for(list<ClientState*>::iterator it =  client->states_.begin(); it !=client->states_.end(); it++) {
-					clone.push_back(*it);
-				}
-				client->states_.clear();
-				ClientBase *client = this->open();
-				client->set_states(client->states_);
-			}
 		}
 	} else if (state == ClientBase::EVENT_TYPE_USE_STATE) {
 		if (client->in_using_) {
@@ -132,6 +131,12 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 		}
 	}
 	mutex.unlock();
+	if(clone.size()>0){
+		cout << " watch state reserving......................................." << endl;
+		ClientBase *c = this->open();
+		c->set_states(client->states_);
+		cout << " watch state reserved......................................." << endl;
+	}
 }
 
 void ClientPool::reset() {

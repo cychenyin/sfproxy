@@ -227,7 +227,7 @@ extern int32_t LogWrite(int32_t log_type, const char * category, const char * me
 			level = "WARNING";
 			break;
 		case NOTICE:
-			level = "NOTICE";
+			level = "INFO";
 			break;
 		case TRACE:
 			level = "TRACE";

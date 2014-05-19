@@ -110,13 +110,28 @@ public:
 	}
 
 	void run() {
+#ifdef DEBUG_
+		cout << " async getting: " << zkpath << endl;
+#endif
+		logger::warn("async get request: %s", zkpath.c_str());
+
 		ZkClient *client = (ZkClient*) pool->open();
+//		cout << "async says before sleep: " << utils::now_in_us() << endl;
+//		usleep(20000);
+//		cout << "async says after  sleep: " << utils::now_in_us() << endl;
 		if (client) {
 			client->get_children(zkpath);
+#ifdef DEBUG_
+			cout << "debugggggggggggggggggggggggggggggggggggg " << endl;
+			client->debug();
+			cout << pool->stat() << endl;
+			cout << "debugggggggggggggggggggggggggggggggggggg end" << endl;
+#endif
 			client->close(); // must
 			set<string>::iterator it = skip_set->find(zkpath);
-			if (it != skip_set->end())
+			if (it != skip_set->end()) {
 				skip_set->erase(it);
+			}
 		} else {
 			cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
 			return;
@@ -175,26 +190,27 @@ public:
 #ifdef DEBUG_
 		cout << "frproxy get method called. " << serviceName << endl;
 		uint64_t start = utils::now_in_us();
-		uint64_t got = start, got_try_start, get_try_end, serial = start;
+		uint64_t got(start), zk_retrieve_start(start), zk_retrieve_end(start), serial(start);
 #endif
 		string path = *root + split + serviceName;
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-				cout << " async getting " << path << endl;
-				got_try_start = utils::now_in_us();
+			cout << " async get request: " << path << endl;
+			zk_retrieve_start = utils::now_in_us();
 #endif
-			logger::warn("async getting %s", path.c_str());
+			logger::warn("async get request: %s", path.c_str());
 			// if getting from zk, then skip
-			set<string>::iterator found = skip_set->find(serviceName);
+			set<string>::iterator found = skip_set->find(path);
 			if (found == skip_set->end()) {
-				pair<set<string>::iterator, bool> insert = skip_set->insert(serviceName);
+				pair<set<string>::iterator, bool> insert = skip_set->insert(path);
 				if (insert.second) {
-					threadManager->add(shared_ptr<GetZkTask>(new GetZkTask(pool, path, skip_set)), async_timeout);
+					threadManager->add(shared_ptr<GetZkTask>(new GetZkTask(pool, path, skip_set)), async_timeout,
+							async_timeout);
 				}
 			}
 #ifdef DEBUG_
-			get_try_end = utils::now_in_us();
+			zk_retrieve_end = utils::now_in_us();
 #endif
 		}
 #ifdef DEBUG_
@@ -207,8 +223,8 @@ public:
 #ifdef DEBUG_
 		serial = utils::now_in_us();
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
-		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " got's try="
-		<< DiffMs(get_try_end, got_try_start) << " serial=" << DiffMs(serial, got) << endl;
+		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " zk retrieve="
+				<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
 //		cache->dump();
 #endif
 	}
@@ -218,7 +234,7 @@ public:
 	}
 
 	void warm() {
-		threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)), async_timeout * 1000);
+		threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)), async_timeout * 1000, async_timeout * 1000);
 	}
 	void register_self(int port) {
 		ZkClient *client = (ZkClient *) pool->open();
@@ -227,13 +243,13 @@ public:
 //		string data = ss.str();
 //		char p[20];
 //		itoa(port, p, 10);
-		ss <<"/soa";
+		ss << "/soa";
 		client->create_pnode(ss.str());
 		ss << "/proxies";
 		client->create_pnode(ss.str());
 		ss << "/" << hostname << ":" << port;
 		int res = client->create_enode(ss.str(), "");
-		if( res != 0) {
+		if (res != 0) {
 			logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
 		}
 #ifdef DEBUG_
@@ -245,7 +261,6 @@ private:
 		int i;
 		for (i = 0; i < 3; i++)
 			cout << svc_name << " " << i << endl;
-
 	}
 
 	void init_pool() {
