@@ -175,9 +175,8 @@ public:
 	}
 
 	void get(std::string& _return, const std::string& serviceName) {
-
+		cout << "frproxy get method called. " << serviceName << endl;
 #ifdef DEBUG_
-//		cout << "frproxy get method called. " << serviceName << endl;
 		uint64_t start = utils::now_in_us();
 		uint64_t got(start), zk_retrieve_start(start), zk_retrieve_end(start), serial(start);
 #endif
@@ -185,8 +184,8 @@ public:
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-//			cout << " async get request: " << path << endl;
-				zk_retrieve_start = utils::now_in_us();
+			cout << " async get request: " << path << endl;
+			zk_retrieve_start = utils::now_in_us();
 #endif
 			logger::warn("async get request: %s", path.c_str());
 			// if getting from zk, then skip
@@ -221,7 +220,34 @@ public:
 	}
 
 	void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port) {
-		// cout << "remove called. not supported now." << endl;
+		_return = "not supported now.";
+		// cout << "remove called. " << endl;
+	}
+
+	void dump(std::string& _return) {
+		stringstream ss;
+		ss << "frproxy dump info. " << "hostname:" << hostname << endl << endl;
+		ss << "connection:" << endl;
+		ss << "---------------------------------------------" << endl;
+		ss << pool->stat() << endl;
+
+		ss << "cache:" << endl;
+		ss << "---------------------------------------------" << endl;
+		ss << cache->dump() << endl;
+
+		ss << "threads:" << endl;
+		ss << "---------------------------------------------" << endl;
+		ss << "worker count:" << threadManager->workerCount() << endl;
+		ss << "worker idle:" << threadManager->idleWorkerCount() << endl;
+		ss << "expired task:" << threadManager->expiredTaskCount() << endl;
+		ss << "pending task:" << threadManager->pendingTaskCount() << endl;
+		ss << "pending max:" << threadManager->pendingTaskCountMax() << endl;
+
+		ss << "skip buffer:" << endl;
+		ss << "---------------------------------------------" << endl;
+		ss << skip_buf->dump() << endl;
+
+		_return = ss.str();
 	}
 
 	void warm() {
@@ -240,11 +266,10 @@ public:
 	}
 
 	void register_self(int port) {
-		return;
 		stringstream name;
 		name << this->hostname << ":" << port;
 		try {
-			threadManager->add(shared_ptr<RegisterTask>(new RegisterTask(pool, name.str())), 0l, 0l);
+			threadManager->add(shared_ptr<RegisterTask>(new RegisterTask(pool, name.str())));
 		} catch (TooManyPendingTasksException &e) {
 			logger::warn("too many pending task occured  in thread pool when register self. %s", e.what());
 			cout << "too many pending task occured  in thread pool when register self. " << e.what() << endl;

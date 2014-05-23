@@ -147,6 +147,22 @@ string ClientPool::stat() {
 	ss << "total" << endl;
 	ss << "	using	idle	watches" << endl;
 	ss << "\t" << using_.size() << "\t" << idle_.size() << "\t" << wc << endl;
+
+	ss << "watcher path" << endl;
+	ss << "-------------------------------------------------" << endl;
+	ss << "	connId	clientId	path " << endl;
+	for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+		StateMap &s = (*it)->states_;
+		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+			ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
+		}
+	}
+	for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+		StateMap &s = (*it)->states_;
+		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+			ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
+		}
+	}
 	return ss.str();
 }
 

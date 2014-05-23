@@ -22,21 +22,23 @@ using boost::shared_ptr;
 
 using namespace FinagleRegistryProxy;
 
-
-class Cursor{
+class Cursor {
 public:
-	Cursor(int seed) : seed(seed){}
-	~Cursor(){}
+	Cursor(int seed) :
+			seed(seed) {
+	}
+	~Cursor() {
+	}
 private:
 	int seed;
 	apache::thrift::concurrency::Mutex locker;
 public:
-	void add(){
+	void add() {
 		locker.lock();
-		seed ++;
+		seed++;
 		locker.unlock();
 	}
-	int get(){
+	int get() {
 		return seed;
 	}
 };
@@ -49,13 +51,33 @@ private:
 	int count;
 	Cursor *cursor;
 public:
-	ClientTask(string host="127.0.0.1", int port=9009, string name="testservice", int count=0, Cursor *cursor = 0) :
-			host(host), port(port), name(name), count(count) , cursor(cursor){
+	ClientTask(string host = "127.0.0.1", int port = 9009, string name = "testservice", int count = 0, Cursor *cursor = 0) :
+			host(host), port(port), name(name), count(count), cursor(cursor) {
 	}
 
 	~ClientTask() {
 	}
 
+	void dump() {
+		boost::shared_ptr<TSocket> socket(new TSocket(host, port));
+		boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+
+		RegistryProxyClient client(protocol);
+		int i;
+		try {
+			transport->open();
+			std::string ret;
+			client.dump(ret);
+			cout << ret << endl;
+		} catch (const apache::thrift::transport::TTransportException& ex) {
+			//transport->close();
+			cout << ex.what() << endl;
+		} catch (const std::exception& ex) {
+			cout << ex.what() << endl;
+		}
+		transport->close();
+	}
 	void once() {
 		boost::shared_ptr<TSocket> socket(new TSocket(host, port));
 		boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
@@ -70,8 +92,8 @@ public:
 			std::string ret;
 			client.get(ret, name);
 			long done = utils::now_in_us();
-			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost="
-					<< (double) (open - start) / 1000 << "ms. get cost=" << (double) (done - open) / 1000 << endl;
+			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost=" << (double) (open - start) / 1000
+					<< "ms. get cost=" << (double) (done - open) / 1000 << endl;
 			cout << "result:	" << ret << endl;
 		} catch (const apache::thrift::transport::TTransportException& ex) {
 			//transport->close();
@@ -84,19 +106,37 @@ public:
 
 	void run() {
 		int c = 0;
-		cout << "count = "<< count << endl;
+		cout << "count = " << count << endl;
 		while (c++ < count || count == 0) {
 			cout << "thread[" << pthread_self() << "]=" << c << endl;
 			once();
 		}
 		// cout << "thread[" << pthread_self() << "]=" << c << endl;
-		if(cursor){
+		if (cursor) {
 			cursor->add();
 		}
 	}
 
 };
 
+void usage() {
+	cout << "client version:1.0.1" << endl;
+	cout << "Usage: client [option [option_value]]" << endl;
+	cout << "Options:" << endl;
+	cout << "	" << "-h, --host:	default 127.0.0.1. eg. -h localhost" << endl;
+	cout << "	" << "-p, --port:	default 9009. eg. -p 9090" << endl;
+	cout << "	" << "-s, --service:	default testservice. eg. -s rpc.counter.thrift" << endl;
+	cout << "	" << "-t, --threadcount:	default 0, single thread. eg. -t 2" << endl;
+	cout << "	" << "-c, --count:	default 1 when single thread. or 1. eg. -c 9999" << endl;
+	cout << "	" << "-m, --method:	candidatation include get, remove, dump. default get" << endl;
+	cout << "eg. " << endl;
+	cout << "	" << "./client " << endl;
+	cout << "	" << "./client -c 999" << endl;
+	cout << "	" << "./client -c 999 -t 2" << endl;
+	cout << "	" << "./client -c 999 -t 2 -h 192.168.1.111 -p 9009" << endl;
+	cout << "	" << "./client -m dump" << endl;
+	cout << "	" << "./client -s rpc.counter.thrift" << endl;
+}
 
 int main(int argc, char **argv) {
 	string host = option_value(argc, argv, "-h", "--host", "127.0.0.1");
@@ -106,9 +146,18 @@ int main(int argc, char **argv) {
 	int pool_size = option_value(argc, argv, "-t", "--threadcount", 0);
 	int count = option_value(argc, argv, "-c", "--count", pool_size > 0 ? 0 : 1);
 
-	cout << "conn to port=" << port << endl;
-	cout << "service name=" << service_name << endl;
+	string method = option_value(argc, argv, "-m", "--method", "");
 
+	cout << "conn to port=" << port << endl;
+
+
+	if (method == "dump") {
+		ClientTask task(host, port, service_name, count);
+		task.dump();
+		return 0;
+	}
+
+	cout << "service name=" << service_name << endl;
 	if (pool_size > 0) {
 		cout << "multi threadddddddddddddddddddddddddddddddddddd mode;" << endl;
 		Cursor *cursor = new Cursor(pool_size);
@@ -116,14 +165,15 @@ int main(int argc, char **argv) {
 		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
 		threadManager->threadFactory(threadFactory);
 		threadManager->start();
-		for(int i=0;i<pool_size; i++){
+		for (int i = 0; i < pool_size; i++) {
 			int batch = count / pool_size == 0 ? (count == 0 ? 0 : 1) : count / pool_size;
-			threadManager->add(shared_ptr<ClientTask>(new ClientTask (host, port, service_name, batch, cursor)), 0, 0);
+			threadManager->add(shared_ptr<ClientTask>(new ClientTask(host, port, service_name, batch, cursor)), 0, 0);
 		}
-		while(threadManager->idleWorkerCount() < pool_size){
+		while (threadManager->idleWorkerCount() < pool_size) {
 			usleep(1000);
 		}
-		cout << "idle thread count " << threadManager->idleWorkerCount() << " pool_size=" << pool_size << " count=" << count <<endl;
+		cout << "idle thread count " << threadManager->idleWorkerCount() << " pool_size=" << pool_size << " count=" << count
+				<< endl;
 //		while(cursor.get() < pool_size){
 //			usleep(1000);
 //		}

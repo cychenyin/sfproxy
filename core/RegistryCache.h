@@ -9,8 +9,8 @@
 #define REGISTRYCACHE_H_
 
 #include "Registry.h"
-
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <map>
 #include <string>
@@ -44,27 +44,26 @@ public:
 	int size();
 	RVector* get(const string name);
 
-	void dump() {
+	string dump() {
+		stringstream ss;
 		RMap::iterator mit = cache.begin();
-		cout << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
-		string s;
+		ss << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
 		int i = 0;
-		int max = 20;
+		int max = 1000;
 		while(mit != cache.end() && ++i < max) {
 			RVector &v = mit->second;
 			RVector::iterator vit = v.begin();
 			while(vit != v.end() ) {
 				Registry &r = *vit;
-				//cout << "	" << Registry::toJsonString(r) << endl;
-				s += "	" + Registry::to_json_string(r) + "\n" ;
+				ss<< "\t" << Registry::to_json_string(r) << endl;
 				++vit ;
 			}
-			cout << s;
 			++mit;
 		}
 		if(i >= max) {
-			cout << "	......" << endl;
+			ss << "	......" << endl;
 		}
+		return ss.str();
 	}
 	RMap cache;
 private:
