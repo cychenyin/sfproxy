@@ -76,21 +76,33 @@ eg. ./frproxy -l -sn -t 20
 ----------------
 release：
 ----------------
+ version 1.1.0 release 7
+    1. add skip strategy
+    2. change conn pool from delete to retry when session stuff occured
+    3. add info type supported in logger
+    4. move warm to asyc mode
+    5. add self register
+    6. add service scripts for init.d
+    7. move package stuff into releases folder
+    8. add dump interface
+    9. add py tester
+    10. add c++ multiple thread tester
+    
  version 1.0.1 release 6
     1. package client into rpm 
-	2. behavior of log change from overwrite to append
+    2. behavior of log change from overwrite to append
  version 1.0.1 release 5
-	1. fix -v --version start server bug
-	2. 
+    1. fix -v --version start server bug
+    2. 
  version 1.0.1 release 4
-	1. fix scribe_log make cpu keep load high bug.
-	2. update verion to 1.0.1 
+    1. fix scribe_log make cpu keep load high bug.
+    2. update verion to 1.0.1 
 
  version 1.0.0 release 3
-	1. update default port from 9091 to 9009
+    1. update default port from 9091 to 9009
  version 1.0.0 release 2
- 	1. zoo_set_debug_level change from ZOO_LOG_LEVEL_WARN to ZOO_LOG_LEVEL_ERROR
- 	2. proxy.sh run frproxy in background, and write stdout in file.
- 	3. fix usage zk eg bug about loss port
+    1. zoo_set_debug_level change from ZOO_LOG_LEVEL_WARN to ZOO_LOG_LEVEL_ERROR
+    2. proxy.sh run frproxy in background, and write stdout in file.
+    3. fix usage zk eg bug about loss port
 version 1.0.0
-	init release.
+    init release.

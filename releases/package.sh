@@ -1,13 +1,13 @@
 #!/bin/bash
-pkgname=frproxy-1.0.1
+pkgname=frproxy-1.1.0
 
 if [ -d ~/rpmbuild/ ]; then
     rpmb_root=~/rpmbuild
 else
     rpmb_root=/usr/src/redhat
 fi
-
-tmp=tmp
+cd "$(dirname $0)"
+tmp=$(dirname $0)/tmp
 folder=$tmp/$pkgname
 test -d $tmp/ || mkdir -- $tmp
 test -d $folder/ || mkdir -- $folder/
@@ -17,11 +17,11 @@ echo $folder
 echo packaging $pkgname
 echo package dest $rpmb_root
 
-cp -f bin/frproxy $folder/
-cp -f bin/client $folder/
-cp -f proxy.sh $folder/
-cp -f proxy_client.sh $folder/
-cp -f lib/* $folder/
+cp -f ../bin/frproxy $folder/
+cp -f ../bin/client $folder/
+cp -f ../proxy.sh $folder/
+cp -f ../proxy_client.sh $folder/
+cp -f ../lib/* $folder/
 
 cd $tmp/
 tar zcvf "$pkgname.tar.gz" "$pkgname/"

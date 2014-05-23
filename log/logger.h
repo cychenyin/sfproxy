@@ -10,15 +10,15 @@
 
 #define HOSTNAME_SIZE 129
 
-#ifndef INT32T
-typedef int int32_t;
-#endif
-#ifndef UINT32T
-typedef unsigned int uint32_t;
-#endif
-#ifndef UINT64T
-typedef unsigned long uint64_t;
-#endif
+//#ifndef INT32T
+//typedef int int32_t;
+//#endif
+//#ifndef UINT32T
+//typedef unsigned int uint32_t;
+//#endif
+//#ifndef UINT64T
+//typedef unsigned long uint64_t;
+//#endif
 
 #include <string>
 #include <iostream>
@@ -26,6 +26,7 @@ typedef unsigned long uint64_t;
 #include <stdarg.h>
 #include <cstdio>
 #include <unistd.h>
+
 #include "scribe_log.h"
 
 using namespace std;
@@ -44,6 +45,7 @@ static void init(const char * hostip, int32_t hostport, int32_t maxcache = 99999
 static void destory();
 static void error(const char* format, ...);
 static void warn(const char* format, ...);
+static void info(const char* format, ...);
 static void debug(const char* format, ...);
 };
 

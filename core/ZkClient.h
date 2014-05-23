@@ -90,15 +90,15 @@ public:
 };
 
 class ZkClient: public ClientBase {
+	friend class ZkClientFactory;
 public:
-
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
 	ZkClient();
 	ZkClient(string hosts, RegistryCache *pcache);
-
+public:
 	void init(string hosts, RegistryCache *pcache);
 	virtual ~ZkClient();
-	void connect_zk();
+	bool connect_zk();
 	void get_children(string serviceZpath);
 	void get_node(string path);
 	void get_node(string serviceZpath, string subNodeName);
@@ -107,25 +107,45 @@ public:
 	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	vector<string> get_all(string root = "/soa/services");
-	void dump_stat(struct Stat *stat);
+//	void dump_stat(struct Stat *stat);
 	void parse(string json);
 	int create_enode(string name, string data);
 	int create_pnode(string abs_path);
 	void debug() {
 		this->set_connected(false);
 	}
+
 	void save_state(string &path, int type);
+	//void ZkClient::dump_stat(struct Stat *stat) {
+	//	char tctimes[40];
+	//	char tmtimes[40];
+	//	time_t tctime;
+	//	time_t tmtime;
+	//
+	//	if (!stat) {
+	//		fprintf(stderr, "null\n");
+	//		return;
+	//	}
+	//	tctime = stat->ctime / 1000;
+	//	tmtime = stat->mtime / 1000;
+	//
+	//	ctime_r(&tmtime, tmtimes);
+	//	ctime_r(&tctime, tctimes);
+	//
+	//	fprintf(stderr,
+	//			"\t ctime =%s \t czxid=%lx\n \t mtime=%s \t mzxid=%lx\n \tversion=%x \t version=%x \n \t ephemeralOwner = %lx\n",
+	//			tctimes, stat->czxid, tmtimes, stat->mzxid, (unsigned int) stat->version, (unsigned int) stat->aversion,
+	//			stat->ephemeralOwner);
+	//}
 public:
 	// interface imple
 	//ClientBase::open
-	virtual void open() {
-		this->connect_zk();
-	}
-	//ClientBase::close
-	virtual void close() {
-		this->set_in_using(false);
-	}
-	virtual int set_states(StateMap &states);
+	virtual bool open();
+	// now close object really, just return it to pool.
+	virtual void close();
+
+	virtual int set_states(StateMap *states);
+	void on_session_timeout();
 public:
 	string* root;
 	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
@@ -170,16 +190,14 @@ private:
 	string zkhosts;
 	RegistryCache* cache;
 public:
-	ZkClientFactory(const string& zookeeperhosts, RegistryCache* cache_) :
+	ZkClientFactory(const string& zookeeperhosts, RegistryCache* cache_ = 0) :
 			zkhosts(zookeeperhosts), cache(cache_) {
-//		zkhosts = zookeeperhosts;
-//		cache = cache_;
 	}
 	~ZkClientFactory() {
-		cache = 0;
 	}
-	ZkClient* create() {
-		return new ZkClient(this->zkhosts, this->cache);
+	ClientBase* create(ClientBase *p){
+		p = new ZkClient(this->zkhosts, this->cache);
+		return p;
 	}
 };
 

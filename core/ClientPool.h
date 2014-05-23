@@ -9,12 +9,14 @@
 #define CLIENTPOOL_H_
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <set>
+#include <map>
 #include <list>
 #include "concurrency/Mutex.h"
-
 #include "SEvent.h"
+#include "../frproxy.h"
 
 using namespace std;
 
@@ -23,10 +25,12 @@ namespace FinagleRegistryProxy {
 class ClientState {
 public:
 	long client_id;
+	virtual string key()=0;
 };
 
 class ClientPool;
 class ClientBase;
+typedef map<string, ClientState*> StateMap;
 
 //typedef SEvent<ClientPool, ClientBase, int> PoolEvent; // client event
 
@@ -38,7 +42,7 @@ public:
 //	PoolEvent *poolEvent; // why fail to compile
 	const static int EVENT_TYPE_CONNECTION_STATE = 1;
 	const static int EVENT_TYPE_USE_STATE = 2;
-	list<ClientState*> states_;	// state about watch type, watch path etc..
+
 public:
 	ClientBase() {
 		use_times_ = 0;
@@ -46,6 +50,7 @@ public:
 		connected_ = false;
 		pool_event_ = 0;
 		id_ = 0;
+		session_id_ = 0;
 	}
 	virtual ~ClientBase() {
 		if (pool_event_) {
@@ -53,9 +58,12 @@ public:
 			pool_event_ = 0;
 		}
 	}
-	virtual void open() = 0;
+public:
+	virtual bool open() = 0;
 	virtual void close() = 0;
-	virtual int set_states(list<ClientState*> &states) {return 0; }
+	virtual int set_states(map<string, ClientState*> *states) {
+		return 0;
+	}
 
 	bool get_in_using() {
 		return in_using_;
@@ -67,10 +75,22 @@ public:
 	int id() {
 		return id_;
 	}
+	int session_id() {
+		return session_id_;
+	}
 
+	string to_string() {
+		stringstream ss;
+		ss << "id=" << id_ << "	session=" << session_id_ << "	use_times=" << use_times_ << "	in_using_=" << in_using_ << "	connected=" << connected_
+				<< "	addesss=" << this;
+		return ss.str();
+	}
 protected:
 	void set_id(long id) {
 		this->id_ = id;
+	}
+	void set_session_id(long session) {
+		this->session_id_ = session;
 	}
 	// should be accessed by derived children; used in close & open method in implement of this abstract class.
 	void set_connected(bool connected) {
@@ -100,16 +120,17 @@ private:
 	bool in_using_;
 	bool connected_;
 	long id_;
+	long session_id_;
 protected:
 	apache::thrift::concurrency::Mutex mutex;
+	StateMap states_;	// state about watch type, watch path etc..
 };
 
 class ClientFactory {
 public:
 	virtual ~ClientFactory() {
 	}
-	;
-	virtual ClientBase* create() = 0;
+	virtual ClientBase* create(ClientBase *p) = 0;
 };
 
 // client collection
@@ -127,18 +148,12 @@ public:
 	virtual ~ClientPool();
 
 	virtual ClientBase* open();
-	virtual ClientBase* open1();
 	void on_client_changed(ClientBase* client, int state);
 
-	int size() {
-		return using_.size() + idle_.size();
-	}
-	int used() {
-		return using_.size();
-	}
-	int idle() {
-		return idle_.size();
-	}
+	int size();
+	int used();
+	int idle();
+	string stat();
 public:
 	int conn_timeout;
 	int max_used_times;
@@ -154,8 +169,6 @@ private:
 	apache::thrift::concurrency::Mutex mutex;
 
 protected:
-
-	virtual ClientBase* create();
 
 	virtual void reset();
 	virtual void destroy(ClientBase* client);

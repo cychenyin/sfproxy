@@ -23,101 +23,45 @@ ClientPool::~ClientPool() {
 	factory = 0;
 }
 
-ClientBase* ClientPool::create() {
-	if (factory) {
-		mutex.lock();
-		ClientBase *c = factory->create();
-		c->id_ = ++last_id_;
-		mutex.unlock();
-
-		c->pool_event_ = new SEvent<ClientPool, ClientBase, int>(this, &ClientPool::on_client_changed);
-
-		return c;
-	} else
-		return 0;
-}
-
 ClientBase* ClientPool::open() {
-	ClientBase *client = 0;
+	ClientBase* c;
 	mutex.lock();
-	CSet::iterator it = idle_.begin();
-	while (it != idle_.end()) {
-		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
-			// how could this happen. a conn open, then left it alone for enough time, could happen?
-			// doute about that, cause of in zk client scenario watcher callback happens in unknown future.
-			CSet::iterator destroy_it = it;
-			++it;
-			delete *destroy_it;
+
+	if (idle_.size() == 0) {
+		if (size() < max_client_) {
+			c = factory->create(c);
+			c->id_ = ++last_id_;
+			idle_.insert(c);
+			c->pool_event_ = new SEvent<ClientPool, ClientBase, int>(this, &ClientPool::on_client_changed);
 		} else {
-			client = *it;
-			break;
+			c = *(this->using_.begin());
 		}
+	} else {
+		c = *(this->idle_.begin());
 	}
 	mutex.unlock();
-	if (client == 0 && size() < max_client_) {
-		// will be add to use_list when connected state is ready through poolevent which callback to onClientChanged method.
-		client = create();
+	if (c) {
+		c->open();
 	}
-	if (client) {
-		client->open();
-	}
-	return client;
-}
-
-ClientBase* ClientPool::open1() {
-	ClientBase *client = 0;
-	CList *destroy_list = 0;
-	mutex.lock();
-	CSet::iterator it = idle_.begin();
-	while (it != idle_.end()) {
-		client = *it;
-		if (!(*it)->connected_ || (*it)->use_times_ > max_used_times) {
-			// how could this happen. a conn open, then left it alone for enough time, could happen? doute about that, cause of in zk client scenario watcher callback happens in unknown future.
-			if (!destroy_list) {
-				destroy_list = new CList();
-			}
-			destroy_list->push_back(client);
-			++it;
-		} else
-			break;
-	}
-	mutex.unlock();
-	if (destroy_list) {
-		CList::iterator i = destroy_list->begin();
-		while (i != destroy_list->end()) {
-			destroy(*i);
-		}
-		delete destroy_list;
-	}
-	if (client == 0 && size() < max_client_) {
-		// will be add to use_list when connected state is ready through poolevent which callback to onClientChanged method.
-		client = create();
-	}
-
-	if (client) {
-		client->open();
-	}
-	return client;
+	return c;
 }
 
 // when disconn or not used then mv to idle;
 void ClientPool::on_client_changed(ClientBase* client, int state) {
+#ifdef DEBUG_
+//	cout << "***** client stated " << state << " changed id=" << client->to_string() << endl;
+#endif
 	if (client == 0)
 		return;
-	StateMap clone;
+	StateMap *smap = 0;
 	mutex.lock();
 	if (state == ClientBase::EVENT_TYPE_CONNECTION_STATE) {
-		if (!client->connected_) {
-			if(client->states_.size() > 0) {
-				cout << " watch state clone......................................." << endl;
-				// ATTENTION: sequence of following code CAN NOT be reverted , reversed or modified by any way.
-				// clone the list
-				for(StateMap::iterator it =  client->states_.begin(); it !=client->states_.end(); it++) {
-					clone.insert(pair<string, ClientState* >( it->first, it->second));
-				}
-				client->states_.clear();
-			}
+		if (client->connected_) { // means that, client->connnected is changed from false to be true.
 			// make sure in idle list
+			idle_.erase(client);
+
+			using_.insert(client);
+		} else {
 			using_.erase(client);
 			idle_.insert(client);
 		}
@@ -131,33 +75,79 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 		}
 	}
 	mutex.unlock();
-	if(clone.size()>0){
-		cout << " watch state reserving......................................." << endl;
-		ClientBase *c = this->open();
-		c->set_states(client->states_);
-		cout << " watch state reserved......................................." << endl;
+	if (smap != 0) {
+		cout << " watch state reserving....................................... " << endl;
+//		ClientBase *c;
+//		ClientBase **pp = 0;
+//		pp = open(c);
+//		c = *pp;
+//		if (c )
+//			c->set_states(smap);
+//
+//		if (c)
+//			c->set_in_using(false);
+//		cout << " watch state reserved....................................... " << &c << c << endl;
+		delete smap;
+		smap = 0;
 	}
 }
 
 void ClientPool::reset() {
 	while (using_.size() > 0) {
-		ClientBase *client = *using_.begin();
+		ClientBase *client = *(using_.begin());
 		destroy(client);
 	}
 	while (idle_.size() > 0) {
-		ClientBase *client = *idle_.begin();
+		ClientBase *client = *(idle_.begin());
 		destroy(client);
 	}
 }
 
 void ClientPool::destroy(ClientBase* client) {
 	if (client) {
+#ifdef DEBUG_
+		cout << "ClientPool::destroy ing client id = " << client->to_string() << endl;
+#endif
 		using_.erase(client);
 		idle_.erase(client);
 
 		delete client;
 		client = 0;
 	}
+}
+int ClientPool::size() {
+	return using_.size() + idle_.size();
+}
+int ClientPool::used() {
+	return using_.size();
+}
+int ClientPool::idle() {
+	return idle_.size();
+}
+
+string ClientPool::stat() {
+	stringstream ss;
+	int wc = 0;
+	ss << "zk client pool stat info." << endl;
+	ss << "using" << endl;
+	ss << "	id	using	times	conn	watches	address" << endl;
+	for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+		ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_ << "\t"
+				<< (*it)->states_.size() << "\t" << *it << endl;
+		wc += (*it)->states_.size();
+	}
+
+	ss << "idle" << endl;
+	ss << "	id	using	times	conn	watches	address" << endl;
+	for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+		ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_ << "\t"
+				<< (*it)->states_.size() << "\t" << *it << endl;
+		wc += (*it)->states_.size();
+	}
+	ss << "total" << endl;
+	ss << "	using	idle	watches" << endl;
+	ss << "\t" << using_.size() << "\t" << idle_.size() << "\t" << wc << endl;
+	return ss.str();
 }
 
 } /* namespace FinagleRegistryProxy */

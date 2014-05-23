@@ -1,6 +1,6 @@
 Name:		frproxy
-Version:	1.0.1
-Release:	6
+Version:	1.1.0
+Release:	7
 Summary:	Proxy of Service Framework Registry of Ganji RPC.
 
 Group:		Ganji
@@ -34,7 +34,7 @@ echo ===========================================================================
 
 
 %install
-    echo "installllllllllllllllllllllllllllllllllllll start"
+#    echo "installllllllllllllllllllllllllllllllllllll start"
 #    pwd
 
     test -d %{buildroot}%{userpath} || mkdir -p -- %{buildroot}%{userpath}
@@ -43,7 +43,7 @@ echo ===========================================================================
 
     ls %{buildroot}%{userpath}
 
-    echo "installllllllllllllllllllllllllllllllllllll end"
+#   echo "installllllllllllllllllllllllllllllllllllll end"
 
 %clean
     rm -rf %{buildroot}

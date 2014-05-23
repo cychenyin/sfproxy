@@ -9,4 +9,6 @@ service RegistryProxy {
 	string get(1: required string serviceName);
 	#reserved method, not supportted currently
 	string remove(1: required string serviceName, 2: optional string host, 3: optional i32 port);
+	#dump server state
+	string dump();
 }
