@@ -1,5 +1,5 @@
 #!/bin/bash
-pkgname=frproxy-1.1.0
+pkgname=frproxy-1.1.1
 
 if [ -d ~/rpmbuild/ ]; then
     rpmb_root=~/rpmbuild
@@ -22,6 +22,7 @@ cp -f ../bin/client $folder/
 cp -f ../proxy.sh $folder/
 cp -f ../proxy_client.sh $folder/
 cp -f ../lib/* $folder/
+cp -f ../releases/frproxy.sh $folder/frproxy.init.d.sh
 
 cd $tmp/
 tar zcvf "$pkgname.tar.gz" "$pkgname/"

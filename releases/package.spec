@@ -1,6 +1,6 @@
 Name:		frproxy
-Version:	1.1.0
-Release:	7
+Version:	1.1.1
+Release:	9
 Summary:	Proxy of Service Framework Registry of Ganji RPC.
 
 Group:		Ganji
@@ -71,5 +71,6 @@ echo ===========================================================================
 %{userpath}/proxy.sh
 %{userpath}/proxy_client.sh
 %{userpath}/README.md
+%{userpath}/frproxy.init.d.sh
 
 %changelog

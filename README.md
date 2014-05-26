@@ -76,6 +76,8 @@ eg. ./frproxy -l -sn -t 20
 ----------------
 release：
 ----------------
+#### version 1.1.1 release 9
+*   1. package frproxy.init.d.sh into rpm
 #### version 1.1.0 release 7
 *    1. add skip strategy
 *    2. change conn pool from delete to retry when session stuff occured

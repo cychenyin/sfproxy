@@ -3,7 +3,7 @@
 
 PROG="frproxy"
 LOG_PATH=/data/log/frproxy
-LOG_PATH=/home/asdf/temp
+#LOG_PATH=/home/asdf/temp
 PROG_PATH="/usr/local/webserver/frproxy"
 PROG_ARGS="-l" 
 
