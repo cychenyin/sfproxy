@@ -57,6 +57,7 @@ deploy on every php server. work with finagle-php & fingle raw in java services.
 ----------------
 usage：
 ----------------
+$ ./frproxy -h
 Proxy Server of Service Framework of Ganji RPC.
 Usage: frproxy [options [option value]]
 	-d,  --debug:		run test main for debugging only
@@ -72,7 +73,43 @@ Usage: frproxy [options [option value]]
 	-lp, --scribeport:		scribe port. default 11463. eg. -lp 11463
 	-l,  --enable:		enable scribe log
 eg. ./frproxy -l -sn -t 20
- 
+
+$ ./client --help
+client version:1.0.1
+Usage: client [option [option_value]]
+Options:
+	-h, --help:			print usage. 
+	-s, --server:		server of frproxy :	default 127.0.0.1. eg. -s localhost
+	-p, --port:			default 9009. eg. -p 9090
+	-n, --name:			name of service:	default testservice. eg. -n rpc.counter.thrift
+	-t, --threadcount:	default 0, single thread. eg. -t 2
+	-c, --count:		default 1 when single thread. or 1. eg. -c 9999
+	-m, --method:		candidatation include get, remove, dump. default get
+	-l, --list:	list 	frproxy server
+	-z,  --zkhosts:		zookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181
+eg. 
+	./client 
+	./client -c 999
+	./client -c 999 -t 2
+	./client -c 999 -t 2 -i 192.168.1.111 -p 9009
+	./client -m dump
+	./client -l -z 192.168.113.212:2181
+	./client -n rpc.counter.thrift
+
+----------------
+package & install：
+----------------
+	Binary rpm package provided only.
+	Rpmbuilder required when packaging. And sh & spec files are wroten for centos6.5. If package folder is in /usr/linux, then you sould mod path to be match in file package.sh.
+$ cd releases
+$ ./package.sh
+$ cd tmp
+	Installation is simple. You can do it throught raw rpm file or yum tool.
+$ rpm -ivh --force frproxy-v1.1.1-9-x86-64.rpm
+	or 
+$ yum install
+	Obviously, rpm package should be deplyed into rpm server firstly.
+	 
 ----------------
 release：
 ----------------

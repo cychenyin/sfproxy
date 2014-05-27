@@ -126,21 +126,23 @@ void usage() {
 	cout << "client version:1.0.1" << endl;
 	cout << "Usage: client [option [option_value]]" << endl;
 	cout << "Options:" << endl;
-	cout << "	" << "-h, --host:	default 127.0.0.1:2181. eg. -h localhost:2181" << endl;
-	cout << "	" << "-p, --port:	default 9009. eg. -p 9090" << endl;
-	cout << "	" << "-s, --service:	default testservice. eg. -s rpc.counter.thrift" << endl;
-	cout << "	" << "-t, --threadcount:	default 0, single thread. eg. -t 2" << endl;
-	cout << "	" << "-c, --count:	default 1 when single thread. or 1. eg. -c 9999" << endl;
-	cout << "	" << "-m, --method:	candidatation include get, remove, dump. default get" << endl;
-	cout << "	" << "-l, --list:	list frproxy server" << endl;
-	cout << "	" << "-z,  --zkhosts:\t\tzookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
+	cout << "	" << "-h, --help:		print usage. " << endl;
+	cout << "	" << "-s, --server:		server of frproxy :	default 127.0.0.1. eg. -s localhost" << endl;
+	cout << "	" << "-p, --port:		default 9009. eg. -p 9090" << endl;
+	cout << "	" << "-n, --name:		name of service:	default testservice. eg. -n rpc.counter.thrift" << endl;
+	cout << "	" << "-t, --threadcount:default 0, single thread. eg. -t 2" << endl;
+	cout << "	" << "-c, --count:		default 1 when single thread. or 1. eg. -c 9999" << endl;
+	cout << "	" << "-m, --method:		candidatation include get, remove, dump. default get" << endl;
+	cout << "	" << "-l, --list:		list frproxy server" << endl;
+	cout << "	" << "-z,  --zkhosts:	zookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
 	cout << "eg. " << endl;
 	cout << "	" << "./client " << endl;
 	cout << "	" << "./client -c 999" << endl;
 	cout << "	" << "./client -c 999 -t 2" << endl;
-	cout << "	" << "./client -c 999 -t 2 -h 192.168.1.111 -p 9009" << endl;
+	cout << "	" << "./client -c 999 -t 2 -i 192.168.1.111 -p 9009" << endl;
 	cout << "	" << "./client -m dump" << endl;
-	cout << "	" << "./client -s rpc.counter.thrift" << endl;
+	cout << "	" << "./client -l -z 192.168.113.212:2181" << endl;
+	cout << "	" << "./client -n rpc.counter.thrift" << endl;
 }
 
 
@@ -156,15 +158,20 @@ void listServer(string zkhosts){
 	}
 }
 int main(int argc, char **argv) {
-	string host = option_value(argc, argv, "-h", "--host", "127.0.0.1:2181");
+	string host = option_value(argc, argv, "-s", "--server", "127.0.0.1");
 	int port = option_value(argc, argv, "-p", "--port", 9009);
-	string service_name = option_value(argc, argv, "-s", "--service", "testservice");
+	string service_name = option_value(argc, argv, "-n", "--name", "testservice");
 	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "localhost:2181");
 
 	int pool_size = option_value(argc, argv, "-t", "--threadcount", 0);
 	int count = option_value(argc, argv, "-c", "--count", pool_size > 0 ? 0 : 1);
 
 	string method = option_value(argc, argv, "-m", "--method", "");
+
+	if( option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help")) {
+		usage();
+		return 0;
+	}
 	if( option_exists(argc, argv, "-l") || option_exists(argc, argv, "--list")) {
 		listServer(zkhosts);
 		return 0;
