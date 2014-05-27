@@ -81,11 +81,8 @@ bool ZkClient::connect_zk() {
 	do {
 		++count;
 		zhandle_ = zookeeper_init(zk_hosts_.c_str(), global_watcher, timeout_, 0, this, 0);
-		this->set_session_id(zhandle_->client_id.client_id);
-#ifdef DEBUG_
-		cout << " zookeeper_init done. client=" << this->to_string() << " zk session=" << zhandle_->client_id.client_id
-		<< endl;
-#endif
+		if(zhandle_ !=0)
+			this->set_session_id(zhandle_->client_id.client_id);
 		//sleep(1 * 1000);
 	} while (zhandle_ == 0 && count < ZK_MAX_CONNECT_RETRY_TIMES);
 #ifdef DEBUG_
@@ -491,7 +488,8 @@ vector<string> ZkClient::get_all(string root) {
 	mutex.unlock();
 	if (rc == ZOK) {
 		for (int i = 0; i < str_vec.count; ++i) {
-			get_children(root + "/" + str_vec.data[i]);
+			ret.push_back(root + "/" + str_vec.data[i]);
+			// get_children(root + "/" + str_vec.data[i]);
 		}
 	}
 

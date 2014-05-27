@@ -158,7 +158,7 @@ public:
 	int conn_timeout;
 	int max_used_times;
 	ClientFactory* factory;
-	const static int MAX_CLIENT_DEF = 10;
+	const static int MAX_CLIENT_DEF = 4;
 	const static int MAX_USED_TIMES_DEF = 1000000; // 1 million
 	const static int CONN_TIMEOUT_DEF = 86400; // 1 day
 private:

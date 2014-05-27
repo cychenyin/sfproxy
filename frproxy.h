@@ -9,7 +9,7 @@
 #define FRPROXY_H_
 
 #ifndef DEBUG_
-#define DEBUG_
+// #define DEBUG_
 
 #endif
 
