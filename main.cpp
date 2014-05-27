@@ -156,7 +156,7 @@ void usage() {
 }
 
 void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.0.1" << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.2" << endl;
 }
 
 int main(int argc, char **argv) {
