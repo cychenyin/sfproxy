@@ -151,7 +151,7 @@ int threadedServer(string zkhosts, int port) {
 }
 
 void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.2" << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.4" << endl;
 }
 void usage() {
 	version();

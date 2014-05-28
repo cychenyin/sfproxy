@@ -123,7 +123,7 @@ public:
 };
 
 void usage() {
-	cout << "client version:1.1.2" << endl;
+	cout << "client version:1.1.4" << endl;
 	cout << "Usage: client [option [option_value]]" << endl;
 	cout << "Options:" << endl;
 	cout << "	" << "-h, --help:		print usage. " << endl;
