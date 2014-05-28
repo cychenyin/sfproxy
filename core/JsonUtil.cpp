@@ -15,7 +15,6 @@ Document Parse( string str) {
 	d.Parse<0>(str.c_str());
 
 	if(!d.HasParseError() && d.HasMember("serviceEndpoint") ) {
-		cout << d["serviceEndpoint"].GetType() << endl;
 
 		Registry r;
 	}

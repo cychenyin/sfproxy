@@ -79,15 +79,19 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 
-	handler.get()->warm();
 	handler.get()->register_self(port);
+	handler.get()->warm();
 	cout << "warm server committed. server is getting up" << endl;
-	server.serve();
+	try {
+		server.serve();
 
+	} catch (TException &ex) {
+		logger::error("thrift error occured when trying to serve. check port which maybe used. message: %s", ex.what());
+	}
 	cout << "frproxy server exiting." << endl;
 	threadManager->stop();
 	cout << "frproxy server exited." << endl;
-	return 0;
+	exit(1);
 }
 
 int poolServer(string zkhosts, int port, int poolSize) {
@@ -107,12 +111,17 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	threadManager->start();
 	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
 
-	handler.get()->warm();
 	handler.get()->register_self(port);
+	handler.get()->warm();
 	cout << "warm server committed. server is getting up" << endl;
-	server.serve();
+	try {
+		server.serve();
+	} catch (TException &ex) {
+		logger::error("thrift error occured when trying to serve. check port which is not be used please. message: %s",
+				ex.what());
+	}
 	cout << "frproxy server exited." << endl;
-	return 0;
+	exit(1);
 }
 
 int threadedServer(string zkhosts, int port) {
@@ -128,16 +137,24 @@ int threadedServer(string zkhosts, int port) {
 
 	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
-	handler.get()->warm();
 	handler.get()->register_self(port);
+	handler.get()->warm();
 	cout << "warm server committed. server is getting up" << endl;
-	server.serve();
+	try {
+		server.serve();
+	} catch (TException &ex) {
+		logger::error("thrift error occured when trying to serve. check port which is not be used please. message: %s",
+				ex.what());
+	}
 	cout << "frproxy server exited." << endl;
-	return 0;
+	exit(1);
 }
 
+void version() {
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.2" << endl;
+}
 void usage() {
-	cout << "Proxy Server of Service Framework of Ganji RPC." << endl;
+	version();
 	cout << "Usage: frproxy [options [option value]]" << endl;
 	cout << "	" << "-d,  --debug:\t\trun test main for debugging only" << endl;
 	cout << "	" << "-p,  --port:\t\tuse definited port. default 9009. eg. -p 9009" << endl;
@@ -155,15 +172,10 @@ void usage() {
 	cout << "	" << "-l,  --enable:\t\tenable scribe log" << endl;
 }
 
-void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.2" << endl;
-}
-
 int main(int argc, char **argv) {
 
 	if (option_exists(argc, argv, "-d") || option_exists(argc, argv, "--debug")) {
 		testmain(argc, argv);
-//		cout << "end..." << endl;
 		return 0;
 	}
 	// high priority args
@@ -204,7 +216,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
-
 	try {
 		switch (type) {
 		case 1:
@@ -225,16 +236,12 @@ int main(int argc, char **argv) {
 		default:
 			break;
 		}
-	} catch (TException &ex) {
-		logger::error("thrift error occured when trying to serve. check port which is not be used please. message: %s",
-				ex.what());
-		cout << "thrift error occured when trying to serve. check port which is not be used please. message: " << ex.what()
-				<< endl;
-		return 1;
 	} catch (char* ex) {
-		logger::error("unknown fatel error occured! need to restart server. ");
-		cout << "unknown fatel error occured! need to restart server. message:" << ex << endl;
+		logger::error("fatal error occured! need to restart server. message: %d", ex);
+		cout << "fatal error occured! need to restart server. message:" << ex << endl;
 		return 1;
+	} catch (...) {
+		cout << "what the fucking is going on." << endl;
 	}
 	return 0;
 }

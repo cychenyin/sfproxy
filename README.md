@@ -113,6 +113,15 @@ $ yum install
 ----------------
 release：
 ----------------
+
+#### version 1.1.3 release 12
+*   1. forbidden zk log
+*	2. little improve in main function
+
+#### version 1.1.2 release 10
+*   1. add help support in client
+*	2. add dump support in client
+
 #### version 1.1.1 release 9
 *   1. package frproxy.init.d.sh into rpm
 #### version 1.1.0 release 7

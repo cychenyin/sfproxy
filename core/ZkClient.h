@@ -147,7 +147,7 @@ public:
 	virtual int set_states(StateMap *states);
 	void on_session_timeout();
 public:
-	string* root;
+	string* root_;
 	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
 	const static int RCEV_TIME_OUT_DEF = 10 * 1000 * 1000; // in microsecond, us
 

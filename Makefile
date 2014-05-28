@@ -36,7 +36,7 @@ EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
 
 TARGET=frproxy
 #TARGET2=testproxy
-LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp
+LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp log/LoggerStream.cpp
 TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp \
  main.cpp
 # test/main.cpp

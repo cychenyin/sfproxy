@@ -117,13 +117,12 @@ public:
 	~ZkReadTask() {
 	}
 	void run() {
-		logger::warn("async get request: %s", zkpath.c_str());
 		c = (ZkClient*) pool->open();
 		if (c) {
 			c->get_children(zkpath);
 			c->close(); // must
 		} else {
-			cout << " get error, fail to open zk client. pool exhausted maybe. " << endl;
+			logger::warn("fail to open zk client when async get request: %s. pool exhausted maybe. ", zkpath.c_str());
 		}
 		skip_buf->erase(zkpath);
 	}
@@ -175,8 +174,8 @@ public:
 	}
 
 	void get(std::string& _return, const std::string& serviceName) {
-		cout << "frproxy get method called. " << serviceName << endl;
 #ifdef DEBUG_
+		cout << "frproxy get method called. " << serviceName << endl;
 		uint64_t start = utils::now_in_us();
 		uint64_t got(start), zk_retrieve_start(start), zk_retrieve_end(start), serial(start);
 #endif
@@ -184,10 +183,9 @@ public:
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-			cout << " async get request: " << path << endl;
-			zk_retrieve_start = utils::now_in_us();
+				cout << " async get request: " << path << endl;
+				zk_retrieve_start = utils::now_in_us();
 #endif
-			logger::warn("async get request: %s", path.c_str());
 			// if getting from zk, then skip
 			pair<map<string, uint32_t>::iterator, bool> insert = skip_buf->insert(path);
 			if (insert.second) {
@@ -196,7 +194,6 @@ public:
 					// (new ZkReadTask(pool, path, skip_buf))->run();
 				} catch (TooManyPendingTasksException &ex) {
 					logger::warn("too many pending zk task in thread pool. %s", ex.what());
-					cout << "too many pending zk task in thread pool. " << ex.what() << endl;
 				}
 			}
 #ifdef DEBUG_
@@ -212,10 +209,10 @@ public:
 			_return = "";
 #ifdef DEBUG_
 		serial = utils::now_in_us();
-//		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
-//		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " zk retrieve="
-//				<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
-//		cache->dump();
+		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
+		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " zk retrieve="
+				<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
+		// cache->dump();
 #endif
 	}
 
@@ -272,16 +269,9 @@ public:
 			threadManager->add(shared_ptr<RegisterTask>(new RegisterTask(pool, name.str())));
 		} catch (TooManyPendingTasksException &e) {
 			logger::warn("too many pending task occured  in thread pool when register self. %s", e.what());
-			cout << "too many pending task occured  in thread pool when register self. " << e.what() << endl;
 		}
 	}
 private:
-//	void read_zk(string svc_name) {
-//		int i;
-//		for (i = 0; i < 3; i++)
-//			cout << svc_name << " " << i << endl;
-//	}
-
 	void init_thread_pool() {
 		threadManager = ThreadManager::newSimpleThreadManager(1, 100);
 		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
@@ -300,33 +290,6 @@ private:
 		delete buf;
 		buf = 0;
 	}
-
-public:
-	void memtest() {
-		int i = 1;
-		int j = 2;
-		int k = 3;
-		cout << "stack" << endl;
-		cout << &i << endl;
-		cout << &j << endl;
-		cout << &k << endl;
-
-		int a[3];
-		cout << &a[0] << endl;
-		cout << &a[1] << endl;
-		cout << &a[2] << endl;
-
-		cout << a[3] << endl;
-		cout << a[5] << endl;
-
-		cout << "heap, new" << endl;
-
-		int* b = new int[3];
-		cout << &b[0] << endl;
-		cout << &b[1] << endl;
-		cout << &b[2] << endl;
-	}
-
 };
 // class ServerHandler
 

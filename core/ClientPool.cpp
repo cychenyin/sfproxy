@@ -53,13 +53,11 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 #endif
 	if (client == 0)
 		return;
-	StateMap *smap = 0;
 	mutex.lock();
 	if (state == ClientBase::EVENT_TYPE_CONNECTION_STATE) {
 		if (client->connected_) { // means that, client->connnected is changed from false to be true.
 			// make sure in idle list
 			idle_.erase(client);
-
 			using_.insert(client);
 		} else {
 			using_.erase(client);
@@ -75,21 +73,6 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 		}
 	}
 	mutex.unlock();
-	if (smap != 0) {
-		cout << " watch state reserving....................................... " << endl;
-//		ClientBase *c;
-//		ClientBase **pp = 0;
-//		pp = open(c);
-//		c = *pp;
-//		if (c )
-//			c->set_states(smap);
-//
-//		if (c)
-//			c->set_in_using(false);
-//		cout << " watch state reserved....................................... " << &c << c << endl;
-		delete smap;
-		smap = 0;
-	}
 }
 
 void ClientPool::reset() {
