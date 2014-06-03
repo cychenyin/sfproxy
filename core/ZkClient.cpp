@@ -250,7 +250,7 @@ void ZkClient::get_children(string serviceZpath) {
 	} else if (ret == ZINVALIDSTATE) {
 		this->on_session_timeout();
 	} else {
-		logger::warn("get_children zoo_wget_children error, ret=%d; msg=%s", ret, zerror(ret));
+		logger::warn("get_children zoo_wget_children error, ret=%d; msg=%s; path=%s", ret, zerror(ret), serviceZpath.c_str());
 	}
 }
 

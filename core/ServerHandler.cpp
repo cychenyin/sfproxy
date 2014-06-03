@@ -175,7 +175,7 @@ public:
 
 	void get(std::string& _return, const std::string& serviceName) {
 #ifdef DEBUG_
-		cout << "frproxy get method called. " << serviceName << endl;
+
 		uint64_t start = utils::now_in_us();
 		uint64_t got(start), zk_retrieve_start(start), zk_retrieve_end(start), serial(start);
 #endif
@@ -183,7 +183,6 @@ public:
 		vector<Registry>* pvector = cache->get(path.c_str());
 		if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-				cout << " async get request: " << path << endl;
 				zk_retrieve_start = utils::now_in_us();
 #endif
 			// if getting from zk, then skip

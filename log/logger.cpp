@@ -7,6 +7,7 @@
 
 #include "logger.h"
 #include <iostream>
+#include "../frproxy.h"
 
 namespace FinagleRegistryProxy {
 

@@ -139,7 +139,7 @@ void usage() {
 	cout << "	" << "./client " << endl;
 	cout << "	" << "./client -c 999" << endl;
 	cout << "	" << "./client -c 999 -t 2" << endl;
-	cout << "	" << "./client -c 999 -t 2 -i 192.168.1.111 -p 9009" << endl;
+	cout << "	" << "./client -c 999 -t 2 -s 192.168.1.111 -p 9009" << endl;
 	cout << "	" << "./client -m dump" << endl;
 	cout << "	" << "./client -l -z 192.168.113.212:2181" << endl;
 	cout << "	" << "./client -n rpc.counter.thrift" << endl;
