@@ -81,8 +81,9 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	handler.get()->register_self(port);
 	handler.get()->warm();
-	cout << "warm server committed. server is getting up" << endl;
+
 	try {
+		logger::warn("server is getting up.");
 		server.serve();
 
 	} catch (TException &ex) {
@@ -113,7 +114,6 @@ int poolServer(string zkhosts, int port, int poolSize) {
 
 	handler.get()->register_self(port);
 	handler.get()->warm();
-	cout << "warm server committed. server is getting up" << endl;
 	try {
 		server.serve();
 	} catch (TException &ex) {
@@ -139,7 +139,6 @@ int threadedServer(string zkhosts, int port) {
 
 	handler.get()->register_self(port);
 	handler.get()->warm();
-	cout << "warm server committed. server is getting up" << endl;
 	try {
 		server.serve();
 	} catch (TException &ex) {
@@ -151,7 +150,7 @@ int threadedServer(string zkhosts, int port) {
 }
 
 void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.4" << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.5" << endl;
 }
 void usage() {
 	version();
@@ -190,8 +189,10 @@ int main(int argc, char **argv) {
 
 	int port = option_value(argc, argv, "-p", "--port", 9009);
 	int thread_count = option_value(argc, argv, "-t", "--thread_count", 16);
-	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "localhost:2181");
-
+	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "127.0.0.1:2181");
+	if(zkhosts.find(':') < 0 ) {
+		zkhosts = zkhosts + ":2181";
+	}
 	if (option_exists(argc, argv, "-l") || option_exists(argc, argv, "--enablelog")) {
 		logger::enable();
 	}
@@ -241,7 +242,7 @@ int main(int argc, char **argv) {
 		cout << "fatal error occured! need to restart server. message:" << ex << endl;
 		return 1;
 	} catch (...) {
-		cout << "what the fucking is going on." << endl;
+		cout << "what's the fucking is going on." << endl;
 	}
 	return 0;
 }

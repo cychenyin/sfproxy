@@ -115,6 +115,11 @@ release：
 ----------------
 
 #### version 1.1.4 release 13
+*   1. fix root watch bug
+    2. add more comments in source code
+    3. some refactor in zkclient
+
+#### version 1.1.4 release 13
 *   1. remove some cout
 	
 #### version 1.1.3 release 12

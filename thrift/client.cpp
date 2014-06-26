@@ -151,7 +151,7 @@ void listServer(string zkhosts){
 
 	ZkClient* client = (ZkClient*)pool.open();
 	string root = "/soa/proxies";
-	vector<string> v = client->get_all(root);
+	vector<string> v = client->get_all_services(root);
 	cout << "frproxy servers regeistered in zk: " << zkhosts << " total:" << v.size() << endl;
 	for(vector<string>::iterator it = v.begin(); it != v.end(); it ++) {
 		cout << "	" << *it << endl;

@@ -48,8 +48,9 @@ typedef SEvent<ClientPool, ClientBase, int> WatchEvent; // client event
 class ZkState: public ClientState {
 public:
 	const static int TYPE_CREATE_EPHERERAL = 0;
-	const static int TYPE_GET_CHILDREN = 1;
+	const static int TYPE_GET_SERVICE = 1;
 	const static int TYPE_GET_NODE = 2;
+	const static int TYPE_GET_ROOT = 3;
 
 	int type;
 	string path;
@@ -99,14 +100,15 @@ public:
 	void init(string hosts, RegistryCache *pcache);
 	virtual ~ZkClient();
 	bool connect_zk();
-	void get_children(string serviceZpath);
+	void get_service(string serviceZpath);
 	void get_node(string path);
 	void get_node(string serviceZpath, string subNodeName);
-	static void children_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	static void ephemeral_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	static void root_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	static void service_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	static void node_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	vector<string> get_all(string root = "/soa/services");
+	vector<string> get_all_services(string root = "/soa/services");
 //	void dump_stat(struct Stat *stat);
 	void parse(string json);
 	int create_enode(string name, string data);

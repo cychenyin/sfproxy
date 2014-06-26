@@ -35,14 +35,22 @@ public:
 	virtual ~RegistryCache();
 
 	void add(Registry& proxy);
+	// name eg /sao/services/test.thrift, ephemeral eg member00000001
 	void remove(const string name, const string ephemeral);
+	// name eg /sao/services/test.thrift
 	void remove(const string name, Registry& reg);
+	// name eg /sao/services/test.thrift
 	void remove(const string name);
+	// name eg /sao/services/test.thrift
 	void replace(const string name, RVector& l);
+	// name eg /sao/services/test.thrift
 	bool empty(const string name);
 	void clear();
 	int size();
+	// name eg /sao/services/test.thrift
 	RVector* get(const string name);
+	// name eg /sao/services/test.thrift
+	bool exists(const string& name);
 
 	string dump() {
 		stringstream ss;

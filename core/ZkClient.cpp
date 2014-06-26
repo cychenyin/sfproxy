@@ -26,7 +26,7 @@ ZkClient::~ZkClient() {
 
 // valuate fields
 void ZkClient::init() {
-	zoo_set_debug_level((ZooLogLevel)0);
+	zoo_set_debug_level((ZooLogLevel) 0);
 //	zoo_set_debug_level(ZOO_LOG_LEVEL_ERROR);
 	this->root_ = NULL;
 	this->zhandle_ = NULL;
@@ -80,21 +80,26 @@ bool ZkClient::connect_zk() {
 	}
 	zhandle_ = NULL;
 
-	int count = 0;
+	int retry = 0;
 	do {
-		++count;
+		++retry;
 		zhandle_ = zookeeper_init(zk_hosts_.c_str(), global_watcher, timeout_, 0, this, 0);
-		if (zhandle_ != 0 && (zhandle_->state == CONNECTED_STATE_DEF || zhandle_->state == ASSOCIATING_STATE_DEF))
+		// 999 is a valid status too.
+		// (zhandle_->state == CONNECTED_STATE_DEF || zhandle_->state == ASSOCIATING_STATE_DEF || zhandle_->state == CONNECTING_STATE_DEF))
+		if (zhandle_ != 0 && zhandle_->state > 0) {
+
 			this->set_session_id(zhandle_->client_id.client_id);
-		else
+		} else {
 			this->close_handle();
+		}
 		//sleep(1 * 1000);
-	} while (zhandle_ == 0 && count < ZK_MAX_CONNECT_RETRY_TIMES);
+	} while (zhandle_ == 0 && retry < ZK_MAX_CONNECT_RETRY_TIMES);
 #ifdef DEBUG_
-	if (count >= ZK_MAX_CONNECT_RETRY_TIMES) {
-		logger::warn("ZkClient connect to zk error: zk_hosts_=%s; retry times:=%d", zk_hosts_.c_str(), count);
-	}
 #endif
+	if (retry >= ZK_MAX_CONNECT_RETRY_TIMES) {
+		logger::warn("ZkClient fail to connect to zk : zk_hosts_=%s; retry times:=%d", zk_hosts_.c_str(), retry);
+		cout << "ZkClient fail to connect to zk. exceed retry times." << retry << endl;
+	}
 	mutex.unlock();
 	if (zhandle_ != 0) {
 		set_connected(true);
@@ -106,6 +111,7 @@ bool ZkClient::connect_zk() {
 	}
 }
 
+// accepts states and add watches
 int ZkClient::set_states(StateMap *states) {
 	for (map<string, ClientState*>::iterator it = states->begin(); it != states->end(); it++) {
 		ZkState *state = (ZkState *) (it->second);
@@ -115,10 +121,12 @@ int ZkClient::set_states(StateMap *states) {
 			state->client_id = this->id();
 			if (state->type == ZkState::TYPE_CREATE_EPHERERAL) {
 				this->create_enode(state->path, state->data);
-			} else if (state->type == ZkState::TYPE_GET_CHILDREN) {
-				this->get_children(state->path);
+			} else if (state->type == ZkState::TYPE_GET_SERVICE) {
+				this->get_service(state->path);
 			} else if (state->type == ZkState::TYPE_GET_NODE) {
 				this->get_node(state->path);
+			} else if (state->type == ZkState::TYPE_GET_ROOT) {
+				this->get_all_services(state->path);
 			}
 		}
 	}
@@ -170,7 +178,7 @@ void ZkClient::get_node(string serviceZpath, string ephemeralName) {
 
 	Stat stat;
 	mutex.lock();
-	int ret = zoo_wget(zhandle_, path.c_str(), &this->ephemeral_watcher, this, buffer, &buffer_len, &stat);
+	int ret = zoo_wget(zhandle_, path.c_str(), &this->node_watcher, this, buffer, &buffer_len, &stat);
 	this->save_state(path, ZkState::TYPE_GET_NODE);
 	mutex.unlock();
 	if (ret == ZOK) {
@@ -221,16 +229,16 @@ void ZkClient::remove_state(ZkState *state) {
 		}
 	}
 }
-//update servcie list
-void ZkClient::get_children(string serviceZpath) {
+//update servcie list. serviceZpath eg. /sao/services/test.xx
+void ZkClient::get_service(string serviceZpath) {
 	if (!this->get_connected()) {
 		connect_zk();
 	}
 	struct String_vector str_vec;
 	mutex.lock();
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int ret = zoo_wget_children(zhandle_, serviceZpath.c_str(), &this->children_watcher, this, &str_vec);
-	this->save_state(serviceZpath, ZkState::TYPE_GET_CHILDREN);
+	int ret = zoo_wget_children(zhandle_, serviceZpath.c_str(), &this->service_watcher, this, &str_vec);
+	this->save_state(serviceZpath, ZkState::TYPE_GET_SERVICE);
 	mutex.unlock();
 
 	if (ret == ZOK) {
@@ -246,7 +254,7 @@ void ZkClient::get_children(string serviceZpath) {
 			delete str_vec.data;
 		}
 	} else if (ret == ZNONODE) {
-		remove_state(&ZkState(serviceZpath, ZkState::TYPE_GET_CHILDREN));
+		remove_state(&ZkState(serviceZpath, ZkState::TYPE_GET_SERVICE));
 	} else if (ret == ZINVALIDSTATE) {
 		this->on_session_timeout();
 	} else {
@@ -254,6 +262,7 @@ void ZkClient::get_children(string serviceZpath) {
 	}
 }
 
+// create permanent node
 int ZkClient::create_pnode(string abs_path) {
 	if (!this->get_connected()) {
 		connect_zk();
@@ -277,7 +286,7 @@ int ZkClient::create_pnode(string abs_path) {
 	}
 	return ret;
 }
-
+// creaet ephermeral node
 int ZkClient::create_enode(string abs_path, string data) {
 	if (!this->get_connected()) {
 		connect_zk();
@@ -287,7 +296,6 @@ int ZkClient::create_enode(string abs_path, string data) {
 	int ret = zoo_create(zhandle_, abs_path.c_str(), data.c_str(), data.length(), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, 0, 0);
 
 	mutex.unlock();
-
 	if (ret == ZOK) {
 #ifdef DEBUG_
 		cout << " create_enode create ephemeral node successfully. path:" << abs_path << endl;
@@ -356,16 +364,15 @@ void ZkClient::create_enode_watcher(zhandle_t *zh, int type, int state, const ch
 //#define ASSOCIATING_STATE_DEF 2		// extern ZOOAPI const int ZOO_ASSOCIATING_STATE;
 //#define CONNECTED_STATE_DEF 3			// extern ZOOAPI const int ZOO_CONNECTED_STATE;
 //#define NOTCONNECTED_STATE_DEF 999
-void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+void ZkClient::node_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+//	cout << "ephemeral_watcher type=" << type << " state=" << state << " path:" << path << endl;
 #ifdef DEBUG_
 	cout << "ephemeral_watcher type=" << type << " state=" << state << " path:" << path << " client id="
 	<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
 #endif
-
 	ZkClient *client = (ZkClient*) watcherCtx;
 	if (!client)
 		return;
-
 	if (state == ZOO_EXPIRED_SESSION_STATE) {
 		client->on_session_timeout();
 		return;
@@ -398,7 +405,55 @@ void ZkClient::ephemeral_watcher(zhandle_t *zh, int type, int state, const char 
 }
 
 // callback method for zookeeper notifier
-void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+void ZkClient::root_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+//	cout << "root_watcher type=" << type << " state=" << state << " path:" << path << endl;
+#ifdef DEBUG_
+	cout << " client id=" << (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
+#endif
+	ZkClient *client = (ZkClient*) watcherCtx;
+	if (!client) {
+		return;
+	}
+	if (state == ZOO_EXPIRED_SESSION_STATE) {
+		client->on_session_timeout();
+		return;
+	}
+
+	if (path) {
+		client->set_in_using(true);
+		switch (type) {
+		case CREATED_EVENT_DEF:
+		case CHANGED_EVENT_DEF:
+		case CHILD_EVENT_DEF: {
+			// re watch
+			if (client) {
+				vector<string> services = client->get_all_services(string(path));
+				vector<string>::iterator it = services.begin();
+				while (it != services.end()) {
+					string zkpath = *it;
+					if (client && client->pcache_  && client->pcache_->exists(zkpath) == false) {
+						client->get_service(zkpath);
+					}
+					++it;
+				}
+			}
+			break;
+		}
+		case DELETED_EVENT_DEF:
+			if (client->pcache_)
+				client->pcache_->remove(path);
+			client->remove_state(&ZkState(path, ZkState::TYPE_GET_SERVICE));
+			break;
+		default:
+			break;
+		}
+		client->set_in_using(false);
+	}
+}
+
+// callback method for zookeeper notifier
+void ZkClient::service_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+//	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << endl;
 #ifdef DEBUG_
 	cout << "children_watcher type=" << type << " state=" << state << " path:" << path << " client id="
 	<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
@@ -418,13 +473,13 @@ void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *
 		case CREATED_EVENT_DEF:
 		case CHANGED_EVENT_DEF:
 		case CHILD_EVENT_DEF: {
-			client->get_children(path);
+			client->get_service(path);
 			break;
 		}
 		case DELETED_EVENT_DEF:
 			if (client->pcache_)
 				client->pcache_->remove(path);
-			client->remove_state(&ZkState(path, ZkState::TYPE_GET_CHILDREN));
+			client->remove_state(&ZkState(path, ZkState::TYPE_GET_SERVICE));
 			break;
 		default:
 			break;
@@ -434,6 +489,7 @@ void ZkClient::children_watcher(zhandle_t *zh, int type, int state, const char *
 }
 
 void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+//	cout << "global_watcher type=" << type << " state=" << state << " path:" << path << endl;
 #ifdef DEBUG_
 	cout << "global_watcher type=" << type << " state=" << state << " path:" << path << " client id="
 	<< (watcherCtx ? ((ZkClient*) watcherCtx)->id() : 0) << endl;
@@ -451,7 +507,8 @@ void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *pa
 	}
 }
 
-vector<string> ZkClient::get_all(string root) {
+// root eg.  /soa/services
+vector<string> ZkClient::get_all_services(string root) {
 	vector<string> ret;
 	if (zhandle_ == NULL) {
 		connect_zk();
@@ -461,8 +518,9 @@ vector<string> ZkClient::get_all(string root) {
 
 	mutex.lock();
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int rc = zoo_wget_children(zhandle_, root.c_str(), NULL, NULL, &str_vec);
+	int rc = zoo_wget_children(zhandle_, root.c_str(), &this->root_watcher, this, &str_vec);
 	mutex.unlock();
+	this->save_state(root, ZkState::TYPE_GET_ROOT);
 	if (rc == ZOK) {
 		for (int i = 0; i < str_vec.count; ++i) {
 			ret.push_back(root + "/" + str_vec.data[i]);
@@ -491,8 +549,8 @@ void ZkClient::on_session_timeout() {
 				if (state) {
 					if (state->type == ZkState::TYPE_CREATE_EPHERERAL) {
 						this->create_enode(state->path, state->data);
-					} else if (state->type == ZkState::TYPE_GET_CHILDREN) {
-						this->get_children(state->path);
+					} else if (state->type == ZkState::TYPE_GET_SERVICE) {
+						this->get_service(state->path);
 					} else if (state->type == ZkState::TYPE_GET_NODE) {
 						this->get_node(state->path);
 					}

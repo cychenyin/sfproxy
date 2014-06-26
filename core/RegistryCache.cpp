@@ -133,6 +133,18 @@ void RegistryCache::clear() {
 	mutex.unlock();
 }
 
+bool RegistryCache::exists(const string& name) {
+	try {
+		mutex.lock();
+		RMap::iterator it = cache.find(name);
+		mutex.unlock();
+		return it != cache.end();
+	} catch (const std::exception& ex) {
+		logger::warn("RegistryCache.exists failure, message: %s", ex.what());
+	}
+	return false;
+}
+// return hosts of service name; name eg. /soa/services/test.http
 RVector* RegistryCache::get(const string name) {
 	RVector *ptr = NULL;
 	try {

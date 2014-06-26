@@ -57,14 +57,17 @@ public:
 	void run() {
 		c = (ZkClient*) pool->open();
 		if (c) {
-			vector<string> names = c->get_all(zk_root);
+			vector<string> names = c->get_all_services(zk_root);
 			vector<string>::iterator it = names.begin();
 			while (it != names.end()) {
 				if (c)
-					c->get_children(zk_root + "/" + (*it));
+					c->get_service(*it);
 				++it;
 			}
 			c->close();
+		} else {
+			logger:: warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
+			cout << "fail to open zk client when warming. please check out whether zookeeper cluster is valid" << endl;
 		}
 	}
 };
@@ -87,7 +90,7 @@ public:
 	void run() {
 		// ZkClient *client = (ZkClient*) pool->open();
 		c = (ZkClient*) pool->open();
-		if (c) {
+		if (c && c->get_connected() == true) {
 			stringstream ss;
 			ss << "/soa";
 			c->create_pnode(ss.str());
@@ -95,9 +98,13 @@ public:
 			c->create_pnode(ss.str());
 			ss << "/" << node_name;
 			int res = c->create_enode(ss.str(), "");
+			cout << "register self done. path=" << ss.str() << endl;
 			if (res != 0) {
 				logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
 			}
+		} else {
+			logger:: warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
+			cout << "fail to open zk client when registering self. please check out whether zookeeper cluster is valid" << endl;
 		}
 	}
 };
@@ -119,7 +126,7 @@ public:
 	void run() {
 		c = (ZkClient*) pool->open();
 		if (c) {
-			c->get_children(zkpath);
+			c->get_service(zkpath);
 			c->close(); // must
 		} else {
 			logger::warn("fail to open zk client when async get request: %s. pool exhausted maybe. ", zkpath.c_str());
@@ -259,6 +266,7 @@ public:
 //		t = 0;
 
 		threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)));
+		logger::warn("warm server committed. server is getting up");
 	}
 
 	void register_self(int port) {
@@ -266,6 +274,7 @@ public:
 		name << this->hostname << ":" << port;
 		try {
 			threadManager->add(shared_ptr<RegisterTask>(new RegisterTask(pool, name.str())));
+			logger::warn("server register self committed. ");
 		} catch (TooManyPendingTasksException &e) {
 			logger::warn("too many pending task occured  in thread pool when register self. %s", e.what());
 		}
