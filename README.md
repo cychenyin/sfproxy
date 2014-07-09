@@ -113,11 +113,14 @@ $ yum install
 ----------------
 release：
 ----------------
-
-#### version 1.1.4 release 13
+#### version 1.1.6 release 15
+*   1. add zkhosts in dump result
+*   2. 
+	
+#### version 1.1.5 release 14
 *   1. fix root watch bug
-    2. add more comments in source code
-    3. some refactor in zkclient
+*   2. add more comments in source code
+*   3. some refactor in zkclient
 
 #### version 1.1.4 release 13
 *   1. remove some cout

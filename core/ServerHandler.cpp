@@ -148,8 +148,9 @@ private:
 	int async_wait_timeout; // in ms
 	int async_exec_timeout; // in ms
 	string hostname;
+	string zkhosts_;
 public:
-	ServerHandler(string zkhosts) {
+	ServerHandler(string zkhosts) : zkhosts_(zkhosts) {
 		root = new string("/soa/services");
 		cache = new RegistryCache();
 		pool = new ClientPool(new ZkClientFactory(zkhosts, cache));
@@ -229,7 +230,7 @@ public:
 
 	void dump(std::string& _return) {
 		stringstream ss;
-		ss << "frproxy dump info. " << "hostname:" << hostname << endl << endl;
+		ss << "frproxy dump info. " << "hostname:" << hostname << "; zkhosts:" << this->zkhosts_ << endl << endl;
 		ss << "connection:" << endl;
 		ss << "---------------------------------------------" << endl;
 		ss << pool->stat() << endl;
