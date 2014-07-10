@@ -16,6 +16,8 @@ using namespace std;
 using namespace FinagleRegistryProxy;
 
 namespace ut {
+
+
 class RegistryCacheTest {
 private:
 	int port;
@@ -57,10 +59,12 @@ public:
 
 		string name("add");
 		vector<Registry> *v = cache.get(name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 		v = cache.get(r.name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 		if (v && v->begin() != v->end()) {
 			Registry &p = *(v->begin());
@@ -74,7 +78,8 @@ public:
 		r.name = "add2";
 		cache.add(r);
 		v = cache.get(r.name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 		if (v && v->begin() != v->end()) {
 			Registry &p = *(v->begin());
 			cout << "ok. name=" << p.name << "	host=" << p.host << "	port=" << p.port << "	w=" << p.weight() << endl;
@@ -89,7 +94,8 @@ public:
 		cache.add(r);
 		cache.add(r);
 		v = cache.get(r.name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get result size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 		if (v && v->begin() != v->end()) {
 			Registry &p = *(v->begin());
 			cout << "ok. name=" << p.name << "	host=" << p.host << "	port=" << p.port << "	w=" << p.weight() << endl;
@@ -127,15 +133,18 @@ public:
 		cache.add(r2);
 
 		vector<Registry> *v = cache.get(name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 		cache.remove(name.c_str(), r1);
 		v = cache.get(name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 		cache.remove(name.c_str(), r2);
 		v = cache.get(name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 		cache.add(r1);
 		cache.add(r1);
@@ -143,11 +152,13 @@ public:
 
 		cache.remove(name.c_str(), r2);
 		v = cache.get(name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 		cache.remove(name.c_str(), r1);
 		v = cache.get(name.c_str());
-		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v) << endl;
+		cout << " addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << " ref=" << &(*v)
+				<< endl;
 
 	}
 	void removeTest1() {
@@ -228,7 +239,7 @@ public:
 		cout << " 5addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << endl;
 		cout << "\t\t\texpected vs=2" << endl;
 
-		cache.remove( (name + " xxx").c_str(), r1.ephemeral.c_str());
+		cache.remove((name + " xxx").c_str(), r1.ephemeral.c_str());
 		v = cache.get(name.c_str());
 		cout << " 6addTest cache size=" << cache.size() << " get vector size=" << (v ? v->size() : 0) << endl;
 		cout << "\t\t\texpected vs=2" << endl;

@@ -26,6 +26,7 @@
 
 #include "transport/TServerSocket.h"
 #include "transport/TBufferTransports.h"
+#include "utils/ArgsParser.h"
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -36,15 +37,16 @@ using namespace ::apache::thrift::concurrency;
 using namespace std;
 using namespace ut;
 using boost::shared_ptr;
+
 // using namespace ganji::util::log::ThriftLog;
 
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
 
 	cout << utils::now() << endl;
-	return 0;
 
 //	ut::RegistryCacheTest a;
+//	a.test();
 //	a.getTest();
 //	a.addTest();
 //	a.removeTest();
@@ -61,7 +63,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 	cout << utils::now() << " frproxy nonblocking server starting at port " << port << endl;
 	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy nonblocking server starting at port %d. zk server %s", port, zkhosts.c_str());
-	// shared_ptr<ServerHandler> handler(new ServerHandler("yz-cdc-wrk-02.dns.ganji.com:2181"));
+
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 
@@ -77,15 +79,20 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 
-	handler.get()->warm();
 	handler.get()->register_self(port);
-	cout << "warm server committed. server is getting up" << endl;
-	server.serve();
+	handler.get()->warm();
 
+	try {
+		logger::warn("server is getting up.");
+		server.serve();
+
+	} catch (TException &ex) {
+		logger::error("thrift error occured when trying to serve. check port which maybe used. message: %s", ex.what());
+	}
 	cout << "frproxy server exiting." << endl;
 	threadManager->stop();
 	cout << "frproxy server exited." << endl;
-	return 0;
+	exit(1);
 }
 
 int poolServer(string zkhosts, int port, int poolSize) {
@@ -105,12 +112,16 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	threadManager->start();
 	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
 
-	handler.get()->warm();
 	handler.get()->register_self(port);
-	cout << "warm server committed. server is getting up" << endl;
-	server.serve();
+	handler.get()->warm();
+	try {
+		server.serve();
+	} catch (TException &ex) {
+		logger::error("thrift error occured when trying to serve. check port which is not be used please. message: %s",
+				ex.what());
+	}
 	cout << "frproxy server exited." << endl;
-	return 0;
+	exit(1);
 }
 
 int threadedServer(string zkhosts, int port) {
@@ -126,16 +137,23 @@ int threadedServer(string zkhosts, int port) {
 
 	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
-	handler.get()->warm();
 	handler.get()->register_self(port);
-	cout << "warm server committed. server is getting up" << endl;
-	server.serve();
+	handler.get()->warm();
+	try {
+		server.serve();
+	} catch (TException &ex) {
+		logger::error("thrift error occured when trying to serve. check port which is not be used please. message: %s",
+				ex.what());
+	}
 	cout << "frproxy server exited." << endl;
-	return 0;
+	exit(1);
 }
 
+void version() {
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.5" << endl;
+}
 void usage() {
-	cout << "Proxy Server of Service Framework of Ganji RPC." << endl;
+	version();
 	cout << "Usage: frproxy [options [option value]]" << endl;
 	cout << "	" << "-d,  --debug:\t\trun test main for debugging only" << endl;
 	cout << "	" << "-p,  --port:\t\tuse definited port. default 9009. eg. -p 9009" << endl;
@@ -153,55 +171,10 @@ void usage() {
 	cout << "	" << "-l,  --enable:\t\tenable scribe log" << endl;
 }
 
-void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.0.1" << endl;
-}
-// return index if exists, or return 0
-int option_exists(int argc, char **argv, const char *option) {
-	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], option) == 0)
-			return i;
-	}
-	return 0;
-}
-
-char* option_value(int argc, char **argv, const char *option, const char* long_name_option, const char *default_value) {
-	int index = option_exists(argc, argv, option);
-	//char *ret = default_value;
-	char *ret = const_cast<char *>(default_value);
-	if (index && argc > index + 1) {
-		ret = argv[index + 1];
-	} else {
-		if (long_name_option) {
-			index = option_exists(argc, argv, long_name_option);
-			if (index && argc > index + 1) {
-				ret = argv[index + 1];
-			}
-		}
-	}
-	return ret;
-}
-
-int option_value(int argc, char **argv, const char *option, const char *long_name_option, int default_value) {
-	int index = option_exists(argc, argv, option);
-	int ret = default_value;
-	if (index && argc > index + 1) {
-		ret = atoi(argv[index + 1]);
-	} else {
-		if (long_name_option) {
-			index = option_exists(argc, argv, long_name_option);
-			if (index && argc > index + 1) {
-				ret = atoi(argv[index + 1]);
-			}
-		}
-	}
-	return ret;
-}
-
 int main(int argc, char **argv) {
+
 	if (option_exists(argc, argv, "-d") || option_exists(argc, argv, "--debug")) {
 		testmain(argc, argv);
-//		cout << "end..." << endl;
 		return 0;
 	}
 	// high priority args
@@ -216,8 +189,10 @@ int main(int argc, char **argv) {
 
 	int port = option_value(argc, argv, "-p", "--port", 9009);
 	int thread_count = option_value(argc, argv, "-t", "--thread_count", 16);
-	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "localhost:2181");
-
+	string zkhosts = option_value(argc, argv, "-z", "--zkhosts", "127.0.0.1:2181");
+	if(zkhosts.find(':') < 0 ) {
+		zkhosts = zkhosts + ":2181";
+	}
 	if (option_exists(argc, argv, "-l") || option_exists(argc, argv, "--enablelog")) {
 		logger::enable();
 	}
@@ -242,15 +217,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
-
-#ifdef DEBUG_
-	if (type > 0) {
-		cout << "port " << port << endl;
-		cout << "thread count " << thread_count << endl;
-		cout << "zkhosts " << zkhosts << endl;
-		cout << "server type  " << type << endl;
-	}
-#endif
 	try {
 		switch (type) {
 		case 1:
@@ -271,8 +237,12 @@ int main(int argc, char **argv) {
 		default:
 			break;
 		}
+	} catch (char* ex) {
+		logger::error("fatal error occured! need to restart server. message: %d", ex);
+		cout << "fatal error occured! need to restart server. message:" << ex << endl;
+		return 1;
 	} catch (...) {
-		logger::error("unknown fatel error occured! need to restart server.");
+		cout << "what's the fucking is going on." << endl;
 	}
 	return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * frproxy.h
+/* frproxy.h
  *
  *  Created on: Mar 21, 2014
  *      Author: asdf
@@ -9,7 +9,7 @@
 #define FRPROXY_H_
 
 #ifndef DEBUG_
-//#define DEBUG_
+// #define DEBUG_
 
 #endif
 

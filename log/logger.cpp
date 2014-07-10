@@ -7,6 +7,7 @@
 
 #include "logger.h"
 #include <iostream>
+#include "../frproxy.h"
 
 namespace FinagleRegistryProxy {
 
@@ -39,6 +40,15 @@ void logger::destory() {
 }
 
 void logger::error(const char* format, ...) {
+#ifdef DEBUG_
+	{
+		va_list args;
+		va_start(args, format);
+		char message[1024] = "";
+		vsprintf(message, format, args);
+		cout << message << endl;
+	}
+#endif
 	if (logger::switcher) {
 		va_list args;
 		va_start(args, format);
@@ -50,6 +60,16 @@ void logger::error(const char* format, ...) {
 }
 
 void logger::warn(const char* format, ...) {
+#ifdef DEBUG_
+	{
+		va_list args;
+		va_start(args, format);
+		char message[1024] = "";
+		vsprintf(message, format, args);
+		cout << message << endl;
+	}
+#endif
+
 	if (logger::switcher) {
 		va_list args;
 		va_start(args, format);
@@ -61,7 +81,37 @@ void logger::warn(const char* format, ...) {
 	}
 }
 
+void logger::info(const char* format, ...) {
+#ifdef DEBUG_
+	{
+		va_list args;
+		va_start(args, format);
+		char message[1024] = "";
+		vsprintf(message, format, args);
+		cout << message << endl;
+	}
+#endif
+	if (logger::switcher) {
+		va_list args;
+		va_start(args, format);
+		char message[1024] = "";
+		vsprintf(message, format, args);
+		va_end(args);
+		const char category[] = "sf.frproxy";
+		LogWrite(ganji::util::log::ThriftLog::NOTICE, category, strcat(message, hostname));
+	}
+}
+
 void logger::debug(const char* format, ...) {
+#ifdef DEBUG_
+	{
+		va_list args;
+		va_start(args, format);
+		char message[1024] = "";
+		vsprintf(message, format, args);
+		cout << message << endl;
+	}
+#endif
 	if (logger::switcher) {
 		va_list args;
 		va_start(args, format);

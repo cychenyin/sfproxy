@@ -21,4 +21,3 @@ thrift/client
 thrift/sserver
 thrift/sclient
 Hello.cpp
-

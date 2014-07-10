@@ -9,7 +9,6 @@
 #include <TProcessor.h>
 #include "proxy_types.h"
 
-
 namespace FinagleRegistryProxy {
 
 class RegistryProxyIf {
@@ -17,6 +16,7 @@ class RegistryProxyIf {
   virtual ~RegistryProxyIf() {}
   virtual void get(std::string& _return, const std::string& serviceName) = 0;
   virtual void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port) = 0;
+  virtual void dump(std::string& _return) = 0;
 };
 
 class RegistryProxyNull : virtual public RegistryProxyIf {
@@ -26,6 +26,9 @@ class RegistryProxyNull : virtual public RegistryProxyIf {
     return;
   }
   void remove(std::string& /* _return */, const std::string& /* serviceName */, const std::string& /* host */, const int32_t /* port */) {
+    return;
+  }
+  void dump(std::string& /* _return */) {
     return;
   }
 };
@@ -233,6 +236,96 @@ class RegistryProxy_remove_presult {
 
 };
 
+
+class RegistryProxy_dump_args {
+ public:
+
+  RegistryProxy_dump_args() {
+  }
+
+  virtual ~RegistryProxy_dump_args() throw() {}
+
+
+  bool operator == (const RegistryProxy_dump_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const RegistryProxy_dump_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const RegistryProxy_dump_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class RegistryProxy_dump_pargs {
+ public:
+
+
+  virtual ~RegistryProxy_dump_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _RegistryProxy_dump_result__isset {
+  _RegistryProxy_dump_result__isset() : success(false) {}
+  bool success;
+} _RegistryProxy_dump_result__isset;
+
+class RegistryProxy_dump_result {
+ public:
+
+  RegistryProxy_dump_result() : success("") {
+  }
+
+  virtual ~RegistryProxy_dump_result() throw() {}
+
+  std::string success;
+
+  _RegistryProxy_dump_result__isset __isset;
+
+  bool operator == (const RegistryProxy_dump_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const RegistryProxy_dump_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const RegistryProxy_dump_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _RegistryProxy_dump_presult__isset {
+  _RegistryProxy_dump_presult__isset() : success(false) {}
+  bool success;
+} _RegistryProxy_dump_presult__isset;
+
+class RegistryProxy_dump_presult {
+ public:
+
+
+  virtual ~RegistryProxy_dump_presult() throw() {}
+
+  std::string* success;
+
+  _RegistryProxy_dump_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
 class RegistryProxyClient : virtual public RegistryProxyIf {
  public:
   RegistryProxyClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
@@ -259,6 +352,9 @@ class RegistryProxyClient : virtual public RegistryProxyIf {
   void remove(std::string& _return, const std::string& serviceName, const std::string& host, const int32_t port);
   void send_remove(const std::string& serviceName, const std::string& host, const int32_t port);
   void recv_remove(std::string& _return);
+  void dump(std::string& _return);
+  void send_dump();
+  void recv_dump(std::string& _return);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -274,16 +370,17 @@ class RegistryProxyProcessor : virtual public ::apache::thrift::TProcessor {
   std::map<std::string, void (RegistryProxyProcessor::*)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*)> processMap_;
   void process_get(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
   void process_remove(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void process_dump(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
  public:
   RegistryProxyProcessor(boost::shared_ptr<RegistryProxyIf> iface) :
     iface_(iface) {
     processMap_["get"] = &RegistryProxyProcessor::process_get;
     processMap_["remove"] = &RegistryProxyProcessor::process_remove;
+    processMap_["dump"] = &RegistryProxyProcessor::process_dump;
   }
-  virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot);
-  //virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot){return true; }
-  virtual ~RegistryProxyProcessor() {}
 
+  virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot);
+  virtual ~RegistryProxyProcessor() {}
 };
 
 class RegistryProxyMultiface : virtual public RegistryProxyIf {
@@ -318,6 +415,18 @@ class RegistryProxyMultiface : virtual public RegistryProxyIf {
         return;
       } else {
         ifaces_[i]->remove(_return, serviceName, host, port);
+      }
+    }
+  }
+
+  void dump(std::string& _return) {
+    uint32_t sz = ifaces_.size();
+    for (uint32_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->dump(_return);
+        return;
+      } else {
+        ifaces_[i]->dump(_return);
       }
     }
   }

@@ -6,7 +6,7 @@ MV=/bin/mv -f
 MKDIR=/bin/mkdir -p
 THRIFT=/usr/local/bin/thrift
 #CC=g++ -O2
-CC=g++ -ggdb
+CC=g++ -ggdb -g
 # -fPIC -DPIC
 CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED 
 #-Wall #c++11# -std=c++0x
@@ -36,15 +36,16 @@ EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
 
 TARGET=frproxy
 #TARGET2=testproxy
-LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp
-TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp main.cpp
+LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp log/LoggerStream.cpp
+TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp \
+ main.cpp
 # test/main.cpp
 TEST_CXXFILES=
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
 all: clean preexec $(TARGET) afterexec client
-	@echo '---------------all done. can package now ---------------'
+	@echo '---------------all done. package can be started now ---------------'
 
 .PHONY: debug
 debug: clean preexecForDebug $(TARGET) afterexec
@@ -66,7 +67,7 @@ lib/zookeeper/libzookeeper_mt.a
 		$(EMBED_STATIC_LIBS) \
 		/usr/lib64/libpthread.a
 #shared link
-	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_SHARED_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
+	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
 
 .SUFFIXES: .o .cpp
 .cpp.o:

@@ -7,6 +7,7 @@
 
 #include "RegistryCache.h"
 #include <stdexcept>
+#include "../log/logger.h"
 
 namespace FinagleRegistryProxy {
 
@@ -29,7 +30,7 @@ void RegistryCache::add(Registry& reg) {
 		ptr = &v;
 		ptr->push_back(reg);
 		// attation: stl copy pair in their implement. so, vector in map this not really the input one.
-		cache.insert(pair<string, RVector >(name, *ptr));
+		cache.insert(pair<string, RVector>(name, *ptr));
 	} else {
 		ptr = &(it->second);
 		RVector::iterator itProxy = ptr->begin();
@@ -118,7 +119,7 @@ void RegistryCache::replace(const string name, RVector& l) {
 	if (it != cache.end()) {
 		it->second.clear();
 	}
-	cache.insert(pair<string, RVector >(name, l));
+	cache.insert(pair<string, RVector>(name, l));
 	mutex.unlock();
 }
 
@@ -132,6 +133,18 @@ void RegistryCache::clear() {
 	mutex.unlock();
 }
 
+bool RegistryCache::exists(const string& name) {
+	try {
+		mutex.lock();
+		RMap::iterator it = cache.find(name);
+		mutex.unlock();
+		return it != cache.end();
+	} catch (const std::exception& ex) {
+		logger::warn("RegistryCache.exists failure, message: %s", ex.what());
+	}
+	return false;
+}
+// return hosts of service name; name eg. /soa/services/test.http
 RVector* RegistryCache::get(const string name) {
 	RVector *ptr = NULL;
 	try {
@@ -143,7 +156,7 @@ RVector* RegistryCache::get(const string name) {
 			return ptr;
 		}
 	} catch (const std::exception& ex) {
-		cout << "RegistryCache.get failure, message:" << ex.what() << endl;
+		logger::warn("RegistryCache.get failure, message: %s", ex.what());
 	}
 	return ptr;
 }
