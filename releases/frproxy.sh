@@ -6,6 +6,7 @@ LOG_PATH=/data/log/frproxy
 #LOG_PATH=/home/asdf/temp
 PROG_PATH="/usr/local/webserver/frproxy"
 PROG_ARGS="-l" 
+test -d $LOG_PATH || LOG_PATH=/tmp
 
 rawstart() {
 	cd $PROG_PATH
@@ -49,7 +50,11 @@ start() {
 stop() {
     if [ -e "$LOG_PATH/$PROG.pid" ]; then
         ## Program is running, so stop it
-        killall -q -w $PROG_PATH/$PROG
+        #killall -s 9 -q -w $PROG_PATH/$PROG
+        killall -s 9 -q -w $PROG
+        #pids=$(ps -ef  | grep "$PROG_PATH/$PROG" | grep -v grep | awk '{print $2}')
+        #test $pids && kill -9 $pids
+
         rm -f "$LOG_PATH/$PROG.pid"
         
         echo "$PROG stopped"
@@ -61,7 +66,7 @@ stop() {
 }
 
 restart() {
-    killall -w -q $PROG_PATH/$PROG
+    killall -s 9 -w -q $PROG
     if [ -e "$LOG_PATH/$PROG.pid" ]; then
         rm -f "$LOG_PATH/$PROG.pid"
         echo "$PROG stopped"
@@ -73,7 +78,7 @@ restart() {
         ## Program is running, exit with error.
         echo "Error: $PROG is currently running!" 1>&2
     else
-	rawstart
+	    rawstart
     fi
 }
 

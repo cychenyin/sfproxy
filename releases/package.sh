@@ -42,12 +42,12 @@ fi
 
 test -f $rpmb_root/SOURCES/$pkgname.tar.gz && rm -fr $rpmb_root/SOURCES/$pkgname.tar.gz
 test -f "$rpmb_root/SPECS/package.spec" && rm -fr "$rpmb_root/SPECS/package.spec"
-test -f "$rpmb_root/RPMS/x86_64/$pkgname*.rpm" && rm -fr "$rpmb_root/RPMS/$pkgname*.rpm"
 
 rm -fr "$tmp/$pkgname/"
 
 if [ $STATUS -eq 0 ]; then
     cp -f $rpmb_root/RPMS/x86_64/$pkgname*.rpm $tmp/
+    test -f $rpmb_root/RPMS/x86_64/$pkgname*.rpm && rm -fr $rpmb_root/RPMS/x86_64/$pkgname*.rpm
     echo package successfully.
     ls -ahl tmp/
 else

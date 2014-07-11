@@ -1,6 +1,6 @@
 Name:		frproxy
 Version:	1.1.5
-Release:	14
+Release:	15
 Summary:	Proxy of Service Framework Registry of Ganji RPC.
 
 Group:		Ganji
