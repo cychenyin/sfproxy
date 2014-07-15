@@ -8,7 +8,7 @@ THRIFT=/usr/local/bin/thrift
 #CC=g++ -O2
 CC=g++ -ggdb -g
 # -fPIC -DPIC
-CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED 
+CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy
 #-Wall #c++11# -std=c++0x
 #THREADED used in zk cli_mt
 #CFLAGS= -D_LINUX_ -D_GNU_SOURCE -DTHREADED -static

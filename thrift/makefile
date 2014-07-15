@@ -4,7 +4,7 @@ MV=/bin/mv -f
 MKDIR=/bin/mkdir -p
 #CC=g++ -O2
 CC=g++ -ggdb
-CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED
+CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy
 #c++11# -std=c++0x  -Wall
 
 LIBS    := thrift thriftnb event pthread zookeeper_mt

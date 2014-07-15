@@ -113,9 +113,12 @@ $ yum install
 ----------------
 release：
 ----------------
-#### version 1.1.6 release 15
-*   1. add zkhosts in dump result
-*   2. 
+#### version 1.1.6 release 16
+#   1. explict that loading *.so in current folder; make more simple on deployment
+#   2. move install path from /usr/local/webserver/frproxy to /usr/local/frproxy
+
+#### version 1.1.5 release 15
+*   3. add zkhosts in dump result
 	
 #### version 1.1.5 release 14
 *   1. fix root watch bug

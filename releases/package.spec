@@ -1,6 +1,6 @@
 Name:		frproxy
-Version:	1.1.5
-Release:	15
+Version:	1.1.6
+Release:	17
 Summary:	Proxy of Service Framework Registry of Ganji RPC.
 
 Group:		Ganji
@@ -11,7 +11,7 @@ BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 #BuildRequires:	 
 #Requires:	
 
-%define    userpath /usr/local/webserver/frproxy
+%define    userpath /usr/local/frproxy
 
 %description
 Proxy of Service Framework Registry of Ganji RPC.

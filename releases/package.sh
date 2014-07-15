@@ -1,5 +1,5 @@
 #!/bin/bash
-pkgname=frproxy-1.1.5
+pkgname=frproxy-1.1.6
 
 if [ -d ~/rpmbuild/ ]; then
     rpmb_root=~/rpmbuild
@@ -22,7 +22,7 @@ cp -f ../bin/client $folder/
 cp -f ../proxy.sh $folder/
 cp -f ../proxy_client.sh $folder/
 cp -f ../lib/* $folder/
-cp -f ../releases/frproxy.sh $folder/frproxy.init.d.sh
+cp -f ../releases/frproxy.init.d.sh $folder/frproxy.init.d.sh
 
 cd $tmp/
 tar zcvf "$pkgname.tar.gz" "$pkgname/"
@@ -34,7 +34,8 @@ if [ -f $tmp/$pkgname.tar.gz ] ; then
     mv $tmp/$pkgname.tar.gz $rpmb_root/SOURCES/$pkgname.tar.gz
     cp package.spec "$rpmb_root/SPECS/"
     set -xv
-    rpmbuild -bb --define "_binary_filedigest_algorithm  1"  --define "_binary_payload 1" package.spec
+    #QA_RPATHS=$[ 0x0004|0x0002|0x00FF ] rpmbuild -bb --define "_binary_filedigest_algorithm  1"  --define "_binary_payload 1" package.spec
+    QA_RPATHS=$[ 0x0004|0x0002 ] rpmbuild -bb --define "_binary_filedigest_algorithm  1"  --define "_binary_payload 1" package.spec
     STATUS=$?
 else
     echo failure. package source $pkgname.tar.gz not exists. 
