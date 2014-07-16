@@ -10,8 +10,8 @@ test -d $LOG_PATH || LOG_PATH=/tmp
 
 rawstart() {
 	cd $PROG_PATH
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
-        $PROG_PATH/$PROG $PROG_ARGS >>${LOG_PATH}/frproxy.stdout 2>&1 &
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
+    $PROG_PATH/$PROG $PROG_ARGS >>${LOG_PATH}/frproxy.stdout 2>&1 &
 	sleep 3
 
 	found=0
@@ -38,12 +38,11 @@ rawstart() {
 }
 
 stop() {
-    pids=$(ps -ef | grep "$PROG" | grep -v "frproxytester.sh" | grep -v "grep" | awk '{print $2}' )
+    pids=$(ps -ef | grep "$PROG" | grep -v "frproxy.init.d.sh" | grep -v "frproxytester.sh" | grep -v "grep" | awk '{print $2}' )
     for pid in $pids;
     do
 		if [[ "$pid" != "$$" ]]; then
             kill -9 $pid >>/dev/null 2>&1 &
-		    break
 		fi
     done;
 
@@ -56,6 +55,32 @@ stop() {
         return 1
     fi
     return 0
+}
+
+status() {
+	found=0
+	pids=$(ps -ef | grep "$PROG" | grep -v "grep" | awk '{print $2}' )
+    #set -x
+	for pid in $pids;
+	do
+	    if [[ -f "/proc/$pid/exe" ]]; then
+    		fullpath=$(ls -l "/proc/$pid/exe" | awk -F" -> " '{print $2}')
+    		if [[ "$PROG_PATH/$PROG" == $fullpath ]]; then
+    		    found=1
+    		    break
+    		fi;
+	    fi
+	done;
+
+    if [ -e "$LOG_PATH/$PROG.pid" ]; then
+        found=$(($found + 1))
+    fi
+
+    if [[ $found -eq 2 ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 start() {
@@ -75,23 +100,28 @@ start() {
 #    echo "This script must be run as root" 1>&2
 #    exit 1
 #fi
+code=0
 case "$1" in
     start)
         start
-        status=$?
+        code=$?
     ;;
     stop)
         stop
-        status=$?
+        code=$?
     ;;
     reload|restart|force-reload)
         stop
         start
-        status=$?
+        code=$?
+    ;;
+    status)
+        status
+        code=$?
     ;;
     **)
         echo "Usage: $0 {start|stop|restart}" 1>&2
-        status=3 
+        code=3 
     ;;
 esac
-exit $status
+exit $code

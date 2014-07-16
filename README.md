@@ -113,6 +113,10 @@ $ yum install
 ----------------
 release：
 ----------------
+#### version 1.1.6 release 17
+#   1. add status method supported in frproxy.init.d.sh 
+#   2. 
+
 #### version 1.1.6 release 16
 #   1. explict that loading *.so in current folder; make more simple on deployment
 #   2. move install path from /usr/local/webserver/frproxy to /usr/local/frproxy
