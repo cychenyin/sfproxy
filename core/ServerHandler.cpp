@@ -277,7 +277,9 @@ public:
 
 		_return = ss.str();
 	}
-
+	void save(string& filename) {
+		this->cache->save(filename);
+	}
 	void warm() {
 //		string path = "/soa/services/testservice";
 //		Runnable *t = new ZkReadTask(pool, path, skip_buf);
@@ -413,10 +415,10 @@ public:
 	AutoSaveScheduler(ServerHandler* phandler, string& filename) :
 			handler(handler), filename(filename) {
 		assert(this->handler);
-		assert(filename);
 	}
 	void run() {
-		handler->cache->save(filename);
+		// handler->cache->save(filename);
+		handler->save(filename);
 	}
 
 //	static void kickoff(ServerHandler* handler, int port) {
