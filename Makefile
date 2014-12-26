@@ -26,7 +26,7 @@ INCLUDES= \
 	-I/usr/local/include \
 	-I/usr/local/include/thrift 
 	
-LIBS		:= thrift thriftnb event pthread zookeeper_mt rt
+LIBS		:= thrift thriftnb event pthread zookeeper_mt rt boost_system boost_filesystem
 STATIC_LibS :=  pthread rt
 #thrift thriftnb event zookeeper_mt 
 EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
@@ -37,7 +37,9 @@ EMBED_STATIC_LIBS= lib/thrift/libthrift.a \
 TARGET=frproxy
 #TARGET2=testproxy
 LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp log/gen-cpp/fb303_types.cpp log/gen-cpp/scribe_constants.cpp log/gen-cpp/scribe_types.cpp log/gen-cpp/scribe.cpp log/gen-cpp/FacebookService.cpp log/LoggerStream.cpp
-TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp \
+#TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/JsonUtil.cpp core/FileCache.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp \
+
+TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/JsonUtil.cpp core/FileCache.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp \
  main.cpp
 # test/main.cpp
 TEST_CXXFILES=
@@ -67,7 +69,8 @@ lib/zookeeper/libzookeeper_mt.a
 		$(EMBED_STATIC_LIBS) \
 		/usr/lib64/libpthread.a
 #shared link
-	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(LDFLAGS) $(OBJS)
+#	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(LDFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(OBJS) 
+	$(CC) -o $(BIN_PATH)/$(TARGET) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(LDFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(OBJS) 
 
 .SUFFIXES: .o .cpp
 .cpp.o:

@@ -16,19 +16,25 @@
 #include "../rapidjson/prettywriter.h"
 #include "../rapidjson/filestream.h"
 #include "../rapidjson/stringbuffer.h"
+#include <boost/version.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/convenience.hpp>
 
 #include "Registry.h"
 
 using namespace std;
 using namespace rapidjson;
+using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
+
+using namespace FinagleRegistryProxy;
 
 class JsonUtil {
 
 public:
-	static Document Parse( string str);
-	// static string serialize(Registry& reg);
+	vector<Registry> Parse( string str);
 };
 
 } /* namespace FinagleRegistryProxy */

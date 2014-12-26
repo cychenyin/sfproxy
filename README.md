@@ -115,7 +115,14 @@ release：
 ----------------
 #### version 1.1.6 release 17
 #   1. add status method supported in frproxy.init.d.sh 
-#   2. 
+#   2. frproxy 增加zk自动刷新
+#   3. frproxy增加配置落地自动加载
+#   4. frproxy 增加远程手工刷新的接口, 不对外公开
+#   5. frproxy线上自注册有服务器丢失的问题,zk连接bug
+#   6. frproxy zk node 增加校验
+#   7. frproxy 增加自守护
+#   8. frproxy中zk连接周期性自动断开
+
 
 #### version 1.1.6 release 16
 #   1. explict that loading *.so in current folder; make more simple on deployment

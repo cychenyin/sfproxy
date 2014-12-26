@@ -8,6 +8,7 @@
 #include "RegistryCache.h"
 #include <stdexcept>
 #include "../log/logger.h"
+#include "JsonUtil.h"
 
 namespace FinagleRegistryProxy {
 
@@ -163,6 +164,47 @@ RVector* RegistryCache::get(const string name) {
 
 int RegistryCache::size() {
 	return cache.size();
+}
+
+void RegistryCache::from_file(const string& filename) {
+	FileCache f(filename);
+	string content;
+	if(f.open_read() && f.read_all(content)){
+		// parse json doc
+
+
+
+		// copy to cache
+	}
+}
+
+bool RegistryCache::save(const string& filename) {
+	stringstream ss;
+	ss << "[";
+	RMap::iterator it = cache.begin();
+	while (it != cache.end()) {
+		if (ss.width() > 2) {
+			ss << ",";
+		}
+		ss << "{\"name\":\"" << it->first << "\",";
+		ss << "\"data\":";
+		ss << Registry::to_json_string(it->second);
+		ss << "}";
+	}
+	ss << "]";
+
+	try {
+		FileCache f(filename);
+		if (f.open_write() && f.write(ss.str())) {
+			f.flush();
+		} else {
+			logger::warn("RegistryCache.save fail to open file %s ", filename.c_str());
+		}
+	} catch (const std::exception& ex) {
+		logger::warn("RegistryCache.save fail to save file %s.  cause of %s", filename.c_str(), ex.what());
+		return false;
+	}
+	return true;
 }
 
 } /* namespace frp */

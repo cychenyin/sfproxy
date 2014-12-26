@@ -20,6 +20,7 @@
 
 // #include "ganji/util/thread/mutex.h"
 #include "concurrency/Mutex.h"
+#include "FileCache.h"
 
 using namespace std;
 
@@ -31,8 +32,12 @@ typedef map<string, RVector > RMap;
 
 class RegistryCache {
 public:
+	RMap cache;
+
+public:
 	RegistryCache();
 	virtual ~RegistryCache();
+
 
 	void add(Registry& proxy);
 	// name eg /sao/services/test.thrift, ephemeral eg member00000001
@@ -51,6 +56,9 @@ public:
 	RVector* get(const string name);
 	// name eg /sao/services/test.thrift
 	bool exists(const string& name);
+
+	bool save(const string& filename);
+	void from_file(const string& filename);
 
 	string dump() {
 		stringstream ss;
@@ -73,7 +81,7 @@ public:
 		}
 		return ss.str();
 	}
-	RMap cache;
+
 private:
 	// ::ganji::util::thread::Mutex mutex;
 	apache::thrift::concurrency::Mutex mutex;

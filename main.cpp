@@ -40,6 +40,9 @@ using boost::shared_ptr;
 
 // using namespace ganji::util::log::ThriftLog;
 
+static const string VERION_Str = "1.1.6";
+
+
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
 
@@ -64,7 +67,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy nonblocking server starting at port %d. zk server %s", port, zkhosts.c_str());
 
-	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
+	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 
 	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
@@ -79,8 +82,11 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 
-	handler.get()->register_self(port);
+	handler.get()->register_self();
 	handler.get()->warm();
+
+
+	// ReloadScheduler::kickoff(handler.get(), port);
 
 	try {
 		logger::warn("server is getting up.");
@@ -100,7 +106,7 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy pool server starting at port %d. zk server %s", port, zkhosts.c_str());
 
-	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
+	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
 	shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
@@ -112,7 +118,7 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	threadManager->start();
 	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
 
-	handler.get()->register_self(port);
+	handler.get()->register_self();
 	handler.get()->warm();
 	try {
 		server.serve();
@@ -128,7 +134,7 @@ int threadedServer(string zkhosts, int port) {
 	cout << utils::now() << " frproxy threaded server starting at port " << port << endl;
 	cout << utils::now() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy threaded server starting at port %d. zk server %s", port, zkhosts.c_str());
-	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts));
+	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 
 	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
@@ -137,7 +143,7 @@ int threadedServer(string zkhosts, int port) {
 
 	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
-	handler.get()->register_self(port);
+	handler.get()->register_self();
 	handler.get()->warm();
 	try {
 		server.serve();
@@ -150,7 +156,7 @@ int threadedServer(string zkhosts, int port) {
 }
 
 void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.5" << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.6" << endl;
 }
 void usage() {
 	version();

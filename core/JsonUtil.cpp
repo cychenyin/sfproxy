@@ -9,23 +9,30 @@
 
 namespace FinagleRegistryProxy {
 
-Document Parse( string str) {
-
+vector<Registry> Parse(string str) {
 	Document d;
 	d.Parse<0>(str.c_str());
 
-	if(!d.HasParseError() && d.HasMember("serviceEndpoint") ) {
+//	Registry reg;
+//	reg.name = serviceZpath;
+//	reg.ctime = stat.ctime / 1000;
+//	reg.ephemeral = ephemeralName;
+//
+//	if (!d.HasParseError() && d.HasMember("serviceEndpoint")) {
+//		const Value &v = d["serviceEndpoint"];
+//		if (v.IsObject() && v.HasMember("host")) {
+//			reg.host = v["host"].GetString();
+//			if (v.HasMember("port")) {
+//				reg.port = v["port"].GetInt();
+//			}
+//		}
+//	}
 
-		Registry r;
-	}
-
-	return 0;
 }
 
 string serialize(Registry& reg) {
 
 	return 0;
 }
-
 
 } /* namespace FinagleRegistryProxy */

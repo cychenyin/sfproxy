@@ -17,18 +17,19 @@
 // #include "../rapidjson/stringbuffer.h"
 
 #include "../frproxy.h"
-#include "JsonUtil.h"
+// #include "JsonUtil.h"
 
 namespace FinagleRegistryProxy {
 using namespace  std;
 
 class Registry {
 public:
-	// zk path really
+	// zk path really, eg. soa/serivces/rta.counter.thrift
 	std::string name;
 	std::string host;
 	int port;
 	int ctime;
+	// zk ephemeral node name, eg. member00000001
 	std::string ephemeral;
 
 	Registry();

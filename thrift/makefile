@@ -7,7 +7,7 @@ CC=g++ -ggdb
 CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy
 #c++11# -std=c++0x  -Wall
 
-LIBS    := thrift thriftnb event pthread zookeeper_mt
+LIBS    := thrift thriftnb event pthread zookeeper_mt boost_system boost_filesystem
 LIB_PATH=../lib /usr/local/lib 
 BIN_PATH=../bin
 INCLUDES=../include /usr/include /usr/local/include /usr/local/include/thrift ../include/zookeeper
@@ -19,7 +19,7 @@ MOD_NAME4=sserver
 
 LOG_CXXFILES=../log/logger.cpp ../log/scribe_log.cpp ../log/gen-cpp/fb303_constants.cpp ../log/gen-cpp/fb303_types.cpp ../log/gen-cpp/scribe_constants.cpp ../log/gen-cpp/scribe_types.cpp ../log/gen-cpp/scribe.cpp ../log/gen-cpp/FacebookService.cpp
 COMMON_CXXFILES=proxy_constants.cpp RegistryProxy.cpp proxy_types.cpp RegistryProxyHandler.cpp $(LOG_CXXFILES)
-MOD_NAME_CXXFILES=$(COMMON_CXXFILES) client.cpp ../core/ClientPool.cpp ../core/ZkClient.cpp ../core/Registry.cpp ../core/RegistryCache.cpp
+MOD_NAME_CXXFILES=$(COMMON_CXXFILES) client.cpp ../core/ClientPool.cpp ../core/ZkClient.cpp ../core/Registry.cpp ../core/JsonUtil.cpp ../core/FileCache.cpp ../core/RegistryCache.cpp
 MOD_NAME2_CXXFILES=$(COMMON_CXXFILES) server.cpp
 MOD_NAME3_CXXFILES=$(COMMON_CXXFILES) clientSimple.cpp
 MOD_NAME4_CXXFILES=$(COMMON_CXXFILES) serverSimple.cpp

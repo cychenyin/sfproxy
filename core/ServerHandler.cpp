@@ -17,6 +17,7 @@
 #define DiffMs(end, start) ((double) (end - start) / CLOCKS_PER_SEC * 1000)
 #endif
 
+#include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
@@ -39,6 +40,27 @@ using namespace apache::thrift::concurrency;
 using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
+
+/*
+ * TaskInfo, use to save schedule interval and running time
+ * 	TaskInfo will not release runner. YOU SOULD DO IT YOURSELF.
+ */
+class TaskInfo {
+public:
+	Runnable* runner;
+	int interval_in_ms;
+	// last run time; accurate to ms,
+	uint32_t last_run_ms;
+
+	TaskInfo(Runnable* runner, int interval_in_ms) :
+			runner(runner), interval_in_ms(interval_in_ms) {
+		last_run_ms = 0;
+	}
+	~TaskInfo() {
+		runner = NULL;
+	}
+};
+typedef vector<TaskInfo> RunerVector;
 
 class WarmTask: public Runnable {
 private:
@@ -66,7 +88,7 @@ public:
 			}
 			c->close();
 		} else {
-			logger:: warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
+			logger::warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
 			cout << "fail to open zk client when warming. please check out whether zookeeper cluster is valid" << endl;
 		}
 	}
@@ -103,7 +125,7 @@ public:
 				logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
 			}
 		} else {
-			logger:: warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
+			logger::warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
 			cout << "fail to open zk client when registering self. please check out whether zookeeper cluster is valid" << endl;
 		}
 	}
@@ -149,8 +171,10 @@ private:
 	int async_exec_timeout; // in ms
 	string hostname;
 	string zkhosts_;
+	int port;
 public:
-	ServerHandler(string zkhosts) : zkhosts_(zkhosts) {
+	ServerHandler(string zkhosts, int port) :
+			zkhosts_(zkhosts), port(port) {
 		root = new string("/soa/services");
 		cache = new RegistryCache();
 		pool = new ClientPool(new ZkClientFactory(zkhosts, cache));
@@ -199,7 +223,7 @@ public:
 				try {
 					threadManager->add(shared_ptr<ZkReadTask>(new ZkReadTask(pool, path, skip_buf)), async_wait_timeout);
 					// (new ZkReadTask(pool, path, skip_buf))->run();
-				} catch (TooManyPendingTasksException &ex) {
+				} catch (const TooManyPendingTasksException &ex) {
 					logger::warn("too many pending zk task in thread pool. %s", ex.what());
 				}
 			}
@@ -218,7 +242,7 @@ public:
 		serial = utils::now_in_us();
 		cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
 		cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " zk retrieve="
-				<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
+		<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
 		// cache->dump();
 #endif
 	}
@@ -270,23 +294,29 @@ public:
 		logger::warn("warm server committed. server is getting up");
 	}
 
-	void register_self(int port) {
+	void register_self() {
 		stringstream name;
 		name << this->hostname << ":" << port;
 		try {
 			threadManager->add(shared_ptr<RegisterTask>(new RegisterTask(pool, name.str())));
 			logger::warn("server register self committed. ");
-		} catch (TooManyPendingTasksException &e) {
+		} catch (const TooManyPendingTasksException &e) {
 			logger::warn("too many pending task occured  in thread pool when register self. %s", e.what());
 		}
 	}
+
+	void commit_task(TaskInfo& task) {
+		threadManager->add(shared_ptr<Runnable>(task.runner), async_wait_timeout);
+	}
+
 private:
 	void init_thread_pool() {
-		threadManager = ThreadManager::newSimpleThreadManager(1, 100);
+		threadManager = ThreadManager::newSimpleThreadManager(3, 100);
 		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
 		threadManager->threadFactory(threadFactory);
 		threadManager->start();
 	}
+
 	void init_hostname() {
 		int size = 128;
 		char *buf = new char[size];
@@ -301,5 +331,99 @@ private:
 	}
 };
 // class ServerHandler
+
+class TaskScheduler: public Runnable {
+private:
+	ServerHandler* handler;
+	// disallow no param construstor
+	TaskScheduler() :
+			handler(NULL) {
+		stop = false;
+		interval_in_us = 0;
+	}
+
+	int interval_in_us;
+	RunerVector runners;
+	bool stop;
+public:
+	TaskScheduler(ServerHandler* handler) :
+			handler(handler) {
+		assert(this->handler);
+		stop = false;
+		interval_in_us = 1000 * 1000;
+	}
+
+	~TaskScheduler() {
+		runners.clear();
+		this->handler = NULL;
+	}
+
+	void run() {
+		while (!stop) {
+			for (RunerVector::iterator it = runners.begin(); it != runners.end(); ++it) {
+				// verify stop signal firstly
+				if (stop) {
+					return;
+				}
+				int32_t now = utils::now_in_ms();
+				if (now > it->interval_in_ms + it->last_run_ms) {
+					try {
+						handler->commit_task(*it);
+						it->last_run_ms = now;
+					} catch (const TooManyPendingTasksException &ex) {
+						logger::warn("too many pending task in thread pool when committing scheduled task. %s", ex.what());
+					}
+				}
+			}
+			usleep(interval_in_us);
+		}
+	}
+
+	void add(Runnable* runner, int interval_ms) {
+		TaskInfo info(runner, interval_ms);
+		runners.push_back(info);
+	}
+
+	void clear() {
+		runners.clear();
+	}
+
+}; /* nested class TaskScheduler */
+
+class ReloadTask: public Runnable {
+private:
+	ServerHandler* handler;
+
+public:
+	ReloadTask(ServerHandler* handler_) :
+			handler(handler_) {
+		assert(this->handler);
+	}
+	void run() {
+		handler->warm();
+	}
+}; //! class ReloadScheduler
+
+class AutoSaveScheduler: public Runnable {
+private:
+	ServerHandler* handler;
+	string filename;
+
+public:
+	AutoSaveScheduler(ServerHandler* phandler, string& filename) :
+			handler(handler), filename(filename) {
+		assert(this->handler);
+		assert(filename);
+	}
+	void run() {
+		handler->cache->save(filename);
+	}
+
+//	static void kickoff(ServerHandler* handler, int port) {
+//		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+//		const shared_ptr<Thread> thread = threadFactory->newThread(shared_ptr<Runnable>(new ReloadScheduler(handler, port)));
+//		thread->start();
+//	}
+}; //! class ReloadScheduler
 
 } /* namespace FinagleRegistryProxy  */
