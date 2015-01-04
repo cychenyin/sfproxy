@@ -109,9 +109,9 @@ public:
 
 	void run() {
 		int c = 0;
-		cout << "count = " << count << endl;
+		// cout << "count = " << count << endl;
 		while (c++ < count || count == 0) {
-			cout << "thread[" << pthread_self() << "]=" << c << endl;
+			// cout << "thread[" << pthread_self() << "]=" << c << endl;
 			once();
 		}
 		// cout << "thread[" << pthread_self() << "]=" << c << endl;
@@ -122,8 +122,8 @@ public:
 
 };
 
-void usage() {
-	cout << "client version:1.1.4" << endl;
+void usage(int egg=0) {
+	cout << "client version: " << FinagleRegistryProxy::FRPROXY_VERSION << endl;
 	cout << "Usage: client [option [option_value]]" << endl;
 	cout << "Options:" << endl;
 	cout << "	" << "-h, --help:		print usage. " << endl;
@@ -135,6 +135,10 @@ void usage() {
 	cout << "	" << "-m, --method:		candidatation include get, remove, dump. default get" << endl;
 	cout << "	" << "-l, --list:		list frproxy server" << endl;
 	cout << "	" << "-z,  --zkhosts:	zookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
+	if( egg > 0) {
+		cout << "	" << "-r,  --runningstatus:\t\t server running health status" << endl;
+	}
+
 	cout << "eg. " << endl;
 	cout << "	" << "./client " << endl;
 	cout << "	" << "./client -c 999" << endl;
@@ -210,7 +214,7 @@ int main(int argc, char **argv) {
 		delete cursor;
 		cursor = 0;
 	} else {
-		cout << "single threadddddddddddddddddddddddddddddddddddd mode;" << endl;
+		// cout << "single threadddddddddddddddddddddddddddddddddddd mode;" << endl;
 		ClientTask task(host, port, service_name, count);
 		task.run();
 	}

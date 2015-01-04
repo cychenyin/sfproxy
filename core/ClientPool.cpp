@@ -23,6 +23,7 @@ ClientPool::~ClientPool() {
 	factory = 0;
 }
 
+//
 ClientBase* ClientPool::open() {
 	ClientBase* c;
 	mutex.lock();
@@ -75,6 +76,7 @@ void ClientPool::on_client_changed(ClientBase* client, int state) {
 	mutex.unlock();
 }
 
+// not automic method
 void ClientPool::reset() {
 	while (using_.size() > 0) {
 		ClientBase *client = *(using_.begin());
@@ -86,6 +88,7 @@ void ClientPool::reset() {
 	}
 }
 
+// not atomic method
 void ClientPool::destroy(ClientBase* client) {
 	if (client) {
 #ifdef DEBUG_
@@ -108,45 +111,74 @@ int ClientPool::idle() {
 	return idle_.size();
 }
 
+int ClientPool::watcher_size() {
+	int ret = 0;
+	for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+		StateMap &s = (*it)->states_;
+		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+			ret++;
+		}
+	}
+	for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+		StateMap &s = (*it)->states_;
+		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+			ret++;
+		}
+	}
+	return ret;
+}
 string ClientPool::stat() {
 	stringstream ss;
 	int wc = 0;
-	ss << "zk client pool stat info." << endl;
-	ss << "using" << endl;
-	ss << "	id	using	times	conn	watches	address" << endl;
-	for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
-		ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_ << "\t"
-				<< (*it)->states_.size() << "\t" << *it << endl;
-		wc += (*it)->states_.size();
-	}
-
-	ss << "idle" << endl;
-	ss << "	id	using	times	conn	watches	address" << endl;
-	for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
-		ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_ << "\t"
-				<< (*it)->states_.size() << "\t" << *it << endl;
-		wc += (*it)->states_.size();
-	}
-	ss << "total" << endl;
-	ss << "	using	idle	watches" << endl;
-	ss << "\t" << using_.size() << "\t" << idle_.size() << "\t" << wc << endl;
-
-	ss << "watcher path" << endl;
-	ss << "-------------------------------------------------" << endl;
-	ss << "	connId	clientId	path " << endl;
-	for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
-		StateMap &s = (*it)->states_;
-		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
-			ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
+	this->mutex.lock();
+	try {
+		ss << "zk client pool stat info." << endl;
+		ss << "using" << endl;
+		ss << "	id	using	times	conn	watches	address" << endl;
+		for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
+					<< "\t" << (*it)->states_.size() << "\t" << *it << endl;
+			wc += (*it)->states_.size();
 		}
-	}
-	for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
-		StateMap &s = (*it)->states_;
-		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
-			ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
+
+		ss << "idle" << endl;
+		ss << "	id	using	times	conn	watches	address" << endl;
+		for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
+					<< "\t" << (*it)->states_.size() << "\t" << *it << endl;
+			wc += (*it)->states_.size();
 		}
+		ss << "total" << endl;
+		ss << "	using	idle	watches" << endl;
+		ss << "\t" << using_.size() << "\t" << idle_.size() << "\t" << wc << endl;
+
+		ss << "watcher path" << endl;
+		ss << "-------------------------------------------------" << endl;
+		ss << "	connId	clientId	path " << endl;
+		for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+			StateMap &s = (*it)->states_;
+			for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+				ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
+			}
+		}
+		for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+			StateMap &s = (*it)->states_;
+			for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+				ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
+			}
+		}
+	} catch (...) {
 	}
+	this->mutex.unlock();
 	return ss.str();
+}
+
+void ClientPool::clear() {
+	mutex.lock();
+	try {
+		this->reset();
+	}catch(...){}
+	mutex.unlock();
 }
 
 } /* namespace FinagleRegistryProxy */

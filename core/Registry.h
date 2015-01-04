@@ -28,15 +28,16 @@ public:
 	std::string name;
 	std::string host;
 	int port;
+	// time read from zk stat, value = stat.ctime/ 1000
 	int ctime;
 	// zk ephemeral node name, eg. member00000001
 	std::string ephemeral;
-
+	std::string json;
+public:
 	Registry();
 	Registry(string name , string host, int port);
 	virtual ~Registry();
 
-	std::string json;
 	// check validation
 	bool check();
 	// get service weight, in the hour following register hour, weight be the elapse seconds; after 1 hour, weight will always be 3600;
@@ -45,13 +46,15 @@ public:
 	bool operator==(Registry& r);
 	bool operator!=(Registry& r);
 
-	static string to_json_string(Registry &r);
+	static string serialize(Registry &r);
 //	static string to_json_string1(Registry &r);
 //	static string to_json_string2(Registry &r);
 //	static string to_json_string3(Registry &r);
 //	static string to_json_string4(Registry &r);
 
-	static string to_json_string(vector<Registry> v);
+	static string serialize(vector<Registry>& v);
+
+	static vector<Registry> unserialize(const string& json);
 };
 
 } /* namespace FinagleRegistryProxy */

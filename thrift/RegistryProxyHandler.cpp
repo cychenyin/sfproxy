@@ -39,7 +39,17 @@ public:
 		printf("remove\n");
 		_return = "test remove";
 	}
-	void dump(std::string& _return){
+	void dump(std::string& _return) {
 		_return = "";
 	}
+	void reset(std::string& _return) {
+		// Your implementation goes here
+		printf("reset\n");
+	}
+
+	int32_t status() {
+		// Your implementation goes here
+		printf("status\n");
+	}
+
 };

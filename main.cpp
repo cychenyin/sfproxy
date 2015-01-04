@@ -14,7 +14,7 @@
 #include "test/RegistryCacheTest.h"
 #include "test/ZkClientTest.h"
 
-#include "core/ServerHandler.cpp"
+#include "core/ServerHandler.h"
 #include "log/logger.h"
 
 #include "concurrency/PosixThreadFactory.h"
@@ -39,9 +39,6 @@ using namespace ut;
 using boost::shared_ptr;
 
 // using namespace ganji::util::log::ThriftLog;
-
-static const string VERION_Str = "1.1.6";
-
 
 int testmain(int argc, char** argv) {
 	cout << "welcome to finagle regsitry proxy" << endl;
@@ -156,8 +153,9 @@ int threadedServer(string zkhosts, int port) {
 }
 
 void version() {
-	cout << "Proxy Server of Service Framework of Ganji RPC 1.1.6" << endl;
+	cout << "Proxy Server of Service Framework of Ganji RPC " << FinagleRegistryProxy::FRPROXY_VERSION << endl;
 }
+
 void usage() {
 	version();
 	cout << "Usage: frproxy [options [option value]]" << endl;
@@ -166,15 +164,14 @@ void usage() {
 	cout << "	" << "-st, --threaded:\trun server as TTreadedServer" << endl;
 	cout << "	" << "-sp, --threadpool:\trun server as TTreadPoolServer" << endl;
 	cout << "	" << "-sn, --nonblocking:\trun server as TNonblockingServer. default server type" << endl;
-	cout << "	"
-			<< "-t,  --thread_count:\tthread pool size or max thread count. used in NoblockingServer & ThreadpoolServer. default 16. eg. -t 20"
-			<< endl;
+	cout << "	" << "-t,  --thread_count:\tthread pool size or max thread count. used in NoblockingServer & ThreadpoolServer. default 16. eg. -t 20" << endl;
 	cout << "	" << "-h,  --help:\t\tshow help" << endl;
 	cout << "	" << "-v,  --version:\t\tshow version" << endl;
 	cout << "	" << "-z,  --zkhosts:\t\tzookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
 	cout << "	" << "-lh, --scribehost:\t\tscribe hosts. default 127.0.0.1. eg. -lg localhost" << endl;
 	cout << "	" << "-lp, --scribeport:\t\tscribe port. default 11463. eg. -lp 11463" << endl;
-	cout << "	" << "-l,  --enable:\t\tenable scribe log" << endl;
+	cout << "	" << "-l,  --enablelog:\t\tenable scribe log" << endl;
+	cout << "	" << "-a,  --autoreset:\t\tauto reset. default true; '-a true' same to '-a' eg. -a. eg. -a false. eg. -a true" << endl;
 }
 
 int main(int argc, char **argv) {

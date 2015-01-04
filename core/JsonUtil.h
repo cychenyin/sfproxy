@@ -34,7 +34,7 @@ using namespace FinagleRegistryProxy;
 class JsonUtil {
 
 public:
-	vector<Registry> Parse( string str);
+	// vector<Registry> Parse( string str);
 };
 
 } /* namespace FinagleRegistryProxy */

@@ -9,30 +9,24 @@
 
 namespace FinagleRegistryProxy {
 
-vector<Registry> Parse(string str) {
-	Document d;
-	d.Parse<0>(str.c_str());
-
-//	Registry reg;
-//	reg.name = serviceZpath;
-//	reg.ctime = stat.ctime / 1000;
-//	reg.ephemeral = ephemeralName;
-//
-//	if (!d.HasParseError() && d.HasMember("serviceEndpoint")) {
-//		const Value &v = d["serviceEndpoint"];
-//		if (v.IsObject() && v.HasMember("host")) {
-//			reg.host = v["host"].GetString();
-//			if (v.HasMember("port")) {
-//				reg.port = v["port"].GetInt();
+//vector<Registry> Parse(string str) {
+//	vector<Registry> v;
+//	Document d;
+//	d.Parse<0>(str.c_str());
+//	if(d.IsArray()) {
+//		for(int i=0; i < d.Size(); i++ ) {
+//			if(d[i].HasMember("name")  && d[i].HasMember("host") && d[i].HasMember("port")) {
+//				Registry reg;
+//				reg.name =  d[i]["name"].GetString();
+//				reg.ctime = utils::now_in_ms();
+//				reg.host = d[i]["host"].GetString();
+//				reg.host = d[i]["port"].GetInt();
+//				reg.ephemeral = "";
+//				v.push_back(reg);
 //			}
 //		}
 //	}
-
-}
-
-string serialize(Registry& reg) {
-
-	return 0;
-}
+//	return v;
+//}
 
 } /* namespace FinagleRegistryProxy */

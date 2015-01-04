@@ -171,31 +171,45 @@ void RegistryCache::from_file(const string& filename) {
 	string content;
 	if(f.open_read() && f.read_all(content)){
 		// parse json doc
-
-
+		RVector v = Registry::unserialize(content);
 
 		// copy to cache
+		for(RVector::iterator it = v.begin(); it != v.end(); ++it ) {
+			this->add(*it);
+		}
+		logger::warn("loaded from file. service count=%ld, item count= %ld", cache.size(), v.size());
 	}
 }
 
 bool RegistryCache::save(const string& filename) {
-	stringstream ss;
-	ss << "[";
-	RMap::iterator it = cache.begin();
-	while (it != cache.end()) {
-		if (ss.width() > 2) {
-			ss << ",";
-		}
-		ss << "{\"name\":\"" << it->first << "\",";
-		ss << "\"data\":";
-		ss << Registry::to_json_string(it->second);
-		ss << "}";
-	}
-	ss << "]";
+// complex format, replaced by chenyin 2014-12-26
+//	stringstream ss;
+//	ss << "[";
+//	RMap::iterator it = cache.begin();
+//	while (it != cache.end()) {
+//		if (ss.width() > 2) {
+//			ss << ",";
+//		}
+//		ss << "{\"name\":\"" << it->first << "\",";
+//		ss << "\"data\":";
+//		ss << Registry::to_json_string(it->second);
+//		ss << "}";
+//	}
+//	ss << "]";
 
+	// simple format, lucky you, name is zkpath
+	RVector v;
+	for(RMap::iterator mit = cache.begin(); mit != cache.end(); ++mit ) {
+		RVector& pv = mit->second;
+		for(RVector::iterator vit = pv.begin(); vit != pv.end(); ++vit ) {
+			v.push_back(*vit);
+		}
+	}
+
+	string json = Registry::serialize(v);
 	try {
 		FileCache f(filename);
-		if (f.open_write() && f.write(ss.str())) {
+		if (f.open_write() && f.write(json)) {
 			f.flush();
 		} else {
 			logger::warn("RegistryCache.save fail to open file %s ", filename.c_str());

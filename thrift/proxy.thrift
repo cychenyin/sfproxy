@@ -11,4 +11,6 @@ service RegistryProxy {
 	string remove(1: required string serviceName, 2: optional string host, 3: optional i32 port);
 	#dump server state
 	string dump();
+    string reset();
+    i32 status();
 }

@@ -41,8 +41,8 @@ LOG_CXXFILES=log/logger.cpp log/scribe_log.cpp log/gen-cpp/fb303_constants.cpp l
 
 TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cpp thrift/RegistryProxy.cpp core/Registry.cpp core/JsonUtil.cpp core/FileCache.cpp core/RegistryCache.cpp core/ZkClient.cpp core/ClientPool.cpp core/ServerHandler.cpp \
  main.cpp
+ 
 # test/main.cpp
-TEST_CXXFILES=
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
@@ -96,9 +96,8 @@ client:
 	make -C thrift
 
 .PHONY: test
-test:
-	#make -C test
-	
+test: btest
+	make -C test
 	
 .PHONY: clean
 clean:

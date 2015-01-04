@@ -8,6 +8,12 @@
 #include "Registry.h"
 #include <sstream>
 #include <boost/format.hpp>
+#include "../rapidjson/document.h"
+#include "../rapidjson/prettywriter.h"
+#include "../rapidjson/filestream.h"
+#include "../rapidjson/stringbuffer.h"
+
+using namespace rapidjson;
 
 namespace FinagleRegistryProxy {
 
@@ -53,7 +59,8 @@ bool Registry::operator!=(Registry& r) {
 
 // 67us
 // use stringstream, perfermance import 100% than using rapidJson
-string Registry::to_json_string(Registry& r) {
+// 	eg. {"name":"/soa/services/zhaopin.company.http","host":"g1-zp-job-00.dns.ganji.com","port":28008,"weight":3600 }
+string Registry::serialize(Registry& r) {
 	stringstream ss;
 	ss << "{\"name\":\"" << r.name;
 	ss << "\",\"host\":\"" << r.host;
@@ -116,8 +123,8 @@ string Registry::to_json_string(Registry& r) {
 // 	fmt % r.name % r.host % r.port % r.weight();
 // 	return fmt.str();
 // }
-
-string Registry::to_json_string(vector<Registry> v) {
+// return json format, eg. [{"name":"/soa/services/zhaopin.company.http","host":"g1-zp-job-00.dns.ganji.com","port":28008,"weight":3600 }]
+string Registry::serialize(vector<Registry>& v) {
 	string ret;
 	ret += "[";
 	vector<Registry>::iterator it = v.begin();
@@ -125,11 +132,31 @@ string Registry::to_json_string(vector<Registry> v) {
 		if (ret.size() > 2) {
 			ret += ",";
 		}
-		ret += Registry::to_json_string(*it);
+		ret += Registry::serialize(*it);
 		++it;
 	}
 	ret += "]";
 	return ret;
+}
+
+vector<Registry> Registry::unserialize(const string& str) {
+	vector<Registry> v;
+	Document d;
+	d.Parse<0>(str.c_str());
+	if(d.IsArray()) {
+		for(int i=0; i < d.Size(); i++ ) {
+			if(d[i].HasMember("name")  && d[i].HasMember("host") && d[i].HasMember("port")) {
+				Registry reg;
+				reg.name =  d[i]["name"].GetString();
+				reg.ctime = utils::now_in_ms();
+				reg.host = d[i]["host"].GetString();
+				reg.host = d[i]["port"].GetInt();
+				reg.ephemeral = "";
+				v.push_back(reg);
+			}
+		}
+	}
+	return v;
 }
 
 } /* namespace FinagleRegistryProxy */

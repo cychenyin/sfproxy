@@ -71,7 +71,7 @@ public:
 			RVector::iterator vit = v.begin();
 			while(vit != v.end() ) {
 				Registry &r = *vit;
-				ss<< "\t" << Registry::to_json_string(r) << endl;
+				ss<< "\t" << Registry::serialize(r) << endl;
 				++vit ;
 			}
 			++mit;

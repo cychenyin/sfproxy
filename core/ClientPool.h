@@ -146,14 +146,17 @@ class ClientPool {
 public:
 	ClientPool(ClientFactory* factory);
 	virtual ~ClientPool();
-
+	// get a client, create if not exists, thread safe
 	virtual ClientBase* open();
+	// raise on any client change, thread safe, IN IMPLEMENT SHOULD BE USE LOCK CAREFULLY
 	void on_client_changed(ClientBase* client, int state);
 
 	int size();
 	int used();
 	int idle();
 	string stat();
+	int watcher_size();
+	void clear();
 public:
 	int conn_timeout;
 	int max_used_times;
@@ -169,8 +172,9 @@ private:
 	apache::thrift::concurrency::Mutex mutex;
 
 protected:
-
+	// clear & destory all clients in using_ and idle_ lists, not atomic method
 	virtual void reset();
+	// remove client from using_ and idle_ list, and destroy client handler, not atomic method
 	virtual void destroy(ClientBase* client);
 
 };

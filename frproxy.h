@@ -35,6 +35,8 @@ using namespace std;
 
 namespace FinagleRegistryProxy {
 
+const string FRPROXY_VERSION = "1.1.6";
+
 namespace utils {
 inline uint64_t now_in_us() {
 	struct timeval tv;
