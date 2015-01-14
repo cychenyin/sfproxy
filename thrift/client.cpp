@@ -81,6 +81,7 @@ public:
 		}
 		transport->close();
 	}
+
 	void once() {
 		boost::shared_ptr<TSocket> socket(new TSocket(host, port));
 		boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
@@ -107,6 +108,52 @@ public:
 		transport->close();
 	}
 
+	void status() {
+		boost::shared_ptr<TSocket> socket(new TSocket(host, port));
+		boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+
+		RegistryProxyClient client(protocol);
+		int i;
+		try {
+			transport->open();
+			int status = client.status();
+			cout << "status : " << status << endl;
+			cout
+					<< "	tips: get 0 is fine; 1 means zk conn , 2 means watcher, 3 means cache, 4 means that thread has some problem."
+					<< endl;
+
+		} catch (const apache::thrift::transport::TTransportException& ex) {
+			//transport->close();
+			cout << ex.what() << endl;
+		} catch (const std::exception& ex) {
+			cout << ex.what() << endl;
+		}
+		transport->close();
+	}
+	void reset() {
+		boost::shared_ptr<TSocket> socket(new TSocket(host, port));
+		boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+
+		RegistryProxyClient client(protocol);
+		int i;
+		try {
+			transport->open();
+			string ret = "";
+			client.reset(ret);
+			cout << "reset result : " << ret << endl;
+			cout << "	tips: empty result is fine." << endl;
+
+		} catch (const apache::thrift::transport::TTransportException& ex) {
+			//transport->close();
+			cout << ex.what() << endl;
+		} catch (const std::exception& ex) {
+			cout << ex.what() << endl;
+		}
+		transport->close();
+	}
+
 	void run() {
 		int c = 0;
 		// cout << "count = " << count << endl;
@@ -122,7 +169,7 @@ public:
 
 };
 
-void usage(int egg=0) {
+void usage(int egg = 0) {
 	cout << "client version: " << FinagleRegistryProxy::FRPROXY_VERSION << endl;
 	cout << "Usage: client [option [option_value]]" << endl;
 	cout << "Options:" << endl;
@@ -134,9 +181,12 @@ void usage(int egg=0) {
 	cout << "	" << "-c, --count:		default 1 when single thread. or 1. eg. -c 9999" << endl;
 	cout << "	" << "-m, --method:		candidatation include get, remove, dump. default get" << endl;
 	cout << "	" << "-l, --list:		list frproxy server" << endl;
+	cout << "	"
+			<< "-a, --status:		list frproxy working status. get 0 is fine; 1 means zk conn , 2 means watcher, 3 means cache, 4 means that thread has some problem. "
+			<< endl;
 	cout << "	" << "-z,  --zkhosts:	zookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
-	if( egg > 0) {
-		cout << "	" << "-r,  --runningstatus:\t\t server running health status" << endl;
+	if (egg > 0) {
+		cout << "	" << "-r,  --reset:\t\t server running health status" << endl;
 	}
 
 	cout << "eg. " << endl;
@@ -149,18 +199,18 @@ void usage(int egg=0) {
 	cout << "	" << "./client -n rpc.counter.thrift" << endl;
 }
 
-
-void listServer(string zkhosts){
+void listServer(string zkhosts) {
 	ClientPool pool = ClientPool(new ZkClientFactory(zkhosts, 0));
 
-	ZkClient* client = (ZkClient*)pool.open();
+	ZkClient* client = (ZkClient*) pool.open();
 	string root = "/soa/proxies";
 	vector<string> v = client->get_all_services(root);
 	cout << "frproxy servers regeistered in zk: " << zkhosts << " total:" << v.size() << endl;
-	for(vector<string>::iterator it = v.begin(); it != v.end(); it ++) {
+	for (vector<string>::iterator it = v.begin(); it != v.end(); it++) {
 		cout << "	" << *it << endl;
 	}
 }
+
 int main(int argc, char **argv) {
 	string host = option_value(argc, argv, "-s", "--server", "127.0.0.1");
 	int port = option_value(argc, argv, "-p", "--port", 9009);
@@ -172,14 +222,25 @@ int main(int argc, char **argv) {
 
 	string method = option_value(argc, argv, "-m", "--method", "");
 
-	if( option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help")) {
+	if (option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help")) {
 		usage();
 		return 0;
 	}
-	if( option_exists(argc, argv, "-l") || option_exists(argc, argv, "--list")) {
+	if (option_exists(argc, argv, "-l") || option_exists(argc, argv, "--list")) {
 		listServer(zkhosts);
 		return 0;
 	}
+	if (option_exists(argc, argv, "-a") || option_exists(argc, argv, "--status")) {
+		ClientTask task(host, port, service_name, count);
+		task.status();
+		return 0;
+	}
+	if (option_exists(argc, argv, "-r") || option_exists(argc, argv, "--reset")) {
+		ClientTask task(host, port, service_name, count);
+		task.reset();
+		return 0;
+	}
+
 	cout << "conn to port=" << port << endl;
 
 	if (method == "dump") {
@@ -187,7 +248,6 @@ int main(int argc, char **argv) {
 		task.dump();
 		return 0;
 	}
-
 
 	cout << "service name=" << service_name << endl;
 	if (pool_size > 0) {

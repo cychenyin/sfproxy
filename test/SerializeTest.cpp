@@ -1,5 +1,7 @@
 #define BOOST_TEST_NO_MAIN
 
+#include <iostream>
+#include <sstream>
 #include <boost/test/unit_test.hpp>
 #include "../core/RegistryCache.h"
 #include "../core/FileCache.h"
@@ -9,17 +11,50 @@ using namespace std;
 
 BOOST_AUTO_TEST_SUITE( serialize_suite )
 
-RegistryCache* p;
-void setup(){
 
+RegistryCache* p;
+const string filename = "/tmp/serialize.test";
+const int count = 2;
+
+Registry createReg(int i) {
+	Registry r;
+	stringstream ss;
+	ss << "servier" << i;
+	r.name =  ss.str();
+	r.host = "localhost";
+	r.port = i;
+	r.ephemeral = "e";
+	r.ctime = 1232344;
+	return r;
+}
+
+void setup() {
+	p = new RegistryCache();
+	for (int i = 0; i < count; i++) {
+		Registry r = createReg(i);
+		p->add(r);
+	}
 }
 
 void teardown() {
+	if (p) {
+		 delete p;
+		p = NULL;
+	}
+}
 
+BOOST_AUTO_TEST_CASE( empty ) {
+	setup();
+	BOOST_CHECK(true);
+	teardown();
 }
 
 BOOST_AUTO_TEST_CASE( serialize ) {
 	setup();
+
+	p->save(filename);
+
+	BOOST_CHECK(true);
 
 	teardown();
 }
@@ -27,40 +62,45 @@ BOOST_AUTO_TEST_CASE( serialize ) {
 BOOST_AUTO_TEST_CASE( unserialize ) {
 	setup();
 
+	const string content = "[{\"name\":\"servier0\",\"host\":\"localhost\",\"port\":0,\"weight\":3600 },{\"name\":\"servier1\",\"host\":\"localhost\",\"port\":1,\"weight\":3600 }]";
+	// vector<Registry>
+	RVector v = Registry::unserialize(content);
+	BOOST_CHECK_EQUAL(v.size(), 2);
+
 	teardown();
 }
 
-BOOST_AUTO_TEST_CASE( save ) {
+BOOST_AUTO_TEST_CASE( ser_vs_unser ) {
+	assert(count > 0);
+
 	setup();
+	p->save(filename);
+
+
+	RegistryCache* up = new RegistryCache();
+	up->from_file(filename);
+
+	BOOST_CHECK_EQUAL(up->size(), count);
+
+	Registry left = createReg(1);
+	RVector* v = p->get(left.name);
+	BOOST_CHECK_EQUAL(v->size(), 1);
+	Registry right = v->front();
+	BOOST_CHECK_EQUAL(left.name, right.name);
+	BOOST_CHECK_EQUAL(left.host, right.host);
+	BOOST_CHECK_EQUAL(left.port, right.port);
+
+	left = createReg(count -1);
+	BOOST_CHECK_EQUAL(v->size(), 1);
+	right = v->front();
+	BOOST_CHECK_EQUAL(left.name, right.name);
+	BOOST_CHECK_EQUAL(left.host, right.host);
+	BOOST_CHECK_EQUAL(left.port, right.port);
+
+	delete up;
+	up = NULL;
 
 	teardown();
 }
 
-BOOST_AUTO_TEST_CASE( read ) {
-	setup();
-
-	teardown();
-}
-
-BOOST_AUTO_TEST_CASE( ff_test ) {
-	// seven ways to detect and report the same error:
-	BOOST_CHECK(4 == 4);        // #1 continues on error
-
-	BOOST_REQUIRE(4 == 4);      // #2 throws on error
-
-	if (4 != 4)
-		BOOST_ERROR("Ouch...");            // #3 continues on error
-
-	if (4 != 4)
-		BOOST_FAIL("Ouch...");             // #4 throws on error
-
-	if (4 != 4)
-		throw "Ouch..."; // #5 throws on error
-
-	BOOST_CHECK_MESSAGE(4 == 4,  // #6 continues on error
-			"addf(..) result: " << 4);
-
-	BOOST_CHECK_EQUAL(4, 4);	  // #7 continues on error
-}
-
-BOOST_AUTO_TEST_SUITE(filecache_suite)
+BOOST_AUTO_TEST_SUITE_END()

@@ -14,12 +14,14 @@ BOOST_AUTO_TEST_CASE( openread ) {
 	FileCache f(filename);
 	f.open_read();
 	f.close();
+	BOOST_CHECK(true);
 }
 
 BOOST_AUTO_TEST_CASE( openall ) {
 	FileCache f(filename);
 	f.open_write();
 	f.close();
+	BOOST_CHECK(true);
 }
 
 BOOST_AUTO_TEST_CASE( readwrite ) {
@@ -30,7 +32,7 @@ BOOST_AUTO_TEST_CASE( readwrite ) {
 	fw.write(origin);
 	fw.flush();
 	fw.close();
-
+	BOOST_CHECK(true);
 }
 
 BOOST_AUTO_TEST_CASE( readsize) {
@@ -52,11 +54,13 @@ BOOST_AUTO_TEST_CASE( readcontent) {
 
 	string content = "";
 	fr.read_all(content);
-	cout << content << endl;
+
+//	cout << "===============================================================" << endl;
+//	cout << content << endl;
 
 	fr.close();
 
-	// BOOST_CHECK_EQUAL(content, origin);
+	BOOST_CHECK(true);
 }
 
 

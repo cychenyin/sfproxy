@@ -4,11 +4,12 @@ MV=/bin/mv -f
 MKDIR=/bin/mkdir -p
 #CC=g++ -O2
 CC=g++ -ggdb
-CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy
+CFLAGS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy:/usr/local/lib
 #c++11# -std=c++0x  -Wall
 
 LIBS    := thrift thriftnb event pthread zookeeper_mt boost_system boost_filesystem
-LIB_PATH=../lib /usr/local/lib 
+LIB_PATH=../lib /usr/local/lib
+#~/opt/boost/lib  
 BIN_PATH=../bin
 INCLUDES=../include /usr/include /usr/local/include /usr/local/include/thrift ../include/zookeeper
 

@@ -10,12 +10,9 @@
 namespace FinagleRegistryProxy {
 
 hstreambuf::hstreambuf() {
-	// TODO Auto-generated constructor stub
-
 }
 
 hstreambuf::~hstreambuf() {
-	// TODO Auto-generated destructor stub
 }
 
 } /* namespace FinagleRegistryProxy */

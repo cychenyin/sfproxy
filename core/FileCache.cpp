@@ -15,8 +15,8 @@
 
 namespace FinagleRegistryProxy {
 
-FileCache::FileCache(const std::string& name) :
-		filename(name), inputBuffer(0), bufferSize(0) {
+FileCache::FileCache(const std::string& _filename) :
+		filename(_filename), inputBuffer(0), bufferSize(0) {
 }
 
 FileCache::~FileCache() {
@@ -76,38 +76,36 @@ void FileCache::flush() {
 	}
 }
 
+
 long FileCache::read_all(std::string& _return) {
-	file >> _return;
-	return _return.size();
+	assert(file);
+	unsigned long size = 0;
+	mutex.lock();
+	try {
+		file.seekg(0, file.end);
+		size = file.tellg();
+		file.seekg(0, file.beg);
 
-//	assert(file);
-//	unsigned long size = 0;
-//	mutex.lock();
-//	try {
-//		file.seekg(0, file.end);
-//		size = file.tellg();
-//		file.seekg(0, file.beg);
-//
-//		if (inputBuffer) {
-//			delete[] inputBuffer;
-//			inputBuffer = NULL;
-//		}
-//		inputBuffer = new char[size];
-//
-//		file.read(inputBuffer, size);
-//		if (!file.good()) {
-//			logger::warn("Fail to read_all of file %s", filename.c_str());
-//		} else {
-//			_return.assign(inputBuffer, size);
-//		}
-//		delete[] inputBuffer;
-//		inputBuffer = NULL;
-//	} catch (const exception& e) {
-//		logger::warn("Fail to read_all of file %s cause of exception", filename.c_str());
-//	}
-//	mutex.unlock();
+		if (inputBuffer) {
+			delete[] inputBuffer;
+			inputBuffer = NULL;
+		}
+		inputBuffer = new char[size];
 
-//	return size;
+		file.read(inputBuffer, size);
+		if (!file.good()) {
+			logger::warn("Fail to read_all of file %s", filename.c_str());
+		} else {
+			_return.assign(inputBuffer, size);
+		}
+		delete[] inputBuffer;
+		inputBuffer = NULL;
+	} catch (const exception& e) {
+		logger::warn("Fail to read_all of file %s cause of exception", filename.c_str());
+	}
+	mutex.unlock();
+
+	return size;
 }
 
 unsigned long FileCache::file_size() {

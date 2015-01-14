@@ -112,7 +112,7 @@ public:
 //	void dump_stat(struct Stat *stat);
 	void parse(string json);
 	int create_enode(string name, string data);
-	int create_pnode(string abs_path);
+	int create_pnode(string abs_path, bool log_when_exists = false);
 	void debug() {
 		this->set_connected(false);
 	}

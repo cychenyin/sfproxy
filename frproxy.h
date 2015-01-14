@@ -9,8 +9,9 @@
 #define FRPROXY_H_
 
 #ifndef DEBUG_
-// #define DEBUG_
-
+	#define DEBUG_
+#else
+#define TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT
 #endif
 
 #include <sys/time.h>
@@ -38,6 +39,18 @@ namespace FinagleRegistryProxy {
 const string FRPROXY_VERSION = "1.1.6";
 
 namespace utils {
+
+inline std::string get_current_time() {
+	time_t tt;
+	struct tm vtm;
+	time(&tt);
+	localtime_r(&tt, &vtm);
+	char tc[512] = "";
+	snprintf(tc, sizeof(tc), "%04d/%02d/%02d %02d:%02d:%02d", vtm.tm_year + 1900, vtm.tm_mon + 1, vtm.tm_mday,
+			vtm.tm_hour, vtm.tm_min, vtm.tm_sec);
+	return tc;
+}
+
 inline uint64_t now_in_us() {
 	struct timeval tv;
 	struct timezone tz;

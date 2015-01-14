@@ -47,7 +47,7 @@ public:
 //			l.erase(tmp) ;
 //		}
 
-		cout << "endddddddddddddddddddddddddddddddd" << endl;
+		// cout << "endddddddddddddddddddddddddddddddd" << endl;
 		// result: throw exception when ++ after erase
 	}
 	void itoratorTest() {

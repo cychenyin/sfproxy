@@ -154,7 +154,7 @@ public:
 	void RegistryEqualsTest() {
 		Registry r = Registry("a", "b", 2);
 
-		cout << Registry::to_json_string(r) << endl;
+		cout << Registry::serialize(r) << endl;
 		Registry &r1 = r;
 		Registry *p = &r;
 

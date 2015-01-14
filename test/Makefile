@@ -8,11 +8,11 @@ THRIFT=/usr/local/bin/thrift
 #CC=g++ -O2
 CC=g++ -ggdb -g
 # -fPIC -DPIC
-CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy
+CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy:../lib:../bin:/usr/local/lib
 
 BIN_PATH=.
 INSTALL_PATH=/usr/local/webserver/frproxy
-LIB_PATH= ../lib  
+LIB_PATH=../lib /usr/local/lib
 
 INCLUDES= \
 	-I../include \
@@ -38,7 +38,7 @@ SRC_CXXFILE =$(LOG_CXXFILES) ../thrift/proxy_constants.cpp ../thrift/proxy_types
 	../core/Registry.cpp ../core/JsonUtil.cpp ../core/FileCache.cpp ../core/RegistryCache.cpp ../core/ZkClient.cpp ../core/ClientPool.cpp \
 	../core/ServerHandler.cpp 
 	
-TARGET_CXXFILES=$(SRC_CXXFILE) FileCacheTest.cpp entry.cpp
+TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp SmartpointTest.cpp #Polymorphism.cpp # TaskTest.cpp #SerializeTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
@@ -63,14 +63,15 @@ preexec:
 	
 .PHONY: afterexec
 afterexec:
-	#@echo '=================================================================='
-	#test -z $(BIN_PATH)/$(TARGET) && $(BIN_PATH)/$(TARGET)
+	@echo '=================================================================='
+	test -f $(BIN_PATH)/$(TARGET) && $(BIN_PATH)/$(TARGET) --log_level=message
 	
 .PHONY: test
 test:
 	
 .PHONY: clean
 clean:
+	$(RM) ../core/ServerHandler.o
 	$(RM) *.o
 	test -z $(BIN_PATH)/$(TARGET) || $(RM) $(BIN_PATH)/$(TARGET) 
 	

@@ -8,16 +8,17 @@ THRIFT=/usr/local/bin/thrift
 #CC=g++ -O2
 CC=g++ -ggdb -g
 # -fPIC -DPIC
-CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy
+CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy:/usr/local/lib
 #-Wall #c++11# -std=c++0x
 #THREADED used in zk cli_mt
 #CFLAGS= -D_LINUX_ -D_GNU_SOURCE -DTHREADED -static
 
 BIN_PATH=./bin
 INSTALL_PATH=/usr/local/webserver/frproxy
-LIB_PATH= ./lib  
+LIB_PATH= ./lib /usr/local/lib
+	#~/opt/boost/lib
 	#/home/asdf/downloads/gtest-1.7.0/lib \
-	#/usr/local/lib
+	
 
 INCLUDES= \
 	-I./include \
@@ -48,6 +49,10 @@ OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
 all: clean preexec $(TARGET) afterexec client
 	@echo '---------------all done. package can be started now ---------------'
+
+quick: cleanQuick preexec $(TARGET) afterexec
+	@echo '---------------quick build done as your will. ---------------'
+
 
 .PHONY: debug
 debug: clean preexecForDebug $(TARGET) afterexec
@@ -101,10 +106,15 @@ test: btest
 	
 .PHONY: clean
 clean:
-	$(RM) *.o log/*.o ./core/*.o ./thrift/*.o t
-	test -z $(TARGET) || $(RM) $(BIN_PATH)/$(TARGET) 
-	test -z $(TARGET1) || $(RM) $(BIN_PATH)/$(TARGET2)
-	test -z $(TARGET2) || $(RM) $(BIN_PATH)/$(TARGET2)
+	$(RM) *.o log/*.o ./core/*.o ./thrift/*.o
+	test -z $(TARGET) || $(RM) $(BIN_PATH)/$(TARGET)
+#	test -z $(TARGET1) || $(RM) $(BIN_PATH)/$(TARGET2)
+#	test -z $(TARGET2) || $(RM) $(BIN_PATH)/$(TARGET2)
+
+.PHONY: cleanQuick
+cleanQuick:
+	$(RM) ../core/ServerHandler.o
+	test -z $(TARGET) || $(RM) $(BIN_PATH)/$(TARGET)
 	
 install:
 #	ar r $(TARGET) $(OBJS) 

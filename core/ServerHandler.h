@@ -43,74 +43,90 @@ using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
 
+class ServerHandler;
+class ScheduledTask: virtual public Runnable {
+protected:
+	ServerHandler* handler;
+public:
+	ScheduledTask(ServerHandler* _handler) : handler(_handler) {}
+	virtual ~ScheduledTask() { handler = NULL; }
+
+	void run() {}
+}; // class TaskScheduler
+
 /*
  * TaskInfo, use to save schedule interval and running time
  * 	TaskInfo will not release runner. YOU SOULD DO IT YOURSELF.
  */
 class TaskInfo {
 public:
-	Runnable* runner;
+	string name;
+	shared_ptr<ScheduledTask> runner;
 	int interval_in_ms;
 	// last run time; accurate to ms,
 	uint32_t last_run_ms;
 
 public:
-	TaskInfo(Runnable* runner, int interval_in_ms) : runner(runner), interval_in_ms(interval_in_ms), last_run_ms(0) {}
-	~TaskInfo() {
-		if(runner) {
-			delete runner;
-		}
+	TaskInfo(ScheduledTask* _runner, int _interval_in_ms) : interval_in_ms(_interval_in_ms), last_run_ms(0) {
+		name = "";
+		runner = shared_ptr<ScheduledTask>(_runner);
+	}
+	virtual ~TaskInfo() {
+		// use smart point, DO NOT delete explicitly
+//		if(runner) {
+//			cout << name << " delete TaskInfo" << endl;
+//			delete runner;
+//		}
 	}
 }; // class TaskInfo
 
+typedef vector<TaskInfo*> RunnerVector;
 
-typedef vector<TaskInfo> RunerVector;
-
-class ServerHandler;
 
 class TaskScheduler: virtual public Runnable {
 private:
 	ServerHandler* handler;
 	int interval_in_us;
-	RunerVector runners;
-	bool stop;
+	RunnerVector runners;
+	bool stop_flag;
+private:
+	int count;
 
 public:
 	TaskScheduler(ServerHandler* handler);
-	~TaskScheduler();
-	// run scheduler
+	virtual ~TaskScheduler();
+	// override Runnable; run scheduler
 	void run();
 	// scheduler will run next round after interval eclipsed
-	void add(Runnable* runner, int interval_ms);
+	void add(ScheduledTask* _runner, int _interval_ms);
+	void add(TaskInfo* _task);
 	// clear scheduled task
 	void clear();
+
+	void stop();
+
+	int size() { return runners.size(); }
+
 private:
 	// disallow empty construction
 	TaskScheduler();
 
 }; // class TaskScheduler
 
-class ScheduledTask: virtual public Runnable {
-protected:
-	ServerHandler* handler;
-	ScheduledTask(ServerHandler* phandler) : handler(phandler) {}
-	~ScheduledTask() { handler = NULL; }
+// reload from zookeeper again, if all zk offline, then use local file
+class ReloadTask: public ScheduledTask {
 public:
-	//void run() = 0;
-}; // class TaskScheduler
-
-class ResetTask: public ScheduledTask {
-public:
-	ResetTask(ServerHandler* handler_) : ScheduledTask(handler_){}
-	 void run();
-}; // class ResetTask
+	ReloadTask(ServerHandler* _handler) : ScheduledTask(_handler){}
+	virtual ~ReloadTask() {}
+	void run();
+}; // class ReloadTask
 
 class AutoBreakZkConnTask: public ScheduledTask{
 private:
 	ClientPool *pool;
 public:
 	AutoBreakZkConnTask(ServerHandler* handler_, ClientPool *pool) : ScheduledTask(handler_), pool(pool) {}
-	~AutoBreakZkConnTask() {
+	virtual ~AutoBreakZkConnTask() {
 		pool = NULL;
 	}
 	void run();
@@ -122,15 +138,19 @@ private:
 
 public:
 	AutoSaveTask(ServerHandler* handler_, const string& filename) : ScheduledTask(handler_), filename(filename){}
+	virtual ~AutoSaveTask(){}
 	void run();
 }; // class AutoSaveTask
 
-//class OnceTask: virtual public Runnable {
-//public:
-////	void run() = 0;
-//}; // class OnceTask
+class OnceTask: virtual public Runnable {
+public:
+//	void run() = 0;
+}; // class OnceTask
 
-class WarmTask: virtual public Runnable {
+/**
+ * init registry cache from file firstly, and then override these registry with zk if possible;
+ */
+class WarmTask: public OnceTask { // virtual public Runnable {
 private:
 	ClientPool *pool;
 	string zk_root;
@@ -139,12 +159,12 @@ public:
 	WarmTask(ClientPool *pool, string zkRoot) : pool(pool), zk_root(zkRoot) {
 		c = NULL;
 	}
-	~WarmTask() {}
+	virtual ~WarmTask() {}
 
 	void run();
 }; // class WarmTask
 
-class RegisterTask: virtual public Runnable {
+class RegisterTask: public OnceTask { // virtual public Runnable {
 private:
 	ClientPool *pool;
 	string node_name;
@@ -155,12 +175,12 @@ public:
 			pool(pool), node_name(node_name) {
 		c = 0;
 	}
-	~RegisterTask() {}
+	virtual ~RegisterTask() {}
 
 	void run();
 }; // class RegisterTask
 
-class ZkReadTask: virtual public Runnable {
+class ZkReadTask: public OnceTask { // virtual public Runnable {
 private:
 	ClientPool *pool;
 	string zkpath;
@@ -171,7 +191,7 @@ public:
 		c = 0;
 	}
 
-	~ZkReadTask() {	}
+	virtual ~ZkReadTask() {	}
 	void run();
 }; // class ZkReadTask
 
@@ -189,12 +209,12 @@ private:
 	int async_wait_timeout; // in ms
 	int async_exec_timeout; // in ms
 	string hostname;
-	string zkhosts_;
+	string zkhosts;
 	int port;
 	TaskScheduler *scheduler;
 public:
 	ServerHandler(string zkhosts, int port);
-	~ServerHandler();
+	virtual ~ServerHandler();
 
 	// RegistryProxyIf::get
 	void get(std::string& _return, const std::string& serviceName);
@@ -216,10 +236,15 @@ public:
 	void warm();
 	void register_self();
 	void start_scheduler();
-	void commit_task(TaskInfo& task);
+	void commit_task(TaskInfo* task);
 
+
+	// for test
+	TaskScheduler* get_scheduler() {
+		return scheduler;
+	}
 private:
-	void init_scheduler();
+	void init_scheduledtask();
 
 	void init_thread_pool();
 

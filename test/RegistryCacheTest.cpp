@@ -5,9 +5,11 @@
  *      Author: asdf
  */
 
-// #include "RegistryCacheTest.h"
-#ifndef REGISTRYCACHETEST_H_
-#define REGISTRYCACHETEST_H_
+#define BOOST_TEST_NO_MAIN
+#include <boost/test/unit_test.hpp>
+
+using namespace FinagleRegistryProxy;
+using namespace std;
 
 #include <iostream>
 #include "../core/RegistryCache.h"
@@ -15,7 +17,7 @@
 using namespace std;
 using namespace FinagleRegistryProxy;
 
-namespace ut {
+BOOST_AUTO_TEST_SUITE( registry_cache_suite )
 
 
 class RegistryCacheTest {
@@ -161,6 +163,7 @@ public:
 				<< endl;
 
 	}
+
 	void removeTest1() {
 		cache.clear();
 		string name("remove");
@@ -271,6 +274,10 @@ public:
 	}
 };
 
-} /* namespace ut */
 
-#endif /* REGISTRYCACHETEST_H_ */
+BOOST_FIXTURE_TEST_CASE( empty , RegistryCacheTest) {
+	emptyTest();
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()

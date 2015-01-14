@@ -33,6 +33,7 @@ public:
 	bool is_open();
 	void close();
 	bool write(const std::string& data);
+	// used for small file read
 	long read_all(std::string& _return);
 	void flush();
 	unsigned long file_size();

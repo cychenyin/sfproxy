@@ -4,25 +4,29 @@
  *  Created on: Mar 13, 2014
  *      Author: asdf
  */
-
-#include "RegistryCache.h"
 #include <stdexcept>
+#include <sstream>
+#include <algorithm>
+
 #include "../log/logger.h"
 #include "JsonUtil.h"
+#include "RegistryCache.h"
 
 namespace FinagleRegistryProxy {
 
 RegistryCache::RegistryCache() {
-
 }
 
 RegistryCache::~RegistryCache() {
+	this->clear();
 }
 
 void RegistryCache::add(Registry& reg) {
 	string &name = reg.name;
-	if (name == "" || reg.host == "" || reg.ephemeral == "")
+	if (name == "" || reg.host == "" || reg.ephemeral == "") {
+		cout << "add valid false" << endl;
 		return;
+	}
 	mutex.lock();
 	RMap::iterator it = cache.find(name);
 	RVector *ptr = NULL;
@@ -69,33 +73,15 @@ void RegistryCache::remove(const string name, const string ephemeral) {
 		}
 	}
 	mutex.unlock();
-//	const string n("" + name + "");
-//	 Rmap::iterator it = cache.find(n);
-//
-//	if (it != cache.end()) {
-//		ptr = &(it->second);
-//		Rvector::iterator itProxy = ptr->begin();
-//		while (itProxy != ptr->end()) {
-//			if ((*itProxy).ephemeral == ephemeral) {
-//				ptr->erase(itProxy);
-//				break;
-//			}
-//			++itProxy;
-//		}
-//	}
-
 }
 
-void RegistryCache::remove(const string name, Registry& reg) {
+void RegistryCache::remove(Registry& reg) {
 	mutex.lock();
-	RMap::iterator it = cache.find(name);
+	// RMap::iterator it = cache.find(name);
+	RMap::iterator it = cache.find(reg.name);
 	RVector *ptr = NULL;
 	if (it != cache.end()) {
 		ptr = &(it->second);
-//		Rvector::iterator itProxy = find(ptr->begin(), ptr->end(), proxy);
-//		if (itProxy != ptr->end()) {
-//			ptr->erase(itProxy);
-//		}
 		RVector::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
 			if ((*itProxy) == reg) {
@@ -130,7 +116,7 @@ bool RegistryCache::empty(const string name) {
 
 void RegistryCache::clear() {
 	mutex.lock();
-	return cache.clear();
+	cache.clear();
 	mutex.unlock();
 }
 
@@ -154,7 +140,6 @@ RVector* RegistryCache::get(const string name) {
 		mutex.unlock();
 		if (it != cache.end()) {
 			ptr = &(it->second);
-			return ptr;
 		}
 	} catch (const std::exception& ex) {
 		logger::warn("RegistryCache.get failure, message: %s", ex.what());
@@ -172,31 +157,40 @@ void RegistryCache::from_file(const string& filename) {
 	if(f.open_read() && f.read_all(content)){
 		// parse json doc
 		RVector v = Registry::unserialize(content);
-
 		// copy to cache
 		for(RVector::iterator it = v.begin(); it != v.end(); ++it ) {
+			(*it).ephemeral = "from_file";
+			(*it).ctime = utils::now_in_ms();
 			this->add(*it);
 		}
 		logger::warn("loaded from file. service count=%ld, item count= %ld", cache.size(), v.size());
 	}
 }
 
-bool RegistryCache::save(const string& filename) {
-// complex format, replaced by chenyin 2014-12-26
-//	stringstream ss;
-//	ss << "[";
-//	RMap::iterator it = cache.begin();
-//	while (it != cache.end()) {
-//		if (ss.width() > 2) {
-//			ss << ",";
-//		}
-//		ss << "{\"name\":\"" << it->first << "\",";
-//		ss << "\"data\":";
-//		ss << Registry::to_json_string(it->second);
-//		ss << "}";
-//	}
-//	ss << "]";
+string RegistryCache::dump() {
+	stringstream ss;
+	RMap::iterator mit = cache.begin();
+	ss << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
+	int i = 0;
+	int max = 1000;
+	while(mit != cache.end() && ++i < max) {
+		RVector &v = mit->second;
+		RVector::iterator vit = v.begin();
+		while(vit != v.end() ) {
+			Registry &r = *vit;
+			ss<< "\t" << Registry::serialize(r) << endl;
+			++vit ;
+		}
+		++mit;
+	}
+	if(i >= max) {
+		ss << "	......" << endl;
+	}
+	return ss.str();
+}
 
+
+bool RegistryCache::save(const string& filename) {
 	// simple format, lucky you, name is zkpath
 	RVector v;
 	for(RMap::iterator mit = cache.begin(); mit != cache.end(); ++mit ) {

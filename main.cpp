@@ -10,11 +10,6 @@
 
 #include <iostream>
 
-#include "frproxy.h"
-#include "test/RegistryCacheTest.h"
-#include "test/ZkClientTest.h"
-
-#include "core/ServerHandler.h"
 #include "log/logger.h"
 
 #include "concurrency/PosixThreadFactory.h"
@@ -26,6 +21,9 @@
 
 #include "transport/TServerSocket.h"
 #include "transport/TBufferTransports.h"
+
+#include "frproxy.h"
+#include "core/ServerHandler.h"
 #include "utils/ArgsParser.h"
 
 using namespace ::apache::thrift;
@@ -34,30 +32,12 @@ using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 using namespace ::apache::thrift::concurrency;
 
+//using namespace ut;
 using namespace std;
-using namespace ut;
 using boost::shared_ptr;
+using namespace FinagleRegistryProxy;
 
 // using namespace ganji::util::log::ThriftLog;
-
-int testmain(int argc, char** argv) {
-	cout << "welcome to finagle regsitry proxy" << endl;
-
-	cout << utils::now() << endl;
-
-//	ut::RegistryCacheTest a;
-//	a.test();
-//	a.getTest();
-//	a.addTest();
-//	a.removeTest();
-//	a.removeTest1();
-//	a.removeTest2();
-
-//	ZkClientTest clientTest;
-//	clientTest.ConnecionTest();
-//	clientTest.RegistryEqualsTest();
-	return 0;
-}
 
 int nonblockingServer(string zkhosts, int port, int threadCount) {
 	cout << utils::now() << " frproxy nonblocking server starting at port " << port << endl;
@@ -82,8 +62,8 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 	handler.get()->register_self();
 	handler.get()->warm();
 
+	handler.get()->start_scheduler();
 
-	// ReloadScheduler::kickoff(handler.get(), port);
 
 	try {
 		logger::warn("server is getting up.");
@@ -122,6 +102,7 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	} catch (TException &ex) {
 		logger::error("thrift error occured when trying to serve. check port which is not be used please. message: %s",
 				ex.what());
+		cout << "thrift error occured when trying to serve. check port which is not be used please. message: " << ex.what() << endl;
 	}
 	cout << "frproxy server exited." << endl;
 	exit(1);
@@ -159,7 +140,6 @@ void version() {
 void usage() {
 	version();
 	cout << "Usage: frproxy [options [option value]]" << endl;
-	cout << "	" << "-d,  --debug:\t\trun test main for debugging only" << endl;
 	cout << "	" << "-p,  --port:\t\tuse definited port. default 9009. eg. -p 9009" << endl;
 	cout << "	" << "-st, --threaded:\trun server as TTreadedServer" << endl;
 	cout << "	" << "-sp, --threadpool:\trun server as TTreadPoolServer" << endl;
@@ -175,11 +155,6 @@ void usage() {
 }
 
 int main(int argc, char **argv) {
-
-	if (option_exists(argc, argv, "-d") || option_exists(argc, argv, "--debug")) {
-		testmain(argc, argv);
-		return 0;
-	}
 	// high priority args
 	if (option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help")) {
 		usage();

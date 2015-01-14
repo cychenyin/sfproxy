@@ -263,7 +263,7 @@ void ZkClient::get_service(string serviceZpath) {
 }
 
 // create permanent node
-int ZkClient::create_pnode(string abs_path) {
+int ZkClient::create_pnode(string abs_path,bool log_when_exists) {
 	if (!this->get_connected()) {
 		connect_zk();
 	}
@@ -282,7 +282,8 @@ int ZkClient::create_pnode(string abs_path) {
 	} else if (ret == ZNODEEXISTS) {
 		logger::info("create_pnode zoo_create failure, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
 	} else {
-		logger::warn("create_pnode zoo_create error, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
+		if(log_when_exists)
+			logger::warn("create_pnode zoo_create error, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
 	}
 	return ret;
 }

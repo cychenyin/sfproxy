@@ -10,13 +10,11 @@
 
 #include "Registry.h"
 #include <iostream>
-#include <sstream>
 #include <stdio.h>
 #include <map>
 #include <string>
 #include <list>
 #include <vector>
-#include <algorithm>
 
 // #include "ganji/util/thread/mutex.h"
 #include "concurrency/Mutex.h"
@@ -30,9 +28,15 @@ namespace FinagleRegistryProxy {
 typedef vector<Registry> RVector;
 typedef map<string, RVector > RMap;
 
+/**
+ * RegistryCache, cache for registry; similar to stl multimap, but not same cause of biz process in detail
+ */
 class RegistryCache {
 public:
 	RMap cache;
+private:
+	// ::ganji::util::thread::Mutex mutex;
+	apache::thrift::concurrency::Mutex mutex;
 
 public:
 	RegistryCache();
@@ -40,10 +44,10 @@ public:
 
 
 	void add(Registry& proxy);
+	// name eg /sao/services/test.thrift
+	void remove(Registry& reg);
 	// name eg /sao/services/test.thrift, ephemeral eg member00000001
 	void remove(const string name, const string ephemeral);
-	// name eg /sao/services/test.thrift
-	void remove(const string name, Registry& reg);
 	// name eg /sao/services/test.thrift
 	void remove(const string name);
 	// name eg /sao/services/test.thrift
@@ -60,31 +64,8 @@ public:
 	bool save(const string& filename);
 	void from_file(const string& filename);
 
-	string dump() {
-		stringstream ss;
-		RMap::iterator mit = cache.begin();
-		ss << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
-		int i = 0;
-		int max = 1000;
-		while(mit != cache.end() && ++i < max) {
-			RVector &v = mit->second;
-			RVector::iterator vit = v.begin();
-			while(vit != v.end() ) {
-				Registry &r = *vit;
-				ss<< "\t" << Registry::serialize(r) << endl;
-				++vit ;
-			}
-			++mit;
-		}
-		if(i >= max) {
-			ss << "	......" << endl;
-		}
-		return ss.str();
-	}
+	string dump();
 
-private:
-	// ::ganji::util::thread::Mutex mutex;
-	apache::thrift::concurrency::Mutex mutex;
 };
 
 } /* namespace frp */

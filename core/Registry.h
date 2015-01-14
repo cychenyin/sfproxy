@@ -28,7 +28,7 @@ public:
 	std::string name;
 	std::string host;
 	int port;
-	// time read from zk stat, value = stat.ctime/ 1000
+	// time read from zk stat, in ms, value = stat.ctime/ 1000
 	int ctime;
 	// zk ephemeral node name, eg. member00000001
 	std::string ephemeral;
