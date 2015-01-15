@@ -17,6 +17,10 @@
 #include <vector>
 #include <concurrency/Mutex.h>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
+
 #include <concurrency/Exception.h>
 #include <concurrency/PosixThreadFactory.h>
 #include <concurrency/Thread.h>
@@ -46,60 +50,46 @@ namespace FinagleRegistryProxy {
 class ServerHandler;
 class ScheduledTask: virtual public Runnable {
 protected:
-	ServerHandler* handler;
-public:
-	ScheduledTask(ServerHandler* _handler) : handler(_handler) {}
-	virtual ~ScheduledTask() { handler = NULL; }
-
-	void run() {}
-}; // class TaskScheduler
-
-/*
- * TaskInfo, use to save schedule interval and running time
- * 	TaskInfo will not release runner. YOU SOULD DO IT YOURSELF.
- */
-class TaskInfo {
+	shared_ptr<ServerHandler> handler;
+	shared_ptr<ScheduledTask> runner;
 public:
 	string name;
-	shared_ptr<ScheduledTask> runner;
 	int interval_in_ms;
 	// last run time; accurate to ms,
 	uint32_t last_run_ms;
+	bool busy;
 
 public:
-	TaskInfo(ScheduledTask* _runner, int _interval_in_ms) : interval_in_ms(_interval_in_ms), last_run_ms(0) {
-		name = "";
-		runner = shared_ptr<ScheduledTask>(_runner);
-	}
-	virtual ~TaskInfo() {
-		// use smart point, DO NOT delete explicitly
-//		if(runner) {
-//			cout << name << " delete TaskInfo" << endl;
-//			delete runner;
-//		}
-	}
-}; // class TaskInfo
+	ScheduledTask(shared_ptr<ServerHandler> _handler, string _name="", int _interval_in_ms=0) : handler(_handler),interval_in_ms(_interval_in_ms),last_run_ms(0),name(_name), busy(false)  {}
+	virtual ~ScheduledTask() {}
+	void run();
 
-typedef vector<TaskInfo*> RunnerVector;
+	string tostring() const;
+
+private:
+	virtual void dorun() = 0;
+}; // class ScheduledTask
+
+
+typedef vector<shared_ptr<ScheduledTask> > TaskVector;
 
 
 class TaskScheduler: virtual public Runnable {
 private:
-	ServerHandler* handler;
+	shared_ptr<ServerHandler> handler;
 	int interval_in_us;
-	RunnerVector runners;
+	TaskVector runners;
 	bool stop_flag;
-private:
 	int count;
-
 public:
-	TaskScheduler(ServerHandler* handler);
+	int first_delay_sec;
+public:
+	TaskScheduler(shared_ptr<ServerHandler> handler);
 	virtual ~TaskScheduler();
 	// override Runnable; run scheduler
 	void run();
 	// scheduler will run next round after interval eclipsed
-	void add(ScheduledTask* _runner, int _interval_ms);
-	void add(TaskInfo* _task);
+	void add(shared_ptr<ScheduledTask> _runner);
 	// clear scheduled task
 	void clear();
 
@@ -114,22 +104,22 @@ private:
 }; // class TaskScheduler
 
 // reload from zookeeper again, if all zk offline, then use local file
-class ReloadTask: public ScheduledTask {
+class ResetTask: public ScheduledTask {
 public:
-	ReloadTask(ServerHandler* _handler) : ScheduledTask(_handler){}
-	virtual ~ReloadTask() {}
-	void run();
+	ResetTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler){}
+	virtual ~ResetTask() {}
+	void dorun();
 }; // class ReloadTask
 
 class AutoBreakZkConnTask: public ScheduledTask{
 private:
 	ClientPool *pool;
 public:
-	AutoBreakZkConnTask(ServerHandler* handler_, ClientPool *pool) : ScheduledTask(handler_), pool(pool) {}
+	AutoBreakZkConnTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, ClientPool *pool) : ScheduledTask(_handler, _name, _interval_in_ms), pool(pool) {}
 	virtual ~AutoBreakZkConnTask() {
 		pool = NULL;
 	}
-	void run();
+	void dorun();
 }; // class AutoBreakZkConnTask
 
 class AutoSaveTask: public ScheduledTask {
@@ -137,14 +127,14 @@ private:
 	string filename;
 
 public:
-	AutoSaveTask(ServerHandler* handler_, const string& filename) : ScheduledTask(handler_), filename(filename){}
+	AutoSaveTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, const string& filename) : ScheduledTask(_handler, _name, _interval_in_ms), filename(filename){}
 	virtual ~AutoSaveTask(){}
-	void run();
+	void dorun();
 }; // class AutoSaveTask
 
 class OnceTask: virtual public Runnable {
 public:
-//	void run() = 0;
+	void run(){}
 }; // class OnceTask
 
 /**
@@ -196,7 +186,7 @@ public:
 }; // class ZkReadTask
 
 
-class ServerHandler: virtual public RegistryProxyIf {
+class ServerHandler: virtual public RegistryProxyIf, public boost::enable_shared_from_this<ServerHandler> {
 
 private:
 	RegistryCache *cache;
@@ -212,6 +202,11 @@ private:
 	string zkhosts;
 	int port;
 	TaskScheduler *scheduler;
+public:
+	shared_ptr<ServerHandler> get_sharedPtr_from_this(){
+	             return shared_from_this();
+	}
+
 public:
 	ServerHandler(string zkhosts, int port);
 	virtual ~ServerHandler();
@@ -232,12 +227,13 @@ public:
 
 	// save cache into /tmp/frproxy.cache
 	void save(string& filename);
-
 	void warm();
 	void register_self();
-	void start_scheduler();
-	void commit_task(TaskInfo* task);
 
+	void async_warm();
+	void async_register_self();
+	void start_scheduler();
+	void commit_task(shared_ptr<ScheduledTask> task);
 
 	// for test
 	TaskScheduler* get_scheduler() {

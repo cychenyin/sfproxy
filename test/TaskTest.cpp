@@ -30,7 +30,7 @@ BOOST_FIXTURE_TEST_CASE( run_directly, F) {
 	// Runnable *pr;
 	ServerHandler*server = new ServerHandler("localhost:2181", 9009);
 
-	ReloadTask reload(server);
+	ResetTask reload(server);
 	reload.run();
 
 	delete server;
@@ -42,7 +42,7 @@ BOOST_FIXTURE_TEST_CASE( run_by_runnalbe, F) {
 	Runnable *pr;
 	ServerHandler*server = new ServerHandler("localhost:2181", 9009);
 
-	ReloadTask reload(server);
+	ResetTask reload(server);
 
 	pr  = &reload;
 

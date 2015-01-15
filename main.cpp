@@ -10,8 +10,6 @@
 
 #include <iostream>
 
-#include "log/logger.h"
-
 #include "concurrency/PosixThreadFactory.h"
 #include "concurrency/ThreadManager.h"
 #include "protocol/TBinaryProtocol.h"
@@ -25,6 +23,7 @@
 #include "frproxy.h"
 #include "core/ServerHandler.h"
 #include "utils/ArgsParser.h"
+#include "log/logger.h"
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -61,9 +60,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	handler.get()->register_self();
 	handler.get()->warm();
-
 	handler.get()->start_scheduler();
-
 
 	try {
 		logger::warn("server is getting up.");
@@ -215,6 +212,8 @@ int main(int argc, char **argv) {
 		default:
 			break;
 		}
+	} catch (const std::exception& ex) {
+		cout << "fatal error occured! need to restart server. message:" << ex.what() << endl;
 	} catch (char* ex) {
 		logger::error("fatal error occured! need to restart server. message: %d", ex);
 		cout << "fatal error occured! need to restart server. message:" << ex << endl;

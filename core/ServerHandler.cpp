@@ -11,6 +11,7 @@
 
 #include "ServerHandler.h"
 
+// using namespace boost::static_pointer_cast;
 namespace FinagleRegistryProxy {
 
 // TODO ... re imple warm task
@@ -66,129 +67,127 @@ void ZkReadTask::run() {
 	skip_buf->erase(zkpath);
 }
 
-TaskScheduler::TaskScheduler(ServerHandler* _handler) {
+TaskScheduler::TaskScheduler(shared_ptr<ServerHandler> _handler) {
 	this->handler = _handler;
-	assert(this->handler);
+	assert(this->handler.get());
+
 	stop_flag = false;
 	interval_in_us = 10 * 1000;
 	count = 0;
+	first_delay_sec  = 1;
 }
 
 TaskScheduler::~TaskScheduler() {
 	this->clear();
-
-	this->handler = NULL;
 }
 
 void TaskScheduler::clear() {
 	stop();
-
-	TaskInfo *p = NULL;
-	while (runners.size() > 0) {
-		p = runners.back();
-		runners.pop_back();
-		delete p;
-		p = NULL;
-	}
+	runners.clear();
 }
 
 void TaskScheduler::run() {
 	stop_flag = false;
+	if(first_delay_sec > 0) {
+		sleep(first_delay_sec);
+	}
+
 	while (!stop_flag) {
-#ifdef DEBUG_
-		cout << "scheduler running..." << endl;
-#endif
-		try {
-			for (RunnerVector::iterator it = runners.begin(); it != runners.end(); ++it) {
-				// verify stop signal firstly
-				if (stop_flag) {
-					cout << "1. scheduler stopped" << endl;
-					return;
-				}
-				int32_t now = utils::now_in_ms();
-				TaskInfo* task = *it;
-				if (now > (task->interval_in_ms + task->last_run_ms)) {
-					try {
-						cout << "2.1 scheduler committing task " << task->name << endl;
-						handler->commit_task(task);
-						task->last_run_ms = now;
-						cout << "2.2 scheduler committed task " << task->name << endl;
-					} catch (const TooManyPendingTasksException &ex) {
-						logger::warn("too many pending task in thread pool when committing scheduled task. %s", ex.what());
-					}
+		for (TaskVector::iterator it = runners.begin(); it != runners.end(); ++it) {
+			uint32_t now = utils::now_in_ms();
+			//TaskInfo* task = *it;
+			shared_ptr<ScheduledTask> task = *it;
+			cout << utils::now() << " " << task->name << " busy="<< task->busy << " now=" << now << " last=" << task->interval_in_ms + task->last_run_ms << " diff=" << now - task->last_run_ms - task->interval_in_ms<< endl;
+			if (task->busy == false && now - task->last_run_ms - task->interval_in_ms > 0) {
+				try {
+					task->busy = true; // set flag before commit
+					handler->commit_task(task);
+				} catch (const TooManyPendingTasksException &ex) {
+					logger::warn("TaskScheduler::run exception, too many pending task in thread pool when committing %s task. %s", task->name.c_str(), ex.what());
+					task->busy = false;
+				} catch (const exception& ex) {
+					logger::warn("TaskScheduler::run %s exception: %s", task->name.c_str(), ex.what());
+					cerr << "TaskScheduler::run " << task->name << " exception: " << ex.what() << endl;
+					task->busy = false;
+				} catch (const char* ex) {
+					logger::warn("TaskScheduler::run %s exception, msg: %s", task->name.c_str(), ex);
+					cerr << "TaskScheduler::run " << task->name << " exception, msg:" << ex << endl;
+					task->busy = false;
+				} catch (...) {
+					logger::warn("TaskScheduler::run %s fail, and eated exception.", task->name.c_str());
+					cerr << "TaskScheduler::run " << task->name << " fail, and eated exception." << endl;
+					task->busy = false;
 				}
 			}
-		} catch (...) {
-			cout << "TaskScheduler::run throw unknown exception"  << endl;
 		}
 		usleep(interval_in_us);
-#ifdef DEBUG_
-		cout << "scheduler has run." << endl;
-#endif
 	}
 #ifdef DEBUG_
-	cout << "scheduler quit " << endl;
+	cout << "scheduler quit" << endl;
 #endif
 }
 
-void TaskScheduler::add(TaskInfo* _task) {
-	stringstream ss;
-	ss << "task" << ++count;
-	_task->name = ss.str();
-	runners.push_back(_task);
-}
-
-void TaskScheduler::add(ScheduledTask* _runner, int _interval_ms) {
-	TaskInfo* info = new TaskInfo(_runner, _interval_ms);
-	stringstream ss;
-	ss << "task" << ++count;
-	info->name = ss.str();
-	runners.push_back(info);
+void TaskScheduler::add(shared_ptr<ScheduledTask> _runner) {
+	runners.push_back(_runner);
 }
 
 // stop and wait
 void TaskScheduler::stop() {
 	stop_flag = true;
-//	cout << "scheduler stopping" << endl;
+	for (TaskVector::iterator it = runners.begin(); it != runners.end(); ++it) {
+		(*it)->busy = false;
+	}
 #ifndef TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT
 	usleep(this->interval_in_us * 2);
 #else
 	usleep((long)(this->interval_in_us * TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT));
 	cout << "task scheduler stop wait timeout: " << (long)(this->interval_in_us * TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT) << endl;
 #endif
-//	cout << "scheduler stopped" << endl;
+}
+
+string ScheduledTask::tostring() const {
+	stringstream ss;
+	ss << "\t" << name << "\t" << interval_in_ms << "" << last_run_ms << "" << endl;
+	return ss.str();
+}
+// run task, make sure no exception throw out
+void ScheduledTask::run() {
+	cout << name << " \ttask running..." << endl;
+#ifdef DEBUG_
+#endif
+	try {
+		dorun();
+	} catch (const exception& ex) {
+		cout << "ScheduledTask " << name << " exception cause of " << ex.what() << endl;
+	} catch (const char* e) {
+		cout << "ScheduledTask" << name << " exception cause of " << e << endl;
+	} catch (...) {
+		cout << "ScheduledTask" << name << " failed" << endl;
+	}
+	last_run_ms = utils::now_in_ms();
+	busy = false;
 }
 
 // TODO ... re imple reload task
 // reload from zookeeper again, if all zk offline, then use local file
-void ReloadTask::run() {
-#ifdef DEBUG_
-	cout << "reload task running..." << endl;
-#endif
+void ResetTask::dorun() {
 	try {
-	// handler->warm();
-	}catch(...){
+		string result;
+		handler->reset(result);
+
+	} catch (...) {
 	}
-	cout << "reload task done. " << endl;
 }
 
-void AutoBreakZkConnTask::run() {
-#ifdef DEBUG_
-	cout << "auto break task running..." << endl;
-#endif
-//	pool->clear();
-//	handler->register_self(); // have to do it
+void AutoBreakZkConnTask::dorun() {
+	pool->clear();
+	handler->register_self(); // have to do it
 }
 
-void AutoSaveTask::run() {
-#ifdef DEBUG_
-	cout << "auto save task running..." << endl;
-#endif
-
-//	if(handler->status()  == 0 ) { // save to file only if server works healthly
-//		// handler->cache->save(filename);
-//		handler->save(filename);
-//	}
+void AutoSaveTask::dorun() {
+	if(handler->status()  == 0 ) { // save to file only if server works healthly
+		handler->save(filename);
+	}
 }
 
 ServerHandler::ServerHandler(string _zkhosts, int _port) :
@@ -202,8 +201,8 @@ ServerHandler::ServerHandler(string _zkhosts, int _port) :
 	skip_buf = new SkipBuffer(async_exec_timeout);
 	init_hostname();
 
-	scheduler = new TaskScheduler(this);
-	init_scheduledtask();
+	// use shared_from_this, so, CAN NOT initialize scheduler in constructor
+	// init_scheduledtask();
 }
 
 ServerHandler::~ServerHandler() {
@@ -244,7 +243,7 @@ void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 		pair<map<string, uint32_t>::iterator, bool> insert = skip_buf->insert(path);
 		if (insert.second) {
 			try {
-				threadManager->add(shared_ptr<ZkReadTask>(new ZkReadTask(pool, path, skip_buf)), async_wait_timeout);
+				threadManager->add(shared_ptr<Runnable>(new ZkReadTask(pool, path, skip_buf)), async_wait_timeout);
 				// (new ZkReadTask(pool, path, skip_buf))->run();
 			} catch (const TooManyPendingTasksException &ex) {
 				logger::warn("too many pending zk task in thread pool. %s", ex.what());
@@ -303,11 +302,39 @@ void ServerHandler::dump(std::string& _return) {
 	_return = ss.str();
 }
 
+
 // RegistryProxyIf::reset
 void ServerHandler::reset(std::string& _return) {
 	this->pool->clear(); // thread safe
+	this->init_scheduledtask();
+	this->cache->clear();
+
+	this->threadManager->stop(); // needed ?
+	this->threadManager->start(); // needed ?
+
 	register_self();
 	warm();
+
+	stringstream ss;
+	int res = status();
+	switch(res) {
+	case 1:
+		ss << "fail to create zk conn " << endl;
+		break;
+	case 2:
+		ss << "none watcher created" << endl;
+		break;
+	case 3:
+		ss << "no service configured" << endl;
+		break;
+	case 4:
+		ss << "unable to create enought thread " << endl;
+		break;
+	default:
+		break;
+	}
+
+	_return = ss.str();
 }
 // RegistryProxyIf::status
 int32_t ServerHandler::status() {
@@ -322,7 +349,7 @@ int32_t ServerHandler::status() {
 void ServerHandler::save(string& filename) {
 	this->cache->save(filename);
 }
-void ServerHandler::warm() {
+void ServerHandler::async_warm() {
 //		string path = "/soa/services/testservice";
 //		Runnable *t = new ZkReadTask(pool, path, skip_buf);
 //		t->run();
@@ -334,15 +361,23 @@ void ServerHandler::warm() {
 //		delete t;
 //		t = 0;
 
-	threadManager->add(shared_ptr<WarmTask>(new WarmTask(pool, *root)));
+
+	threadManager->add(shared_ptr<Runnable>(new WarmTask(pool, *root)));
 	logger::warn("warm server committed. server is getting up");
 }
 
+void ServerHandler::warm() {
+
+}
+
 void ServerHandler::register_self() {
+
+}
+void ServerHandler::async_register_self() {
 	stringstream name;
 	name << this->hostname << ":" << port;
 	try {
-		threadManager->add(shared_ptr<RegisterTask>(new RegisterTask(pool, name.str())));
+		threadManager->add(shared_ptr<Runnable>(new RegisterTask(pool, name.str())));
 		logger::warn("server register self committed. ");
 	} catch (const TooManyPendingTasksException &e) {
 		logger::warn("too many pending task occured  in thread pool when register self. %s", e.what());
@@ -350,6 +385,9 @@ void ServerHandler::register_self() {
 }
 
 void ServerHandler::start_scheduler() {
+	if (scheduler == NULL) {
+		init_scheduledtask();
+	}
 	try {
 		// expiration is not expire, and wait forever
 		threadManager->add(shared_ptr<TaskScheduler>(scheduler), 0, 0);
@@ -359,28 +397,41 @@ void ServerHandler::start_scheduler() {
 	}
 }
 // commit task with timeout
-void ServerHandler::commit_task(TaskInfo* envlope) {
+void ServerHandler::commit_task(shared_ptr<ScheduledTask> task) {
 	// v1
 	// threadManager->add(shared_ptr<Runnable>(task->runner), async_wait_timeout);
 	// v2
 //	shared_ptr<ScheduledTask> task(envlope->runner);
 //	threadManager->add(task, async_wait_timeout);
 	// v3
-	threadManager->add(envlope->runner, async_wait_timeout);
+	// threadManager->add(envlope->runner, async_wait_timeout);
+	// v4
+	threadManager->add(task, 500, 500); // 10ms wait to add task to pending queue // 200ms expiration in execution
 }
 
 void ServerHandler::init_scheduledtask() {
-	ReloadTask *reload = new ReloadTask(this);
-	AutoBreakZkConnTask *autobreak = new AutoBreakZkConnTask(this, this->pool);
-	AutoSaveTask *autosave = new AutoSaveTask(this, "/tmp/frproxy.cache");
+	if(scheduler == NULL)
+		scheduler = new TaskScheduler(this->shared_from_this());
+	else
+		scheduler->clear();
+	shared_ptr<AutoSaveTask> autosave(
+			new AutoSaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, "/tmp/frproxy.cache"));
+	shared_ptr<ScheduledTask> reset(new ResetTask(this->shared_from_this(), string("reset"), 24 * 3600 * 1000));
+	shared_ptr<AutoBreakZkConnTask> autobreak(
+			new AutoBreakZkConnTask(this->shared_from_this(), string("autobreak"), 5 * 60 * 1000, this->pool));
 
-//	scheduler->add(reset, 3600 * 1000); // 1 hour
-//	scheduler->add(autobreak, 24 * 3600 * 1000); // 1 hour
-//	scheduler->add(autosave, 5 * 60 * 1000); // 1 hour
+	// TODO ... delete 6 lines followed
+	reset->interval_in_ms = 100;
+	autobreak->interval_in_ms = 100;
+	autosave->interval_in_ms = 100;
 
-	scheduler->add(reload, 1 * 100); // 1 hour
-	scheduler->add(autobreak, 1 * 100); // 1 hour
-	//	scheduler->add(autosave, 5 * 60 * 1000); // 1 hour
+	cout << reset->name << reset->interval_in_ms << endl;
+	cout << autobreak->name << autobreak->interval_in_ms << endl;
+	cout << autosave->name << autosave->interval_in_ms << endl;
+
+	scheduler->add(autobreak);
+	scheduler->add(autosave);
+	scheduler->add(reset);
 }
 
 void ServerHandler::init_thread_pool() {

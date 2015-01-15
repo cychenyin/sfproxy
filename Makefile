@@ -47,12 +47,11 @@ TARGET_CXXFILES=$(LOG_CXXFILES) thrift/proxy_constants.cpp thrift/proxy_types.cp
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
+quick: cleanQuick preexec $(TARGET) afterexec
+	@echo '---------------quick build done as default. if you want rebuild wholy, run make all. ---------------'
+
 all: clean preexec $(TARGET) afterexec client
 	@echo '---------------all done. package can be started now ---------------'
-
-quick: cleanQuick preexec $(TARGET) afterexec
-	@echo '---------------quick build done as your will. ---------------'
-
 
 .PHONY: debug
 debug: clean preexecForDebug $(TARGET) afterexec

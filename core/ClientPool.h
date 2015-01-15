@@ -30,6 +30,7 @@ public:
 
 class ClientPool;
 class ClientBase;
+// key, string which contains watcher type and zk path; value, conn data, such as watcher
 typedef map<string, ClientState*> StateMap;
 
 //typedef SEvent<ClientPool, ClientBase, int> PoolEvent; // client event
