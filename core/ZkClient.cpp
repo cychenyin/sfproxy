@@ -280,9 +280,9 @@ int ZkClient::create_pnode(string abs_path,bool log_when_exists) {
 	} else if (ret == ZINVALIDSTATE) {
 		this->set_connected(false);
 	} else if (ret == ZNODEEXISTS) {
-		logger::info("create_pnode zoo_create failure, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
-	} else {
 		if(log_when_exists)
+			logger::info("create_pnode zoo_create failure, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
+	} else {
 			logger::warn("create_pnode zoo_create error, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
 	}
 	return ret;

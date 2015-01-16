@@ -54,7 +54,7 @@ protected:
 	shared_ptr<ScheduledTask> runner;
 public:
 	string name;
-	int interval_in_ms;
+	uint32_t interval_in_ms;
 	// last run time; accurate to ms,
 	uint32_t last_run_ms;
 	bool busy;
@@ -106,7 +106,7 @@ private:
 // reload from zookeeper again, if all zk offline, then use local file
 class ResetTask: public ScheduledTask {
 public:
-	ResetTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler){}
+	ResetTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
 	virtual ~ResetTask() {}
 	void dorun();
 }; // class ReloadTask
@@ -133,8 +133,14 @@ public:
 }; // class AutoSaveTask
 
 class OnceTask: virtual public Runnable {
+protected:
+	shared_ptr<ServerHandler> handler;
 public:
-	void run(){}
+	OnceTask(shared_ptr<ServerHandler> _handler) : handler(_handler) {}
+	virtual ~OnceTask() {}
+	void run();
+private:
+	virtual void dorun() = 0;
 }; // class OnceTask
 
 /**
@@ -142,47 +148,47 @@ public:
  */
 class WarmTask: public OnceTask { // virtual public Runnable {
 private:
-	ClientPool *pool;
-	string zk_root;
-	ZkClient *c;
+//	ClientPool *pool;
+//	string zk_root;
+//	ZkClient *c;
 public:
-	WarmTask(ClientPool *pool, string zkRoot) : pool(pool), zk_root(zkRoot) {
-		c = NULL;
-	}
-	virtual ~WarmTask() {}
-
-	void run();
+	WarmTask(shared_ptr<ServerHandler> _handler) : OnceTask(_handler){}
+//	WarmTask(ClientPool *pool, string zkRoot) : pool(pool), zk_root(zkRoot) {
+//		c = NULL;
+//	}
+private:
+	void dorun();
 }; // class WarmTask
 
 class RegisterTask: public OnceTask { // virtual public Runnable {
-private:
-	ClientPool *pool;
-	string node_name;
-	ZkClient *c;
+//private:
+//	ClientPool *pool;
+//	string node_name;
+//	ZkClient *c;
 
 public:
-	RegisterTask(ClientPool *pool, string node_name) :
-			pool(pool), node_name(node_name) {
-		c = 0;
-	}
-	virtual ~RegisterTask() {}
-
-	void run();
+	RegisterTask(shared_ptr<ServerHandler> _handler) : OnceTask(_handler){}
+//	RegisterTask(ClientPool *pool, string node_name) :
+//			pool(pool), node_name(node_name) {
+//		c = 0;
+//	}
+private:
+	void dorun();
 }; // class RegisterTask
 
-class ZkReadTask: public OnceTask { // virtual public Runnable {
-private:
-	ClientPool *pool;
+class GetFromZkTask: public OnceTask { // virtual public Runnable {
+//private:
+//	ClientPool *pool;
 	string zkpath;
-	SkipBuffer *skip_buf;
-	ZkClient *c;
+//	SkipBuffer *skip_buf;
+//	ZkClient *c;
 public:
-	ZkReadTask(ClientPool *pool, string zkpath, SkipBuffer *skip_set) : pool(pool), zkpath(zkpath), skip_buf(skip_set) {
-		c = 0;
-	}
-
-	virtual ~ZkReadTask() {	}
-	void run();
+	GetFromZkTask(shared_ptr<ServerHandler> _handler, string& _zkpath) : OnceTask(_handler), zkpath(_zkpath){}
+//	ZkReadTask(ClientPool *pool, string zkpath, SkipBuffer *skip_set) : pool(pool), zkpath(zkpath), skip_buf(skip_set) {
+//		c = 0;
+//	}
+private:
+	void dorun();
 }; // class ZkReadTask
 
 
@@ -196,8 +202,8 @@ private:
 	SkipBuffer *skip_buf;
 	int thread_count; // one for long running scheduler; one for scheduled task; one for request
 	shared_ptr<ThreadManager> threadManager;
-	int async_wait_timeout; // in ms
-	int async_exec_timeout; // in ms
+	int async_wait_timeout; // in ms; default -1, means wait forever
+	int async_exec_timeout; // in ms, default 1000ms
 	string hostname;
 	string zkhosts;
 	int port;
@@ -225,13 +231,17 @@ public:
 	// RegistryProxyIf::status
 	int32_t status();
 
+	void get_from_zk(string& zkpath);
+	void async_get_from_zk(string& zkpath);
+
 	// save cache into /tmp/frproxy.cache
 	void save(string& filename);
 	void warm();
-	void register_self();
-
 	void async_warm();
+
+	void register_self();
 	void async_register_self();
+
 	void start_scheduler();
 	void commit_task(shared_ptr<ScheduledTask> task);
 

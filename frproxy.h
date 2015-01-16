@@ -72,7 +72,7 @@ inline uint32_t now_in_ms() {
 	return time;
 }
 
-inline std::string TmToStr(const tm& tmTime) {
+inline std::string time_2_str(const tm& tmTime) {
 	char buf[20];
 	snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d", tmTime.tm_year + 1900, tmTime.tm_mon + 1,
 			tmTime.tm_mday, tmTime.tm_hour, tmTime.tm_min, tmTime.tm_sec);
@@ -84,7 +84,7 @@ inline std::string now() {
 	time(&timep); // get utc time
 	struct tm *p;
 	p = gmtime(&timep); // convert to struct tm
-	std::string r = TmToStr(*p);
+	std::string r = time_2_str(*p);
 	return r;
 }
 

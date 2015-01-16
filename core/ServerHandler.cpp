@@ -14,57 +14,29 @@
 // using namespace boost::static_pointer_cast;
 namespace FinagleRegistryProxy {
 
-// TODO ... re imple warm task
+void OnceTask::run() {
+	try {
+		dorun();
+	} catch (const exception& ex) {
+		cout << "OnceTask exception cause of " << ex.what() << endl;
+	} catch (const char* e) {
+		cout << "OnceTask exception cause of " << e << endl;
+	} catch (...) {
+		cout << "OnceTask failed" << endl;
+	}
+}
+
 // init registry cache from file firstly, and then override these registry with zk if possible;
-void WarmTask::run() {
-	c = (ZkClient*) pool->open();
-	if (c) {
-		vector<string> names = c->get_all_services(zk_root);
-		vector<string>::iterator it = names.begin();
-		while (it != names.end()) {
-			if (c)
-				c->get_service(*it);
-			++it;
-		}
-		c->close();
-	} else {
-		logger::warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
-		cout << "fail to open zk client when warming. please check out whether zookeeper cluster is valid" << endl;
-	}
+void WarmTask::dorun() {
+	handler->warm();
 }
 
-void RegisterTask::run() {
-	c = (ZkClient*) pool->open();
-	if (c) {
-		if (c->get_connected() == true) {
-			stringstream ss;
-			ss << "/soa";
-			c->create_pnode(ss.str());
-			ss << "/proxies";
-			c->create_pnode(ss.str());
-			ss << "/" << node_name;
-			int res = c->create_enode(ss.str(), "");
-			cout << "register self done. path=" << ss.str() << endl;
-			if (res != 0) {
-				logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
-			}
-		}
-		c->close();
-	} else {
-		logger::warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
-		cout << "fail to open zk client when registering self. please check out whether zookeeper cluster is valid" << endl;
-	}
+void RegisterTask::dorun() {
+	handler->register_self();
 }
 
-void ZkReadTask::run() {
-	c = (ZkClient*) pool->open();
-	if (c) {
-		c->get_service(zkpath);
-		c->close(); // must
-	} else {
-		logger::warn("fail to open zk client when async get request: %s. pool exhausted maybe. ", zkpath.c_str());
-	}
-	skip_buf->erase(zkpath);
+void GetFromZkTask::dorun() {
+	handler->get_from_zk(zkpath);
 }
 
 TaskScheduler::TaskScheduler(shared_ptr<ServerHandler> _handler) {
@@ -72,9 +44,9 @@ TaskScheduler::TaskScheduler(shared_ptr<ServerHandler> _handler) {
 	assert(this->handler.get());
 
 	stop_flag = false;
-	interval_in_us = 10 * 1000;
+	interval_in_us = 100 * 1000;
 	count = 0;
-	first_delay_sec  = 1;
+	first_delay_sec = 1;
 }
 
 TaskScheduler::~TaskScheduler() {
@@ -88,7 +60,7 @@ void TaskScheduler::clear() {
 
 void TaskScheduler::run() {
 	stop_flag = false;
-	if(first_delay_sec > 0) {
+	if (first_delay_sec > 0) {
 		sleep(first_delay_sec);
 	}
 
@@ -97,26 +69,29 @@ void TaskScheduler::run() {
 			uint32_t now = utils::now_in_ms();
 			//TaskInfo* task = *it;
 			shared_ptr<ScheduledTask> task = *it;
-			cout << utils::now() << " " << task->name << " busy="<< task->busy << " now=" << now << " last=" << task->interval_in_ms + task->last_run_ms << " diff=" << now - task->last_run_ms - task->interval_in_ms<< endl;
-			if (task->busy == false && now - task->last_run_ms - task->interval_in_ms > 0) {
+			cout << utils::now() << " " << task->name << " busy=" << task->busy << " now=" << now << " last=" << task->last_run_ms
+				<< " diff=" << now - task->last_run_ms << " inter=" << task->interval_in_ms << endl;
+
+			if (/*task->busy == false && */ now - task->last_run_ms > task->interval_in_ms) {
 				try {
-					task->busy = true; // set flag before commit
+					// task->busy = true; // set flag before commit
 					handler->commit_task(task);
 				} catch (const TooManyPendingTasksException &ex) {
-					logger::warn("TaskScheduler::run exception, too many pending task in thread pool when committing %s task. %s", task->name.c_str(), ex.what());
-					task->busy = false;
+					logger::warn("TaskScheduler::run exception, too many pending task in thread pool when committing %s task. %s",
+							task->name.c_str(), ex.what());
+					// task->busy = false;
 				} catch (const exception& ex) {
 					logger::warn("TaskScheduler::run %s exception: %s", task->name.c_str(), ex.what());
 					cerr << "TaskScheduler::run " << task->name << " exception: " << ex.what() << endl;
-					task->busy = false;
+					// task->busy = false;
 				} catch (const char* ex) {
 					logger::warn("TaskScheduler::run %s exception, msg: %s", task->name.c_str(), ex);
 					cerr << "TaskScheduler::run " << task->name << " exception, msg:" << ex << endl;
-					task->busy = false;
+					// task->busy = false;
 				} catch (...) {
 					logger::warn("TaskScheduler::run %s fail, and eated exception.", task->name.c_str());
 					cerr << "TaskScheduler::run " << task->name << " fail, and eated exception." << endl;
-					task->busy = false;
+					//task->busy = false;
 				}
 			}
 		}
@@ -155,6 +130,7 @@ void ScheduledTask::run() {
 	cout << name << " \ttask running..." << endl;
 #ifdef DEBUG_
 #endif
+	last_run_ms = utils::now_in_ms();
 	try {
 		dorun();
 	} catch (const exception& ex) {
@@ -164,28 +140,23 @@ void ScheduledTask::run() {
 	} catch (...) {
 		cout << "ScheduledTask" << name << " failed" << endl;
 	}
-	last_run_ms = utils::now_in_ms();
-	busy = false;
+	// busy = false;
 }
 
-// TODO ... re imple reload task
 // reload from zookeeper again, if all zk offline, then use local file
 void ResetTask::dorun() {
-	try {
-		string result;
-		handler->reset(result);
-
-	} catch (...) {
-	}
+	string result;
+	handler->reset(result);
 }
 
 void AutoBreakZkConnTask::dorun() {
-	pool->clear();
-	handler->register_self(); // have to do it
+	cout << "fineeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" << endl;
+//	pool->clear();
+//	handler->register_self(); // have to do it
 }
 
 void AutoSaveTask::dorun() {
-	if(handler->status()  == 0 ) { // save to file only if server works healthly
+	if (handler->status() == 0) { // save to file only if server works healthly
 		handler->save(filename);
 	}
 }
@@ -206,9 +177,17 @@ ServerHandler::ServerHandler(string _zkhosts, int _port) :
 }
 
 ServerHandler::~ServerHandler() {
+	if (scheduler) {
+		delete scheduler;
+		scheduler = 0;
+	}
 	if (pool) {
 		delete pool;
 		pool = 0;
+	}
+	if (skip_buf) {
+		delete skip_buf;
+		skip_buf = 0;
 	}
 	if (cache) {
 		delete cache;
@@ -218,14 +197,9 @@ ServerHandler::~ServerHandler() {
 		delete root;
 		root = 0;
 	}
-	delete skip_buf;
-	skip_buf = 0;
-
-	if (scheduler) {
-		delete scheduler;
-	}
 	threadManager->stop();
 }
+
 // RegistryProxyIf::get
 void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 #ifdef DEBUG_
@@ -242,12 +216,7 @@ void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 		// if getting from zk, then skip
 		pair<map<string, uint32_t>::iterator, bool> insert = skip_buf->insert(path);
 		if (insert.second) {
-			try {
-				threadManager->add(shared_ptr<Runnable>(new ZkReadTask(pool, path, skip_buf)), async_wait_timeout);
-				// (new ZkReadTask(pool, path, skip_buf))->run();
-			} catch (const TooManyPendingTasksException &ex) {
-				logger::warn("too many pending zk task in thread pool. %s", ex.what());
-			}
+			async_get_from_zk(path);
 		}
 #ifdef DEBUG_
 		zk_retrieve_end = utils::now_in_us();
@@ -302,7 +271,6 @@ void ServerHandler::dump(std::string& _return) {
 	_return = ss.str();
 }
 
-
 // RegistryProxyIf::reset
 void ServerHandler::reset(std::string& _return) {
 	this->pool->clear(); // thread safe
@@ -317,7 +285,7 @@ void ServerHandler::reset(std::string& _return) {
 
 	stringstream ss;
 	int res = status();
-	switch(res) {
+	switch (res) {
 	case 1:
 		ss << "fail to create zk conn " << endl;
 		break;
@@ -349,36 +317,104 @@ int32_t ServerHandler::status() {
 void ServerHandler::save(string& filename) {
 	this->cache->save(filename);
 }
-void ServerHandler::async_warm() {
-//		string path = "/soa/services/testservice";
-//		Runnable *t = new ZkReadTask(pool, path, skip_buf);
-//		t->run();
-//		delete t;
-//		t = 0;
-//
-//		t = new WarmTask(pool, *root);
-//		t->run();
-//		delete t;
-//		t = 0;
 
-
-	threadManager->add(shared_ptr<Runnable>(new WarmTask(pool, *root)));
-	logger::warn("warm server committed. server is getting up");
+void ServerHandler::get_from_zk(string &zkpath) {
+	ZkClient* c = (ZkClient*) pool->open();
+	if (c) {
+		try {
+		c->get_service(zkpath);
+		}catch(...){
+		}
+		c->close(); // must
+	} else {
+		logger::warn("fail to open zk client when async get request: %s. pool exhausted maybe. ", zkpath.c_str());
+	}
+	skip_buf->erase(zkpath);
 }
 
-void ServerHandler::warm() {
+void ServerHandler::async_get_from_zk(string &zkpath) {
+	try {
+		threadManager->add(shared_ptr<Runnable>(new GetFromZkTask(this->shared_from_this(), zkpath)), async_wait_timeout, async_exec_timeout);
+		logger::warn("server async_get_from_zk task committed. ");
+	} catch (const TooManyPendingTasksException &e) {
+		logger::warn("too many pending task occured  in thread pool when async_get_from_zk. %s", e.what());
+	}
+	//			try {
+	//				threadManager->add(shared_ptr<Runnable>(new ZkReadTask(pool, path, skip_buf)), async_wait_timeout);
+	//				// (new ZkReadTask(pool, path, skip_buf))->run();
+	//			} catch (const TooManyPendingTasksException &ex) {
+	//				logger::warn("too many pending zk task in thread pool. %s", ex.what());
+	//			}
 
+}
+
+// load all config from zk
+void ServerHandler::warm() {
+	ZkClient *c = (ZkClient*) pool->open();
+	if (c) {
+		vector<string> names = c->get_all_services(*this->root);
+		vector<string>::iterator it = names.begin();
+		while (it != names.end()) {
+			if (c)
+				c->get_service(*it);
+			++it;
+		}
+		c->close();
+	} else {
+		logger::warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
+		cout << "fail to open zk client when warming. please check out whether zookeeper cluster is valid" << endl;
+	}
+}
+
+void ServerHandler::async_warm() {
+	try {
+		threadManager->add(shared_ptr<Runnable>(new WarmTask(this->shared_from_this()))); // NO timeout, wait forvever
+		logger::warn("server async_warm taskcommitted. ");
+	} catch (const TooManyPendingTasksException &e) {
+		logger::warn("too many pending task occured  in thread pool when warm. %s", e.what());
+	}
 }
 
 void ServerHandler::register_self() {
+	ZkClient *c = (ZkClient*) pool->open();
+	if (c) {
+		try {
+			if (c->get_connected() == true) {
+
+				stringstream ss;
+				ss << "/soa";
+				c->create_pnode(ss.str());
+				ss << "/proxies";
+				c->create_pnode(ss.str());
+
+				stringstream name;
+				name << this->hostname << ":" << port;
+				ss << "/" << name.str();
+				int res = c->create_enode(ss.str(), "");
+				cout << "register self done. path=" << ss.str() << endl;
+				if (res != 0) {
+					logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
+				}
+			}
+		} catch (...) {
+			logger::warn("fail to regsister self");
+#ifdef DEBUG_
+			cout << "fail to regsister self" << endl;
+#endif
+		}
+		c->close();
+	} else {
+		logger::warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
+		cout << "fail to open zk client when registering self. please check out whether zookeeper cluster is valid" << endl;
+	}
 
 }
 void ServerHandler::async_register_self() {
-	stringstream name;
-	name << this->hostname << ":" << port;
 	try {
-		threadManager->add(shared_ptr<Runnable>(new RegisterTask(pool, name.str())));
-		logger::warn("server register self committed. ");
+		// bak code before 1.1.6
+		// threadManager->add(shared_ptr<Runnable>(new RegisterTask(pool, name.str())));
+		threadManager->add(shared_ptr<Runnable>(new RegisterTask(this->shared_from_this()))); // NO timeout, wait forvever
+		logger::warn("server async_register_self task committed. ");
 	} catch (const TooManyPendingTasksException &e) {
 		logger::warn("too many pending task occured  in thread pool when register self. %s", e.what());
 	}
@@ -406,32 +442,33 @@ void ServerHandler::commit_task(shared_ptr<ScheduledTask> task) {
 	// v3
 	// threadManager->add(envlope->runner, async_wait_timeout);
 	// v4
-	threadManager->add(task, 500, 500); // 10ms wait to add task to pending queue // 200ms expiration in execution
+	// threadManager->add(task, async_wait_timeout, 3 * async_wait_timeout); // 10ms wait to add task to pending queue // 200ms expiration in execution
+	threadManager->add(task);
 }
 
 void ServerHandler::init_scheduledtask() {
-	if(scheduler == NULL)
+	if (scheduler == NULL)
 		scheduler = new TaskScheduler(this->shared_from_this());
 	else
 		scheduler->clear();
-	shared_ptr<AutoSaveTask> autosave(
-			new AutoSaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, "/tmp/frproxy.cache"));
-	shared_ptr<ScheduledTask> reset(new ResetTask(this->shared_from_this(), string("reset"), 24 * 3600 * 1000));
 	shared_ptr<AutoBreakZkConnTask> autobreak(
 			new AutoBreakZkConnTask(this->shared_from_this(), string("autobreak"), 5 * 60 * 1000, this->pool));
+	shared_ptr<ScheduledTask> reset(new ResetTask(this->shared_from_this(), string("reset"), 24 * 3600 * 1000));
+	shared_ptr<AutoSaveTask> autosave(
+			new AutoSaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, "/tmp/frproxy.cache"));
 
-	// TODO ... delete 6 lines followed
-	reset->interval_in_ms = 100;
-	autobreak->interval_in_ms = 100;
-	autosave->interval_in_ms = 100;
+	// TODO ... delete 3 lines followed
+	autobreak->interval_in_ms = 3 * 1000;
+	autosave->interval_in_ms = 3 * 1000;
+	reset->interval_in_ms = 10 * 1000;
 
-	cout << reset->name << reset->interval_in_ms << endl;
-	cout << autobreak->name << autobreak->interval_in_ms << endl;
-	cout << autosave->name << autosave->interval_in_ms << endl;
+	cout << utils::now() << " " << autobreak->name << " scheduled task interval(ms): " << autobreak->interval_in_ms << endl;
+	cout << utils::now() << " " << autosave->name << " scheduled task interval(ms): " << autosave->interval_in_ms << endl;
+	cout << utils::now() << " " << reset->name << " scheduled task interval(ms): " << reset->interval_in_ms << endl;
 
 	scheduler->add(autobreak);
-	scheduler->add(autosave);
-	scheduler->add(reset);
+//	scheduler->add(autosave);
+//	scheduler->add(reset);
 }
 
 void ServerHandler::init_thread_pool() {
