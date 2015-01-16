@@ -57,10 +57,10 @@ public:
 	uint32_t interval_in_ms;
 	// last run time; accurate to ms,
 	uint32_t last_run_ms;
-	bool busy;
+	// bool busy; // remove busy flag cause of when expiration happens in multi thread env, busy state will keep be true forever
 
 public:
-	ScheduledTask(shared_ptr<ServerHandler> _handler, string _name="", int _interval_in_ms=0) : handler(_handler),interval_in_ms(_interval_in_ms),last_run_ms(0),name(_name), busy(false)  {}
+	ScheduledTask(shared_ptr<ServerHandler> _handler, string _name="", int _interval_in_ms=0) : handler(_handler),interval_in_ms(_interval_in_ms),last_run_ms(0),name(_name) /*, busy(false)*/  {}
 	virtual ~ScheduledTask() {}
 	void run();
 
@@ -103,32 +103,40 @@ private:
 
 }; // class TaskScheduler
 
-// reload from zookeeper again, if all zk offline, then use local file
-class ResetTask: public ScheduledTask {
-public:
-	ResetTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
-	virtual ~ResetTask() {}
-	void dorun();
-}; // class ReloadTask
 
-class AutoBreakZkConnTask: public ScheduledTask{
-private:
-	ClientPool *pool;
+class CheckTask: public ScheduledTask {
 public:
-	AutoBreakZkConnTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, ClientPool *pool) : ScheduledTask(_handler, _name, _interval_in_ms), pool(pool) {}
-	virtual ~AutoBreakZkConnTask() {
-		pool = NULL;
-	}
+	CheckTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
+	virtual ~CheckTask() {}
 	void dorun();
-}; // class AutoBreakZkConnTask
+}; // class CheckTask
 
-class AutoSaveTask: public ScheduledTask {
+//// reload from zookeeper again, if all zk offline, then use local file
+//class ResetTask: public ScheduledTask {
+//public:
+//	ResetTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
+//	virtual ~ResetTask() {}
+//	void dorun();
+//}; // class ReloadTask
+//
+//class BreakZkConnTask: public ScheduledTask{
+//private:
+//	ClientPool *pool;
+//public:
+//	BreakZkConnTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, ClientPool *pool) : ScheduledTask(_handler, _name, _interval_in_ms), pool(pool) {}
+//	virtual ~BreakZkConnTask() {
+//		pool = NULL;
+//	}
+//	void dorun();
+//}; // class AutoBreakZkConnTask
+
+class SaveTask: public ScheduledTask {
 private:
 	string filename;
 
 public:
-	AutoSaveTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, const string& filename) : ScheduledTask(_handler, _name, _interval_in_ms), filename(filename){}
-	virtual ~AutoSaveTask(){}
+	SaveTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, const string& filename) : ScheduledTask(_handler, _name, _interval_in_ms), filename(filename){}
+	virtual ~SaveTask(){}
 	void dorun();
 }; // class AutoSaveTask
 
@@ -208,6 +216,7 @@ private:
 	string zkhosts;
 	int port;
 	TaskScheduler *scheduler;
+	string cache_file_name;
 public:
 	shared_ptr<ServerHandler> get_sharedPtr_from_this(){
 	             return shared_from_this();
@@ -238,6 +247,9 @@ public:
 	void save(string& filename);
 	void warm();
 	void async_warm();
+
+	void check();
+
 
 	void register_self();
 	void async_register_self();

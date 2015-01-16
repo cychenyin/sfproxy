@@ -201,6 +201,7 @@ bool RegistryCache::save(const string& filename) {
 	}
 
 	string json = Registry::serialize(v);
+	cout << json << endl;
 	try {
 		FileCache f(filename);
 		if (f.open_write() && f.write(json)) {

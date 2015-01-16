@@ -98,7 +98,7 @@ bool ZkClient::connect_zk() {
 #endif
 	if (retry >= ZK_MAX_CONNECT_RETRY_TIMES) {
 		logger::warn("ZkClient fail to connect to zk : zk_hosts_=%s; retry times:=%d", zk_hosts_.c_str(), retry);
-		cout << "ZkClient fail to connect to zk. exceed retry times." << retry << endl;
+		cout << "ZkClient fail to connect to zk=" << zk_hosts_ <<" exceed retry times." << retry << endl;
 	}
 	mutex.unlock();
 	if (zhandle_ != 0) {

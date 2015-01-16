@@ -8,6 +8,8 @@
 #ifndef CLIENTPOOL_H_
 #define CLIENTPOOL_H_
 
+#include <boost/shared_ptr.hpp>
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -19,6 +21,7 @@
 #include "../frproxy.h"
 
 using namespace std;
+using boost::shared_ptr;
 
 namespace FinagleRegistryProxy {
 
@@ -26,6 +29,7 @@ class ClientState {
 public:
 	long client_id;
 	virtual string key()=0;
+	virtual ~ClientState(){}
 };
 
 class ClientPool;
@@ -135,9 +139,7 @@ public:
 };
 
 // client collection
-typedef set<ClientBase*> CSet;
-// client collection
-typedef list<ClientBase*> CList;
+typedef set<ClientBase*> ClientSet;
 
 /*
  * create client add to use_list, when client.close then mv to idle_client; when disconnect then destroy it.
@@ -166,8 +168,8 @@ public:
 	const static int MAX_USED_TIMES_DEF = 1000000; // 1 million
 	const static int CONN_TIMEOUT_DEF = 86400; // 1 day
 private:
-	CSet using_;
-	CSet idle_;
+	ClientSet using_;
+	ClientSet idle_;
 	int max_client_;
 	long last_id_;
 	apache::thrift::concurrency::Mutex mutex;

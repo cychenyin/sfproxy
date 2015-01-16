@@ -113,13 +113,13 @@ int ClientPool::idle() {
 
 int ClientPool::watcher_size() {
 	int ret = 0;
-	for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+	for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
 		StateMap &s = (*it)->states_;
 		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
 			ret++;
 		}
 	}
-	for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+	for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
 		StateMap &s = (*it)->states_;
 		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
 			ret++;
@@ -135,7 +135,7 @@ string ClientPool::stat() {
 		ss << "zk client pool stat info." << endl;
 		ss << "using" << endl;
 		ss << "	id	using	times	conn	watches	address" << endl;
-		for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
 			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
 					<< "\t" << (*it)->states_.size() << "\t" << *it << endl;
 			wc += (*it)->states_.size();
@@ -143,7 +143,7 @@ string ClientPool::stat() {
 
 		ss << "idle" << endl;
 		ss << "	id	using	times	conn	watches	address" << endl;
-		for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+		for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
 			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
 					<< "\t" << (*it)->states_.size() << "\t" << *it << endl;
 			wc += (*it)->states_.size();
@@ -155,13 +155,13 @@ string ClientPool::stat() {
 		ss << "watcher path" << endl;
 		ss << "-------------------------------------------------" << endl;
 		ss << "	connId	clientId	path " << endl;
-		for (CSet::iterator it = using_.begin(); it != using_.end(); it++) {
+		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
 			StateMap &s = (*it)->states_;
 			for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
 				ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
 			}
 		}
-		for (CSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+		for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
 			StateMap &s = (*it)->states_;
 			for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
 				ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
