@@ -100,53 +100,45 @@ public:
 	void init(string hosts, RegistryCache *pcache);
 	virtual ~ZkClient();
 	bool connect_zk();
+	// biz interface, get service info by zkpath; eg. serviceZpath = /soa/services/ip2city.thrift
 	void get_service(string serviceZpath);
+	// biz interface, get server info of service by zkpath; eg. serviceZpath = /soa/services/ip2city.thrift/member_00000001
 	void get_node(string path);
+	// biz interface, get server info of serivce by service zkpath and server name; eg. serviceZpath=/soa/services/ip2city.thrift; subNodeName=member_00000001
 	void get_node(string serviceZpath, string subNodeName);
-	static void root_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	static void service_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	static void node_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	vector<string> get_all_services(string root = "/soa/services");
-//	void dump_stat(struct Stat *stat);
+	vector<string> get_all_services(string _serivces_root = "/soa/services");
+	// parse zk node data into Registry and add it to cache; eg. json = {"serviceEndpoint":{"host":"192.168.113.51","port":21004},"additionalEndpoints":{},"status":"ALIVE","shard":1}
 	void parse(string json);
+	// create ephermaral zk node; eg. name="/soa/proxies/localhost:9009" data=""
 	int create_enode(string name, string data);
+	// create normalzk node; eg. abs_path=/soa
 	int create_pnode(string abs_path, bool log_when_exists = false);
+#ifdef DEBUG_
 	void debug() {
 		this->set_connected(false);
 	}
-
+#endif
+	// watcher of /soa/services
+	static void root_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	// watcher of /soa/services
+	static void service_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	// watcher of /soa/services/xxx
+	static void node_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	// watcher of /soa/services/xxx/member_yyy
+	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	// global watcher of zk conn;
+	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	// state, path info which is watched
 	void save_state(string &path, int type);
-	//void ZkClient::dump_stat(struct Stat *stat) {
-	//	char tctimes[40];
-	//	char tmtimes[40];
-	//	time_t tctime;
-	//	time_t tmtime;
-	//
-	//	if (!stat) {
-	//		fprintf(stderr, "null\n");
-	//		return;
-	//	}
-	//	tctime = stat->ctime / 1000;
-	//	tmtime = stat->mtime / 1000;
-	//
-	//	ctime_r(&tmtime, tmtimes);
-	//	ctime_r(&tctime, tctimes);
-	//
-	//	fprintf(stderr,
-	//			"\t ctime =%s \t czxid=%lx\n \t mtime=%s \t mzxid=%lx\n \tversion=%x \t version=%x \n \t ephemeralOwner = %lx\n",
-	//			tctimes, stat->czxid, tmtimes, stat->mzxid, (unsigned int) stat->version, (unsigned int) stat->aversion,
-	//			stat->ephemeralOwner);
-	//}
 public:
 	// interface imple
 	//ClientBase::open
 	virtual bool open();
 	// now close object really, just return it to pool.
 	virtual void close();
-
+	// receive states(watched path info) from cache, and create one watch for each of these states
 	virtual int set_states(StateMap *states);
+	// session timeout event handler
 	void on_session_timeout();
 public:
 	string* root_;
@@ -156,18 +148,23 @@ public:
 private:
 	RegistryCache *pcache_;
 	zhandle_t *zhandle_;
+	// zk conn string, format: host:port[[,host,port]...]
 	string zk_hosts_;
-	int timeout_; // zk recv_timeout in microsecond
+	// zk recv_timeout in microsecond
+	int timeout_;
 	void init();
 	// apache::thrift::concurrency::Mutex mutex;
 	void close_handle();
+	// remove state info when zk node is remove when watcher listens message of node removed
 	void remove_state(ZkState *state);
 };
 
 class ZkClientContext {
 public:
 	ZkClient *client;
+	// eg. /soa/services/xxx
 	string serviceZpath;
+	// eg. member_00000001
 	string ephemeralNode;
 
 	ZkClientContext() {

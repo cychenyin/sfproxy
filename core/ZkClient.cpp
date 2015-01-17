@@ -509,7 +509,7 @@ void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *pa
 }
 
 // root eg.  /soa/services
-vector<string> ZkClient::get_all_services(string root) {
+vector<string> ZkClient::get_all_services(string _serivces_root) {
 	vector<string> ret;
 	if (zhandle_ == NULL) {
 		connect_zk();
@@ -519,12 +519,12 @@ vector<string> ZkClient::get_all_services(string root) {
 
 	mutex.lock();
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int rc = zoo_wget_children(zhandle_, root.c_str(), &this->root_watcher, this, &str_vec);
+	int rc = zoo_wget_children(zhandle_, _serivces_root.c_str(), &this->root_watcher, this, &str_vec);
 	mutex.unlock();
-	this->save_state(root, ZkState::TYPE_GET_ROOT);
+	this->save_state(_serivces_root, ZkState::TYPE_GET_ROOT);
 	if (rc == ZOK) {
 		for (int i = 0; i < str_vec.count; ++i) {
-			ret.push_back(root + "/" + str_vec.data[i]);
+			ret.push_back(_serivces_root + "/" + str_vec.data[i]);
 			// get_children(root + "/" + str_vec.data[i]);
 			delete str_vec.data[i];
 		}
