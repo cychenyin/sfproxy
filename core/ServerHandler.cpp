@@ -164,7 +164,7 @@ void SaveTask::dorun() {
 	if (handler->status() == 0) { // save to file only if server works healthly
 		handler->save(filename);
 	} else {
-		logger::warn("");
+		logger::warn("server status = 4, auto save cancelled.");
 #ifdef DEBUG_
 		cout << "handler status=" << status << endl;
 #endif
@@ -368,13 +368,7 @@ void ServerHandler::warm() {
 
 	ZkClient *c = (ZkClient*) pool->open();
 	if (c) {
-		vector<string> names = c->get_all_services(*this->root);
-		vector<string>::iterator it = names.begin();
-		while (it != names.end()) {
-			if (c)
-				c->get_service(*it);
-			++it;
-		}
+		c->get_all_services(*this->root);
 		c->close();
 	} else {
 		logger::warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
@@ -397,7 +391,14 @@ void ServerHandler::check() {
 	// 2. scan zk, and reload them all.
 	// 3. if zk conn ready, check consistency of cache and zk
 	//		 traverse the cache, and if not exists in zk, then drop off it from cache
-	// 4.
+	uint32_t now = utils::now_in_ms();
+	ZkClient* c= (ZkClient*)pool->open();
+	if(c->check(*root)) {
+		c->get_all_services(*root);
+	}
+	c->close();
+	// remove dead instance info from cache
+	cache->remove_before(now);
 }
 
 void ServerHandler::register_self() {

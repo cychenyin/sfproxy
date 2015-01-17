@@ -15,15 +15,14 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <thrift/concurrency/Mutex.h>
 
 // #include "ganji/util/thread/mutex.h"
-#include "concurrency/Mutex.h"
 #include "FileCache.h"
 
 using namespace std;
 
 namespace FinagleRegistryProxy {
-
 
 typedef vector<Registry> RVector;
 typedef map<string, RVector > RMap;
@@ -44,6 +43,8 @@ public:
 
 
 	void add(Registry& proxy);
+	// remove instance before timestamp;
+	void remove_before(uint32_t timestamp);
 	// name eg /sao/services/test.thrift
 	void remove(Registry& reg);
 	// name eg /sao/services/test.thrift, ephemeral eg member00000001
@@ -55,6 +56,7 @@ public:
 	// name eg /sao/services/test.thrift
 	bool empty(const string name);
 	void clear();
+	// count of services; notice: not count of service instances
 	int size();
 	// name eg /sao/services/test.thrift
 	RVector* get(const string name);

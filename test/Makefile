@@ -38,11 +38,11 @@ SRC_CXXFILE =$(LOG_CXXFILES) ../thrift/proxy_constants.cpp ../thrift/proxy_types
 	../core/Registry.cpp ../core/JsonUtil.cpp ../core/FileCache.cpp ../core/RegistryCache.cpp ../core/ZkClient.cpp ../core/ClientPool.cpp \
 	../core/ServerHandler.cpp 
 	
-TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp SmartpointTest.cpp #Polymorphism.cpp # TaskTest.cpp #SerializeTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
+TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp ZkPoolTest.cpp # RegistryCacheTest.cpp # SmartpointTest.cpp #Polymorphism.cpp # TaskTest.cpp #SerializeTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
-all: clean preexec $(TARGET) afterexec
+all: preexec $(TARGET) afterexec
 	@echo '---------------all done. package can be started now ---------------'
 
 $(TARGET): $(OBJS)

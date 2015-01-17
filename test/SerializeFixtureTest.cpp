@@ -2,10 +2,10 @@
 
 #include <iostream>
 #include <sstream>
+#include <stdio.h>
 #include <boost/test/unit_test.hpp>
 #include "../core/RegistryCache.h"
 #include "../core/FileCache.h"
-#include <stdio.h>
 
 using namespace FinagleRegistryProxy;
 using namespace std;

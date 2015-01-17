@@ -60,8 +60,7 @@ public:
 		type = TYPE_GET_NODE;
 		data = path = "";
 	}
-	ZkState(string path, const int type) :
-			path(path), type(type) {
+	ZkState(string path, const int type) : path(path), type(type) {
 		data = "";
 	}
 
@@ -101,12 +100,17 @@ public:
 	virtual ~ZkClient();
 	bool connect_zk();
 	// biz interface, get service info by zkpath; eg. serviceZpath = /soa/services/ip2city.thrift
-	void get_service(string serviceZpath);
+	// add watcher to service instance zk node
+	bool get_service(string serviceZpath);
 	// biz interface, get server info of service by zkpath; eg. serviceZpath = /soa/services/ip2city.thrift/member_00000001
-	void get_node(string path);
-	// biz interface, get server info of serivce by service zkpath and server name; eg. serviceZpath=/soa/services/ip2city.thrift; subNodeName=member_00000001
-	void get_node(string serviceZpath, string subNodeName);
-	vector<string> get_all_services(string _serivces_root = "/soa/services");
+	// add watcher to service zk node
+	bool get_service_instance(string path);
+	// biz interface, get server info of serivce by service zkpath and server name;
+	// add watcher to service zk node
+	// eg. serviceZpath=/soa/services/ip2city.thrift; subNodeName=member_00000001
+	bool get_service_instance(string serviceZpath, string subNodeName);
+	// get all services; add watcher to services root
+	bool get_all_services(string _serivces_root = "/soa/services");
 	// parse zk node data into Registry and add it to cache; eg. json = {"serviceEndpoint":{"host":"192.168.113.51","port":21004},"additionalEndpoints":{},"status":"ALIVE","shard":1}
 	void parse(string json);
 	// create ephermaral zk node; eg. name="/soa/proxies/localhost:9009" data=""
@@ -130,8 +134,16 @@ public:
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// state, path info which is watched
 	void save_state(string &path, int type);
+	// biz staff, check whether conn is ok; NO watch
+	bool check(const string& top_zk_path="/soa");
+
 public:
-	// interface imple
+	// simple get children; no watch, no biz
+	vector<string> get_children(const string& zkpath );
+	// simple get data; no watch, no biz
+	string get_data(const string& zkpath);
+
+public: // clientbase interface method imple
 	//ClientBase::open
 	virtual bool open();
 	// now close object really, just return it to pool.
@@ -140,6 +152,7 @@ public:
 	virtual int set_states(StateMap *states);
 	// session timeout event handler
 	void on_session_timeout();
+
 public:
 	string* root_;
 	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
@@ -156,7 +169,8 @@ private:
 	// apache::thrift::concurrency::Mutex mutex;
 	void close_handle();
 	// remove state info when zk node is remove when watcher listens message of node removed
-	void remove_state(ZkState *state);
+	void remove_state(ZkState* state);
+
 };
 
 class ZkClientContext {

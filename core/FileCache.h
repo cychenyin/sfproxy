@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
-#include "concurrency/Mutex.h"
+#include <thrift/concurrency/Mutex.h>
 
 namespace FinagleRegistryProxy {
 

@@ -29,7 +29,9 @@ public:
 	std::string host;
 	int port;
 	// time read from zk stat, in ms, value = stat.ctime/ 1000
-	int ctime;
+	uint32_t ctime;
+	// update time in cache; normally, is read zk node timestamp, or read file timestamp
+	uint32_t mtime;
 	// zk ephemeral node name, eg. member00000001
 	std::string ephemeral;
 	std::string json;

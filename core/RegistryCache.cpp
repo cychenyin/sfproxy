@@ -24,7 +24,10 @@ RegistryCache::~RegistryCache() {
 void RegistryCache::add(Registry& reg) {
 	string &name = reg.name;
 	if (name == "" || reg.host == "" || reg.ephemeral == "") {
+#ifdef DEBUG_
 		cout << "add valid false" << endl;
+#endif
+		logger::error("Registry invalid. name ,host or ephemeral is empty");
 		return;
 	}
 	mutex.lock();
@@ -73,6 +76,32 @@ void RegistryCache::remove(const string name, const string ephemeral) {
 		}
 	}
 	mutex.unlock();
+}
+
+// delete reg who's mtime less than given timestamp
+void RegistryCache::remove_before(uint32_t timestamp) {
+	mutex.lock();
+	RVector* pv;
+	vector<Registry*> v_del;
+	for (RMap::iterator it = cache.begin(); it != cache.end(); ++it) {
+		pv = &(it->second);
+		for (RVector::iterator itProxy = pv->begin(); itProxy != pv->end(); ++itProxy) {
+// 			cout << "timestamp=" << timestamp << " mtime=" << (*itProxy).mtime << endl;
+			if(itProxy->mtime < timestamp) {
+				Registry* p = &(*itProxy);
+				v_del.push_back(p);
+			}
+		}
+	}
+	mutex.unlock();
+	// cout << "to del size " << v_del.size() << endl;
+	vector<Registry*>::iterator it = v_del.begin();
+	while (it != v_del.end()) {
+		remove(**it);
+		++it;
+	}
+	v_del.clear();
+//	cout << "remove mtime before " << v_del.size() << endl;
 }
 
 void RegistryCache::remove(Registry& reg) {
@@ -154,13 +183,13 @@ int RegistryCache::size() {
 void RegistryCache::from_file(const string& filename) {
 	FileCache f(filename);
 	string content;
-	if(f.open_read() && f.read_all(content)){
+	if (f.open_read() && f.read_all(content)) {
 		// parse json doc
 		RVector v = Registry::unserialize(content);
 		// copy to cache
-		for(RVector::iterator it = v.begin(); it != v.end(); ++it ) {
+		for (RVector::iterator it = v.begin(); it != v.end(); ++it) {
 			(*it).ephemeral = "from_file";
-			(*it).ctime = utils::now_in_ms();
+			(*it).mtime = (*it).ctime = utils::now_in_ms();
 			this->add(*it);
 		}
 		logger::warn("loaded from file. service count=%ld, item count= %ld", cache.size(), v.size());
@@ -173,29 +202,28 @@ string RegistryCache::dump() {
 	ss << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
 	int i = 0;
 	int max = 1000;
-	while(mit != cache.end() && ++i < max) {
+	while (mit != cache.end() && ++i < max) {
 		RVector &v = mit->second;
 		RVector::iterator vit = v.begin();
-		while(vit != v.end() ) {
+		while (vit != v.end()) {
 			Registry &r = *vit;
-			ss<< "\t" << Registry::serialize(r) << endl;
-			++vit ;
+			ss << "\t" << Registry::serialize(r) << endl;
+			++vit;
 		}
 		++mit;
 	}
-	if(i >= max) {
+	if (i >= max) {
 		ss << "	......" << endl;
 	}
 	return ss.str();
 }
 
-
 bool RegistryCache::save(const string& filename) {
 	// simple format, lucky you, name is zkpath
 	RVector v;
-	for(RMap::iterator mit = cache.begin(); mit != cache.end(); ++mit ) {
+	for (RMap::iterator mit = cache.begin(); mit != cache.end(); ++mit) {
 		RVector& pv = mit->second;
-		for(RVector::iterator vit = pv.begin(); vit != pv.end(); ++vit ) {
+		for (RVector::iterator vit = pv.begin(); vit != pv.end(); ++vit) {
 			v.push_back(*vit);
 		}
 	}

@@ -89,6 +89,16 @@ public:
 };
 
 BOOST_FIXTURE_TEST_CASE( empty, F) {
+	int a = 12;
+	int b = 23;
+	int& c = a;
+
+	BOOST_CHECK_EQUAL(a,c);
+	c = b;
+
+	BOOST_CHECK_EQUAL(b,c);
+	c = b;
+
 	BOOST_CHECK(true);
 }
 
