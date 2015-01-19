@@ -131,7 +131,7 @@ string ScheduledTask::tostring() const {
 }
 // run task, make sure no exception throw out
 void ScheduledTask::run() {
-	cout << utils::now() << " " << name << " \ttask running..." << endl;
+	cout << utils::time_stamp() << " " << name << " \ttask running..." << endl;
 #ifdef DEBUG_
 #endif
 	last_run_ms = utils::now_in_ms();
@@ -484,8 +484,8 @@ void ServerHandler::init_scheduledtask() {
 	check->interval_in_ms = 1 * 1000;
 	autosave->interval_in_ms = 3 * 1000;
 
-	cout << utils::now() << " " << check->name << " scheduled task interval(ms): " << check->interval_in_ms << endl;
-	cout << utils::now() << " " << autosave->name << " scheduled task interval(ms): " << autosave->interval_in_ms << endl;
+	cout << utils::time_stamp() << " " << check->name << " scheduled task interval(ms): " << check->interval_in_ms << endl;
+	cout << utils::time_stamp() << " " << autosave->name << " scheduled task interval(ms): " << autosave->interval_in_ms << endl;
 
  	scheduler->add(check);
 	scheduler->add(autosave);
