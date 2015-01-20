@@ -91,6 +91,7 @@ public:
 
 class ZkClient: public ClientBase {
 	friend class ZkClientFactory;
+	friend class ClientPool;
 public:
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
 	ZkClient();
@@ -121,13 +122,15 @@ public:
 	void debug() {
 		this->set_connected(false);
 	}
+
+	string to_string();
 #endif
 	// watcher of /soa/services
 	static void root_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// watcher of /soa/services
 	static void service_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// watcher of /soa/services/xxx
-	static void node_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+	static void service_instance_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// watcher of /soa/services/xxx/member_yyy
 	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// global watcher of zk conn;
@@ -148,8 +151,10 @@ public: // clientbase interface method imple
 	virtual bool open();
 	// now close object really, just return it to pool.
 	virtual void close();
-	// receive states(watched path info) from cache, and create one watch for each of these states
+	// receive states(watched path info) from cache, and create one watch for each of these states; used when save states from other zk client
 	virtual int set_states(StateMap *states);
+	// ATTION: maybe end-less loop until zk server can be connected.
+	virtual void restore_states();
 	// session timeout event handler
 	void on_session_timeout();
 

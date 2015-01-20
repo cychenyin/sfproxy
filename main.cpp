@@ -39,8 +39,8 @@ using namespace FinagleRegistryProxy;
 // using namespace ganji::util::log::ThriftLog;
 
 int nonblockingServer(string zkhosts, int port, int threadCount) {
-	cout << utils::now() << " frproxy nonblocking server starting at port " << port << endl;
-	cout << utils::now() << " zk server " << zkhosts << endl;
+	cout << utils::time_stamp() << " frproxy nonblocking server starting at port " << port << endl;
+	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy nonblocking server starting at port %d. zk server %s", port, zkhosts.c_str());
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
@@ -76,8 +76,8 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 }
 
 int poolServer(string zkhosts, int port, int poolSize) {
-	cout << utils::now() << " frproxy pool server starting at port " << port << endl;
-	cout << utils::now() << " zk server " << zkhosts << endl;
+	cout << utils::time_stamp() << " frproxy pool server starting at port " << port << endl;
+	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy pool server starting at port %d. zk server %s", port, zkhosts.c_str());
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
@@ -106,8 +106,8 @@ int poolServer(string zkhosts, int port, int poolSize) {
 }
 
 int threadedServer(string zkhosts, int port) {
-	cout << utils::now() << " frproxy threaded server starting at port " << port << endl;
-	cout << utils::now() << " zk server " << zkhosts << endl;
+	cout << utils::time_stamp() << " frproxy threaded server starting at port " << port << endl;
+	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
 	logger::warn("frproxy threaded server starting at port %d. zk server %s", port, zkhosts.c_str());
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));

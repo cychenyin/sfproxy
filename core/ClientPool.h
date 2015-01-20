@@ -84,7 +84,7 @@ public:
 		return session_id_;
 	}
 
-	string to_string() {
+	virtual string to_string() {
 		stringstream ss;
 		ss << "id=" << id_ << "	session=" << session_id_ << "	use_times=" << use_times_ << "	in_using_=" << in_using_ << "	connected=" << connected_
 				<< "	addesss=" << this;
@@ -101,6 +101,7 @@ protected:
 	void set_connected(bool connected) {
 		if (this->connected_ == connected)
 			return;
+		cout << "set_connected " << connected << " ###################################################" << endl;
 		mutex.lock();
 		this->connected_ = connected;
 		mutex.unlock();
@@ -157,7 +158,7 @@ public:
 	int size();
 	int used();
 	int idle();
-	string stat();
+	string dump();
 	int watcher_size();
 	void clear();
 public:

@@ -24,9 +24,6 @@ RegistryCache::~RegistryCache() {
 void RegistryCache::add(Registry& reg) {
 	string &name = reg.name;
 	if (name == "" || reg.host == "" || reg.ephemeral == "") {
-#ifdef DEBUG_
-		cout << "add valid false" << endl;
-#endif
 		logger::error("Registry invalid. name ,host or ephemeral is empty");
 		return;
 	}
@@ -199,7 +196,9 @@ void RegistryCache::from_file(const string& filename) {
 string RegistryCache::dump() {
 	stringstream ss;
 	RMap::iterator mit = cache.begin();
-	ss << "	dump cache. address=" << &cache << " size=" << cache.size() << endl;
+	ss << "cache:      " << "---------------------------------------------" << endl;
+	ss << "\taddress=" << &cache << " size=" << cache.size() << endl;
+
 	int i = 0;
 	int max = 1000;
 	while (mit != cache.end() && ++i < max) {

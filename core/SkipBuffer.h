@@ -60,6 +60,7 @@ public:
 		stringstream ss;
 		uint32_t now = utils::now_in_ms();
 		mutex_.lock();
+		ss << "skip buffer:" << "---------------------------------------------" << endl;
 		ss << "	size: " << size() << endl;
 		map<string, uint32_t>::iterator it = this->begin();
 		while(it != this->end()) {

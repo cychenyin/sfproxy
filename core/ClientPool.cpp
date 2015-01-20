@@ -44,6 +44,7 @@ ClientBase* ClientPool::open() {
 	if (c) {
 		c->open();
 	}
+	cout << "open client " << c << " conned=" << c->connected_ << endl;
 	return c;
 }
 
@@ -127,33 +128,32 @@ int ClientPool::watcher_size() {
 	}
 	return ret;
 }
-string ClientPool::stat() {
+string ClientPool::dump() {
 	stringstream ss;
 	int wc = 0;
 	this->mutex.lock();
 	try {
-		ss << "zk client pool stat info." << endl;
+		ss << "client pool:" << "---------------------------------------------" << endl;
 		ss << "using" << endl;
-		ss << "	id	using	times	conn	watches	address" << endl;
+		ss << "	id	using	times	conn	watches	address	zh" << endl;
 		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
 			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
-					<< "\t" << (*it)->states_.size() << "\t" << *it << endl;
+					<< "\t" << (*it)->states_.size() << "\t" << (*it)->to_string() << endl;
 			wc += (*it)->states_.size();
 		}
 
 		ss << "idle" << endl;
-		ss << "	id	using	times	conn	watches	address" << endl;
+		ss << "	id	using	times	conn	watches	address	zh" << endl;
 		for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
 			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
-					<< "\t" << (*it)->states_.size() << "\t" << *it << endl;
+					<< "\t" << (*it)->states_.size() << "\t" << (*it)->to_string() << endl;
 			wc += (*it)->states_.size();
 		}
 		ss << "total" << endl;
 		ss << "	using	idle	watches" << endl;
 		ss << "\t" << using_.size() << "\t" << idle_.size() << "\t" << wc << endl;
 
-		ss << "watcher path" << endl;
-		ss << "-------------------------------------------------" << endl;
+		ss << "watcher path:  -------------------------------------------------" << endl;
 		ss << "	connId	clientId	path " << endl;
 		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
 			StateMap &s = (*it)->states_;
