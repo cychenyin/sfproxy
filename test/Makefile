@@ -38,7 +38,7 @@ SRC_CXXFILE =$(LOG_CXXFILES) ../thrift/proxy_constants.cpp ../thrift/proxy_types
 	../core/Registry.cpp ../core/JsonUtil.cpp ../core/FileCache.cpp ../core/RegistryCache.cpp ../core/ZkClient.cpp ../core/ClientPool.cpp \
 	../core/ServerHandler.cpp 
 	
-TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp ZkPoolTest.cpp UtilsTest.cpp # RegistryCacheTest.cpp # SmartpointTest.cpp #Polymorphism.cpp # TaskTest.cpp #SerializeTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
+TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp SerializeTest.cpp # ZkPoolTest.cpp # UtilsTest.cpp # RegistryCacheTest.cpp # SmartpointTest.cpp #Polymorphism.cpp # TaskTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
@@ -49,9 +49,8 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(LDFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(OBJS) -o $(BIN_PATH)/$(TARGET) 
 
 .PHONY:re
-re: cleanAll all
+re: clean all
 	@echo '---------------clean  *.o in all source code dir ---------------'
-
 
 .SUFFIXES: .o .cpp
 .cpp.o:
@@ -71,12 +70,6 @@ test:
 	
 .PHONY: clean
 clean:
-	$(RM) ../core/ServerHandler.o
-	$(RM) *.o
-	test -z $(BIN_PATH)/$(TARGET) || $(RM) $(BIN_PATH)/$(TARGET) 
-	
-.PHONY: cleanAll
-cleanAll:
 	$(RM) *.o ../log/*.o ../core/*.o ../thrift/*.o
 	test -z $(BIN_PATH)/$(TARGET) || $(RM) $(BIN_PATH)/$(TARGET) 
 	

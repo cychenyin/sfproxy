@@ -67,5 +67,32 @@ BOOST_FIXTURE_TEST_CASE( check , F) {
 	BOOST_CHECK(true);
 }
 
+BOOST_FIXTURE_TEST_CASE( dump , F) {
+	cout << pool->dump()  << endl;
+
+	ZkClient * c = (ZkClient*) pool->open();
+
+	BOOST_CHECK(c->get_connected());
+	c->close();
+
+	cout << pool->dump() << endl;
+
+	BOOST_CHECK(true);
+}
+
+// find segment fault in this case
+BOOST_FIXTURE_TEST_CASE( dump_with_state, F) {
+	cout << pool->dump()  << endl;
+
+	ZkClient * c = (ZkClient*) pool->open();
+	string path = "/path";
+	c->save_state(path, 2, "data");
+	BOOST_CHECK(c->get_connected());
+	c->close();
+
+	cout << pool->dump() << endl;
+
+	BOOST_CHECK(true);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

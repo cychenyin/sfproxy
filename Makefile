@@ -105,7 +105,7 @@ test: btest
 	
 .PHONY: clean
 clean:
-	$(RM) *.o log/*.o ./core/*.o ./thrift/*.o
+	$(RM) *.o log/*.o ./core/*.o ./thrift/*.o core.*
 	test -z $(TARGET) || $(RM) $(BIN_PATH)/$(TARGET)
 #	test -z $(TARGET1) || $(RM) $(BIN_PATH)/$(TARGET2)
 #	test -z $(TARGET2) || $(RM) $(BIN_PATH)/$(TARGET2)

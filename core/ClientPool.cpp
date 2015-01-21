@@ -30,10 +30,11 @@ ClientBase* ClientPool::open() {
 
 	if (idle_.size() == 0) {
 		if (size() < max_client_) {
-			c = factory->create(c);
+			c = factory->create(&state_bag_);
 			c->id_ = ++last_id_;
 			idle_.insert(c);
 			c->pool_event_ = new SEvent<ClientPool, ClientBase, int>(this, &ClientPool::on_client_changed);
+			// c->p
 		} else {
 			c = *(this->using_.begin());
 		}
@@ -44,7 +45,6 @@ ClientBase* ClientPool::open() {
 	if (c) {
 		c->open();
 	}
-	cout << "open client " << c << " conned=" << c->connected_ << endl;
 	return c;
 }
 
@@ -113,20 +113,22 @@ int ClientPool::idle() {
 }
 
 int ClientPool::watcher_size() {
-	int ret = 0;
-	for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
-		StateMap &s = (*it)->states_;
-		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
-			ret++;
-		}
-	}
-	for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
-		StateMap &s = (*it)->states_;
-		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
-			ret++;
-		}
-	}
-	return ret;
+//	int ret = 0;
+//	for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
+//		StateMap &s = (*it)->states_;
+//		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+//			ret++;
+//		}
+//	}
+//	for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+//		StateMap &s = (*it)->states_;
+//		for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
+//			ret++;
+//		}
+//	}
+//	return ret;
+	return this->state_bag_.size();
+
 }
 string ClientPool::dump() {
 	stringstream ss;
@@ -137,36 +139,27 @@ string ClientPool::dump() {
 		ss << "using" << endl;
 		ss << "	id	using	times	conn	watches	address	zh" << endl;
 		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
+			StateList list = state_bag_.get( (*it)->id());
+
 			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
-					<< "\t" << (*it)->states_.size() << "\t" << (*it)->to_string() << endl;
-			wc += (*it)->states_.size();
+					<< "\t" << list.size() << "\t" << (*it)->to_string() << endl;
+			wc += list.size();
 		}
 
 		ss << "idle" << endl;
 		ss << "	id	using	times	conn	watches	address	zh" << endl;
 		for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
+			StateList list = state_bag_.get( (*it)->id());
 			ss << "\t" << (*it)->id() << "\t" << (*it)->in_using_ << "\t" << (*it)->use_times_ << "\t" << (*it)->connected_
-					<< "\t" << (*it)->states_.size() << "\t" << (*it)->to_string() << endl;
-			wc += (*it)->states_.size();
+					<< "\t" << list.size() << "\t" << (*it)->to_string() << endl;
+			wc += list.size();
 		}
 		ss << "total" << endl;
 		ss << "	using	idle	watches" << endl;
 		ss << "\t" << using_.size() << "\t" << idle_.size() << "\t" << wc << endl;
 
-		ss << "watcher path:  -------------------------------------------------" << endl;
-		ss << "	connId	clientId	path " << endl;
-		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
-			StateMap &s = (*it)->states_;
-			for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
-				ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
-			}
-		}
-		for (ClientSet::iterator it = idle_.begin(); it != idle_.end(); it++) {
-			StateMap &s = (*it)->states_;
-			for (StateMap::iterator sit = s.begin(); sit != s.end(); sit++) {
-				ss << "\t" << (*it)->id() << "\t" << sit->second->client_id << "\t" << sit->first << endl;
-			}
-		}
+		ss << state_bag_.dump() << endl;
+
 	} catch (...) {
 	}
 	this->mutex.unlock();
@@ -181,4 +174,17 @@ void ClientPool::clear() {
 	mutex.unlock();
 }
 
+string StateBag::dump(){
+	stringstream ss;
+	ss << "watcher path:  -------------------------------------------------" << map_.size() << endl;
+	ss << "	clientId	path" << endl;
+	mutex.lock();
+	for (StateMap::iterator it = map_.begin(); it != map_.end(); ++it) {
+		ClientState *state = it->second;
+		ss << "\t" << state->client_id << "\t" << state->key() << endl;
+		// ss << "\t" << state->client_id << endl; // << "\t" << state->key() << endl;
+	}
+	mutex.unlock();
+	return ss.str();
+}
 } /* namespace FinagleRegistryProxy */

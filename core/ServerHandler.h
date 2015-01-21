@@ -250,7 +250,6 @@ public:
 
 	void check();
 
-
 	void register_self();
 	void async_register_self();
 

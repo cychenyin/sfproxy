@@ -130,7 +130,7 @@ string ScheduledTask::tostring() const {
 }
 // run task, make sure no exception throw out
 void ScheduledTask::run() {
-	cout << utils::time_stamp() << " " << name << " task running..." << endl;
+	// cout << utils::time_stamp() << " " << name << " task running..." << endl;
 #ifdef DEBUG_
 #endif
 	last_run_ms = utils::now_in_ms();
@@ -144,7 +144,7 @@ void ScheduledTask::run() {
 		cout << "ScheduledTask" << name << " failed" << endl;
 	}
 	// busy = false;
-	cout << utils::time_stamp() << " " << name << " task done" << endl;
+//	cout << utils::time_stamp() << " " << name << " task done" << endl;
 }
 
 //// reload from zookeeper again, if all zk offline, then use local file
@@ -160,12 +160,13 @@ void ScheduledTask::run() {
 //}
 
 void SaveTask::dorun() {
-//	int status = handler->status();
-//	if (status == 0) { // save to file only if server works healthly
-//		handler->save(filename);
-//	} else {
-//		logger::warn("server status %ld is nonzero, auto save cancelled.", status);
-//	}
+	int status = handler->status();
+	if (status == 0) { // save to file only if server works healthly
+		cout << status << "auto save cache into file "<< filename << endl;
+		handler->save(filename);
+	} else {
+		logger::warn("server status %ld is nonzero, auto save cancelled.", status);
+	}
 }
 
 ServerHandler::ServerHandler(string _zkhosts, int _port) :
@@ -352,21 +353,12 @@ void ServerHandler::async_get_from_zk(string &zkpath) {
 
 }
 
-// load all config from zk
+// load from file firstly; then load all config from zk; finally check it.
 void ServerHandler::warm() {
 	// from file first
-	if (this->pool->size() == 0) {
-		this->cache->from_file(cache_file_name);
-	}
+	this->cache->from_file(cache_file_name);
 
-	ZkClient *c = (ZkClient*) pool->open();
-	if (c) {
-		c->get_all_services(*this->root);
-		c->close();
-	} else {
-		logger::warn("fail to open zk client when warming. please check out whether zookeeper cluster is valid.");
-		cout << "fail to open zk client when warming. please check out whether zookeeper cluster is valid" << endl;
-	}
+	check();
 }
 
 void ServerHandler::async_warm() {
@@ -384,18 +376,22 @@ void ServerHandler::check() {
 	// 3. if zk conn ready, check consistency of cache and zk. traverse the cache, and if not exists in zk, then drop off it from cache
 	uint32_t now = utils::now_in_ms();
 //	cout << "check 1." << pool->dump() << endl;
+//	cout << "check 1." << endl;
 	ZkClient* c = (ZkClient*) pool->open();
 //	cout << "check 2." << pool->dump() << endl;
-
+//	cout << "check 2." << endl;
 	if (c->check(*root)) {
 //		cout << "check 3." << pool->dump() << endl;
 		c->get_all_services(*root);
 //		cout << "check 4." << pool->dump() << endl;
+// 		cout << "check 4." << endl;
+	} else  {
+		logger::warn("check says zk is not ready");
 	}
 	c->close();
 	// remove dead instance info from cache
 	cache->remove_before(now);
-	cout << "check 5." << pool->dump() << endl;
+	// cout << "check 5." << pool->dump() << endl;
 }
 
 void ServerHandler::register_self() {
@@ -466,7 +462,10 @@ void ServerHandler::commit_task(shared_ptr<ScheduledTask> task) {
 	// threadManager->add(envlope->runner, async_wait_timeout);
 	// v4
 	// threadManager->add(task, async_wait_timeout, 3 * async_wait_timeout); // 10ms wait to add task to pending queue // 200ms expiration in execution
-	threadManager->add(task);
+	if(threadManager->pendingTaskCount() < threadManager->pendingTaskCountMax()) {
+		threadManager->add(task);
+	} else
+		logger::warn("thread pool pending task queue is full. %s task is avoid.", task->name.c_str() );
 }
 
 void ServerHandler::init_scheduledtask() {
@@ -479,7 +478,7 @@ void ServerHandler::init_scheduledtask() {
 
 	// TODO ... delete 3 lines followed
 	check->interval_in_ms = 1 * 1000;
-	autosave->interval_in_ms = 3 * 1000;
+	autosave->interval_in_ms = 30 * 1000;
 
 	cout << utils::time_stamp() << " " << check->name << " scheduled task interval(ms): " << check->interval_in_ms << endl;
 	cout << utils::time_stamp() << " " << autosave->name << " scheduled task interval(ms): " << autosave->interval_in_ms << endl;

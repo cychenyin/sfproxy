@@ -45,19 +45,24 @@ namespace FinagleRegistryProxy {
 
 typedef SEvent<ClientPool, ClientBase, int> WatchEvent; // client event
 
-class ZkState: public ClientState {
+/*
+ * zk client;
+ * 	do not use conn, before set is_connected_ and in_using_ flag
+ */
+class ZkState: virtual public ClientState {
 public:
-	const static int TYPE_CREATE_EPHERERAL = 0;
-	const static int TYPE_GET_SERVICE = 1;
-	const static int TYPE_GET_NODE = 2;
-	const static int TYPE_GET_ROOT = 3;
+	// use google name style
+	const static int k_type_create_ephereral = 0;
+	const static int k_type_get_service = 1;
+	const static int k_type_get_service_instance = 2;
+	const static int k_type_get_root = 3;
 
 	int type;
 	string path;
 	string data;
 public:
 	ZkState() {
-		type = TYPE_GET_NODE;
+		type = k_type_get_service_instance;
 		data = path = "";
 	}
 	ZkState(string path, const int type) : path(path), type(type) {
@@ -95,7 +100,7 @@ class ZkClient: public ClientBase {
 public:
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
 	ZkClient();
-	ZkClient(string hosts, RegistryCache *pcache);
+	ZkClient(string hosts, RegistryCache *pcache, StateBag *shared_states=NULL);
 public:
 	void init(string hosts, RegistryCache *pcache);
 	virtual ~ZkClient();
@@ -135,8 +140,6 @@ public:
 	static void create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// global watcher of zk conn;
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-	// state, path info which is watched
-	void save_state(string &path, int type);
 	// biz staff, check whether conn is ok; NO watch
 	bool check(const string& top_zk_path="/soa");
 
@@ -151,30 +154,47 @@ public: // clientbase interface method imple
 	virtual bool open();
 	// now close object really, just return it to pool.
 	virtual void close();
+
+public: // state stuff
+	// state, path info which is watched
+	void save_state(string &path, int type, string data="");
 	// receive states(watched path info) from cache, and create one watch for each of these states; used when save states from other zk client
-	virtual int set_states(StateMap *states);
+	int take_over_states(StateList& states);
 	// ATTION: maybe end-less loop until zk server can be connected.
-	virtual void restore_states();
-	// session timeout event handler
+	void restore_states();
+	/*
+	 * session timeout event handler
+	 * method used in following situation:
+	 * 1. access zk, eg. get, create, etc.
+	 * 2. watcher callback
+	 * when session timeout, need to do:
+	 * 1. set conn status false
+	 * 2. set in using status false
+	 * 3.
+	 */
 	void on_session_timeout();
+	// remove state info when zk node is remove when watcher listens message of node removed
+	void remove_state(ZkState& state);
 
 public:
 	string* root_;
-	const static int ZK_MAX_CONNECT_RETRY_TIMES = 10;
-	const static int RCEV_TIME_OUT_DEF = 10 * 1000 * 1000; // in microsecond, us
-
+	const static int k_max_connect_retry_times = 3;
+	const static int k_receive_time_out_us = 10 * 1000 * 1000; // in microsecond, us
+	const static int k_wait_conn_timeout_us = 10 * 1000; // 10000us = 10 ms
 private:
+	apache::thrift::concurrency::Mutex mutex;
 	RegistryCache *pcache_;
 	zhandle_t *zhandle_;
 	// zk conn string, format: host:port[[,host,port]...]
 	string zk_hosts_;
 	// zk recv_timeout in microsecond
 	int timeout_;
+	// states owned by pool; the states is shared by all the conn clients contained in the pool;
+	// StateBag *self_states_;
+
 	void init();
-	// apache::thrift::concurrency::Mutex mutex;
-	void close_handle();
-	// remove state info when zk node is remove when watcher listens message of node removed
-	void remove_state(ZkState* state);
+	// close zk handle
+	void close_zk_handle();
 
 };
 
@@ -213,9 +233,8 @@ public:
 	}
 	~ZkClientFactory() {
 	}
-	ClientBase* create(ClientBase *p){
-		p = new ZkClient(this->zkhosts, this->cache);
-		return p;
+	ClientBase* create(StateBag* states){
+		return new ZkClient(this->zkhosts, this->cache, states);
 	}
 };
 

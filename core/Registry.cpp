@@ -150,11 +150,14 @@ vector<Registry> Registry::unserialize(const string& str) {
 			if (d[i].HasMember("name") && d[i].HasMember("host") && d[i].HasMember("port")) {
 				Registry reg;
 				reg.name = d[i]["name"].GetString();
-				reg.ctime = utils::now_in_ms();
 				reg.host = d[i]["host"].GetString();
-				reg.host = d[i]["port"].GetInt();
+				reg.port = d[i]["port"].GetInt();
 				reg.ephemeral = "";
+				reg.ctime = utils::now_in_ms();
 				v.push_back(reg);
+
+
+//				cout << "host:" << reg.host << endl;
 			}
 		}
 	}
