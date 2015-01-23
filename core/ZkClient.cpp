@@ -172,7 +172,7 @@ void ZkClient::remove_state(ZkState& state) {
 // when re connect to zk server, the conn needs to restore these watcher state
 void ZkClient::restore_states() {
 #ifdef DEBUG_
-	cout << "restore_states callllllllllllllllllllllllllllllllllllllllllllllllllllllllllllled" << endl;
+	cout << "restore_states calllllllllllllllllllllllled" << endl;
 #endif
 	if (shared_states_) {
 		cout << "restore_states size=" << shared_states_->size() << endl;
@@ -647,17 +647,17 @@ void ZkClient::on_session_timeout() {
 }
 
 bool ZkClient::check(const string& top_zk_path) {
-	cout << "ZkClient::check 1" << endl;
+	// cout << "ZkClient::check 1" << endl;
 	if (!this->get_connected()) {
-		cout << "ZkClient::check 2" << endl;
+		// cout << "ZkClient::check 2" << endl;
 		connect_zk();
-		cout << "ZkClient::check 3" << endl;
+		// cout << "ZkClient::check 3" << endl;
 		if (!this->get_connected()) {
-			cout << "ZkClient::check 4" << endl;
+			// cout << "ZkClient::check 4" << endl;
 			return false;
 		}
 	}
-	cout << "ZkClient::check 5" << endl;
+	// cout << "ZkClient::check 5" << endl;
 
 	int ret = false;
 	int buffer_len = 256;

@@ -15,7 +15,7 @@ RegistryCache* p;
 const string filename = "/tmp/serialize.test";
 const int count = 2;
 
-Registry createReg(int i) {
+Registry createReg(int i=0) {
 	Registry r;
 	stringstream ss;
 	ss << "servier" << i;
@@ -172,6 +172,87 @@ BOOST_AUTO_TEST_CASE( encode_test ) {
 	// cout << cache->dump() << endl;
 
 	BOOST_CHECK(true);
+}
+
+
+BOOST_AUTO_TEST_CASE( large_data1 ) {
+	string file = "/tmp/frproxy.cache";
+	RegistryCache* cache = new RegistryCache();
+	int count = 10;
+	for(int i=0; i<count; i++) {
+		Registry r = createReg(i);
+		cache->add(r);
+	}
+	cache->save(file);
+
+	delete cache;
+	cache = NULL;
+
+	cache = new RegistryCache();
+	cache->from_file(file);
+//	cout << cache->dump() << endl;
+	BOOST_CHECK(cache->size() > 0);
+	BOOST_CHECK(cache->size() == count);
+}
+
+BOOST_AUTO_TEST_CASE( large_data2 ) {
+	string file = "/tmp/frproxy.cache";
+	RegistryCache* cache = new RegistryCache();
+	int count = 100;
+	for(int i=0; i<count; i++) {
+		Registry r = createReg(i);
+		cache->add(r);
+	}
+	cache->save(file);
+
+	delete cache;
+	cache = NULL;
+
+	cache = new RegistryCache();
+	cache->from_file(file);
+	// cout << cache->dump() << endl;
+	BOOST_CHECK(cache->size() > 0);
+	BOOST_CHECK(cache->size() == count);
+}
+
+BOOST_AUTO_TEST_CASE( large_data3 ) {
+	string file = "/tmp/frproxy.cache";
+	RegistryCache* cache = new RegistryCache();
+	int count = 1000;
+	for(int i=0; i<count; i++) {
+		Registry r = createReg(i);
+		cache->add(r);
+	}
+	cache->save(file);
+
+	delete cache;
+	cache = NULL;
+
+	cache = new RegistryCache();
+	cache->from_file(file);
+	// cout << cache->dump() << endl;
+	BOOST_CHECK(cache->size() > 0);
+	BOOST_CHECK(cache->size() == count);
+}
+
+BOOST_AUTO_TEST_CASE( large_data4 ) {
+	string file = "/tmp/frproxy.cache";
+	RegistryCache* cache = new RegistryCache();
+	int count = 10000;
+	for(int i=0; i<count; i++) {
+		Registry r = createReg(i);
+		cache->add(r);
+	}
+	cache->save(file);
+
+	delete cache;
+	cache = NULL;
+
+	cache = new RegistryCache();
+	cache->from_file(file);
+	// cout << cache->dump() << endl;
+	BOOST_CHECK(cache->size() > 0);
+	BOOST_CHECK(cache->size() == count);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

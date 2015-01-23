@@ -29,6 +29,9 @@ void OnceTask::run() {
 void CheckTask::dorun() {
 	handler->check();
 }
+void KeepWakeTask::dorun() {
+	handler->keep_wake();
+}
 
 // init registry cache from file firstly, and then override these registry with zk if possible;
 void WarmTask::dorun() {
@@ -39,8 +42,8 @@ void RegisterTask::dorun() {
 	handler->register_self();
 }
 
-void GetFromZkTask::dorun() {
-	handler->get_from_zk(zkpath);
+void GetServiceTask::dorun() {
+	handler->get_service_from_zk(zkpath);
 }
 
 TaskScheduler::TaskScheduler(shared_ptr<ServerHandler> _handler) {
@@ -70,7 +73,7 @@ void TaskScheduler::run() {
 
 	while (!stop_flag) {
 		for (TaskVector::iterator it = runners.begin(); it != runners.end(); ++it) {
-			uint32_t now = utils::now_in_ms();
+			uint64_t now = utils::now_in_ms();
 			//TaskInfo* task = *it;
 			shared_ptr<ScheduledTask> task = *it;
 			// cout << utils::now() << " " << task->name << " now=" << now << " last=" << task->last_run_ms << " diff=" << now - task->last_run_ms << " inter=" << task->interval_in_ms << endl;
@@ -112,14 +115,11 @@ void TaskScheduler::add(shared_ptr<ScheduledTask> _runner) {
 // stop and wait
 void TaskScheduler::stop() {
 	stop_flag = true;
-//	for (TaskVector::iterator it = runners.begin(); it != runners.end(); ++it) {
-//		(*it)->busy = false;
-//	}
-#ifndef TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT
+#ifndef STOP_TIMEOUT_INTERVAL_MULTIPLE
 	usleep(this->interval_in_us * 2);
 #else
-	usleep((long)(this->interval_in_us * TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT));
-	cout << "task scheduler stop wait timeout: " << (long)(this->interval_in_us * TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT) << endl;
+	usleep((long)(this->interval_in_us * STOP_TIMEOUT_INTERVAL_MULTIPLE));
+	cout << "task scheduler stop wait timeout: " << (long)(this->interval_in_us * STOP_TIMEOUT_INTERVAL_MULTIPLE) << endl;
 #endif
 }
 
@@ -130,7 +130,7 @@ string ScheduledTask::tostring() const {
 }
 // run task, make sure no exception throw out
 void ScheduledTask::run() {
-	// cout << utils::time_stamp() << " " << name << " task running..." << endl;
+// cout << utils::time_stamp() << " " << name << " task running..." << endl;
 #ifdef DEBUG_
 #endif
 	last_run_ms = utils::now_in_ms();
@@ -143,27 +143,14 @@ void ScheduledTask::run() {
 	} catch (...) {
 		cout << "ScheduledTask" << name << " failed" << endl;
 	}
-	// busy = false;
 //	cout << utils::time_stamp() << " " << name << " task done" << endl;
 }
-
-//// reload from zookeeper again, if all zk offline, then use local file
-//void ResetTask::dorun() {
-//	string result;
-//	handler->reset(result);
-//}
-//
-//void BreakZkConnTask::dorun() {
-//	cout << "fineeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" << endl;
-//	pool->clear();
-//	handler->register_self(); // have to do it
-//}
 
 void SaveTask::dorun() {
 	int status = handler->status();
 	if (status == 0) { // save to file only if server works healthly
-		cout << status << "auto save cache into file "<< filename << endl;
 		handler->save(filename);
+		cout << status << "cache saved into file "<< filename << endl;
 	} else {
 		logger::warn("server status %ld is nonzero, auto save cancelled.", status);
 	}
@@ -225,7 +212,7 @@ void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 		// if getting from zk, then skip
 		pair<map<string, uint32_t>::iterator, bool> insert = skip_buf->insert(path);
 		if (insert.second) {
-			async_get_from_zk(path);
+			async_get_service_from_zk(path);
 		}
 #ifdef DEBUG_
 		zk_retrieve_end = utils::now_in_us();
@@ -322,7 +309,7 @@ void ServerHandler::save(string& filename) {
 	this->cache->save(filename);
 }
 
-void ServerHandler::get_from_zk(string &zkpath) {
+void ServerHandler::get_service_from_zk(string &zkpath) {
 	ZkClient* c = (ZkClient*) pool->open();
 	if (c) {
 		try {
@@ -336,21 +323,14 @@ void ServerHandler::get_from_zk(string &zkpath) {
 	skip_buf->erase(zkpath);
 }
 
-void ServerHandler::async_get_from_zk(string &zkpath) {
+void ServerHandler::async_get_service_from_zk(string &zkpath) {
 	try {
-		threadManager->add(shared_ptr<Runnable>(new GetFromZkTask(this->shared_from_this(), zkpath)), async_wait_timeout,
+		threadManager->add(shared_ptr<Runnable>(new GetServiceTask(this->shared_from_this(), zkpath)), async_wait_timeout,
 				async_exec_timeout);
-		logger::warn("server async_get_from_zk task committed. ");
+		logger::warn("server async_get_service_from_zk task committed. ");
 	} catch (const TooManyPendingTasksException &e) {
-		logger::warn("too many pending task occured  in thread pool when async_get_from_zk. %s", e.what());
+		logger::warn("too many pending task occured  in thread pool when async_get_service_from_zk. %s", e.what());
 	}
-	//			try {
-	//				threadManager->add(shared_ptr<Runnable>(new ZkReadTask(pool, path, skip_buf)), async_wait_timeout);
-	//				// (new ZkReadTask(pool, path, skip_buf))->run();
-	//			} catch (const TooManyPendingTasksException &ex) {
-	//				logger::warn("too many pending zk task in thread pool. %s", ex.what());
-	//			}
-
 }
 
 // load from file firstly; then load all config from zk; finally check it.
@@ -370,11 +350,17 @@ void ServerHandler::async_warm() {
 	}
 }
 
+void ServerHandler::keep_wake() {
+	if(pool->used() == 0) {
+		ZkClient* c = (ZkClient*) pool->open();
+		c->close();
+	}
+}
 void ServerHandler::check() {
 	// 1. check zk conn, if false, then clear pool;
 	// 2. scan zk, and reload them all.
 	// 3. if zk conn ready, check consistency of cache and zk. traverse the cache, and if not exists in zk, then drop off it from cache
-	uint32_t now = utils::now_in_ms();
+	uint64_t now = utils::now_in_ms();
 //	cout << "check 1." << pool->dump() << endl;
 //	cout << "check 1." << endl;
 	ZkClient* c = (ZkClient*) pool->open();
@@ -387,11 +373,15 @@ void ServerHandler::check() {
 // 		cout << "check 4." << endl;
 	} else  {
 		logger::warn("check says zk is not ready");
+		if(this->cache->size() == 0) {
+			this->cache->from_file(this->cache_file_name);
+		}
 	}
 	c->close();
 	// remove dead instance info from cache
+	cout << "check 5." << pool->dump() << "now=" << now << endl;
 	cache->remove_before(now);
-	// cout << "check 5." << pool->dump() << endl;
+	cout << "check 6." << pool->dump() << endl;
 }
 
 void ServerHandler::register_self() {
@@ -473,16 +463,21 @@ void ServerHandler::init_scheduledtask() {
 		scheduler = new TaskScheduler(this->shared_from_this());
 	else
 		scheduler->clear();
-	shared_ptr<CheckTask> check(new CheckTask(this->shared_from_this(), string("check"), 5 * 60 * 1000));
-	shared_ptr<SaveTask> autosave(new SaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, cache_file_name));
+	shared_ptr<KeepWakeTask> wake(new KeepWakeTask(this->shared_from_this(), string("wake"), 5 * 60 * 1000)); // 5 minutes
+	shared_ptr<CheckTask> check(new CheckTask(this->shared_from_this(), string("check"), 5 * 60 * 1000));		// 5 minutes
+	shared_ptr<SaveTask> autosave(new SaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, cache_file_name)); // 1 hour
 
 	// TODO ... delete 3 lines followed
-	check->interval_in_ms = 1 * 1000;
-	autosave->interval_in_ms = 30 * 1000;
+#ifdef DEBUG_
+	wake->interval_in_ms = 1 * 1000;
+	check->interval_in_ms = 10 * 1000;
+	autosave->interval_in_ms = 300 * 1000;
+#endif
 
 	cout << utils::time_stamp() << " " << check->name << " scheduled task interval(ms): " << check->interval_in_ms << endl;
 	cout << utils::time_stamp() << " " << autosave->name << " scheduled task interval(ms): " << autosave->interval_in_ms << endl;
 
+	scheduler->add(wake);
 	scheduler->add(check);
 	scheduler->add(autosave);
 }

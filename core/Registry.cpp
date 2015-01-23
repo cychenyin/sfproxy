@@ -132,7 +132,7 @@ string Registry::serialize(vector<Registry>& v) {
 	vector<Registry>::iterator it = v.begin();
 	while (it != v.end()) {
 		if (ret.size() > 2) {
-			ret += ",";
+			ret += ",\n";
 		}
 		ret += Registry::serialize(*it);
 		++it;

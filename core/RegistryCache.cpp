@@ -76,7 +76,7 @@ void RegistryCache::remove(const string name, const string ephemeral) {
 }
 
 // delete reg who's mtime less than given timestamp
-void RegistryCache::remove_before(uint32_t timestamp) {
+void RegistryCache::remove_before(uint64_t timestamp) {
 	mutex.lock();
 	RVector* pv;
 	vector<Registry*> v_del;
@@ -163,10 +163,10 @@ RVector* RegistryCache::get(const string name) {
 	try {
 		mutex.lock();
 		RMap::iterator it = cache.find(name);
-		mutex.unlock();
 		if (it != cache.end()) {
 			ptr = &(it->second);
 		}
+		mutex.unlock();
 	} catch (const std::exception& ex) {
 		logger::warn("RegistryCache.get failure, message: %s", ex.what());
 	}
@@ -189,7 +189,7 @@ void RegistryCache::from_file(const string& filename) {
 			(*it).mtime = (*it).ctime = utils::now_in_ms();
 			this->add(*it);
 		}
-		logger::warn("loaded from file. service count=%ld, item count= %ld", cache.size(), v.size());
+		logger::info("loaded from file. service count=%ld, item count= %ld", cache.size(), v.size());
 	}
 }
 
@@ -201,16 +201,18 @@ string RegistryCache::dump() {
 
 	int i = 0;
 	int max = 1000;
+	mutex.lock();
 	while (mit != cache.end() && ++i < max) {
 		RVector &v = mit->second;
 		RVector::iterator vit = v.begin();
 		while (vit != v.end()) {
 			Registry &r = *vit;
-			ss << "\t" << Registry::serialize(r) << endl;
+			ss << "\t" << Registry::serialize(r) << "mtime= " << r.mtime << endl;
 			++vit;
 		}
 		++mit;
 	}
+	mutex.unlock();
 	if (i >= max) {
 		ss << "	......" << endl;
 	}
@@ -220,15 +222,16 @@ string RegistryCache::dump() {
 bool RegistryCache::save(const string& filename) {
 	// simple format, lucky you, name is zkpath
 	RVector v;
+	mutex.lock();
 	for (RMap::iterator mit = cache.begin(); mit != cache.end(); ++mit) {
 		RVector& pv = mit->second;
 		for (RVector::iterator vit = pv.begin(); vit != pv.end(); ++vit) {
 			v.push_back(*vit);
 		}
 	}
+	mutex.unlock();
 
 	string json = Registry::serialize(v);
-	cout << json << endl;
 	try {
 		FileCache f(filename);
 		if (f.open_write() && f.write(json)) {

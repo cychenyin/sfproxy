@@ -1,6 +1,6 @@
 #define BOOST_TEST_NO_MAIN
 
-#define TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT 0.01
+#define STOP_TIMEOUT_INTERVAL_MULTIPLE 0.01
 
 #include <iostream>
 #include <sstream>

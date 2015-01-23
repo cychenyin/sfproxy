@@ -68,7 +68,7 @@ BOOST_FIXTURE_TEST_CASE( now_case , F) {
 
 BOOST_FIXTURE_TEST_CASE( multi_now_case, F) {
 
-	for(int i=0;i<1000;i++) {
+	for (int i = 0; i < 1000; i++) {
 		utils::now_in_ms();
 		// cout << "now_in_ms=" << utils::now_in_ms() << endl;
 	}
@@ -126,6 +126,11 @@ BOOST_FIXTURE_TEST_CASE( now_ms_case, F) {
 
 	BOOST_CHECK_EQUAL(utils::unix_time(), tv.tv_sec);
 
+}
+BOOST_FIXTURE_TEST_CASE( unixtime_vs_now_in_ms, F) {
+	uint64_t now_in_ms = utils::now_in_ms();
+	uint64_t unixtime = utils::unix_time();
+	BOOST_CHECK_EQUAL(unixtime , now_in_ms / 1000);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

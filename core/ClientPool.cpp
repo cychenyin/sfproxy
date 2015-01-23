@@ -133,11 +133,12 @@ int ClientPool::watcher_size() {
 string ClientPool::dump() {
 	stringstream ss;
 	int wc = 0;
-	this->mutex.lock();
+
 	try {
 		ss << "client pool:" << "---------------------------------------------" << endl;
 		ss << "using" << endl;
 		ss << "	id	using	times	conn	watches	address	zh" << endl;
+		this->mutex.lock();
 		for (ClientSet::iterator it = using_.begin(); it != using_.end(); it++) {
 			StateList list = state_bag_.get( (*it)->id());
 

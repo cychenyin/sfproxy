@@ -162,6 +162,7 @@ public: // state stuff
 	int take_over_states(StateList& states);
 	// ATTION: maybe end-less loop until zk server can be connected.
 	void restore_states();
+
 	/*
 	 * session timeout event handler
 	 * method used in following situation:

@@ -48,6 +48,8 @@ using boost::shared_ptr;
 namespace FinagleRegistryProxy {
 
 class ServerHandler;
+
+// run tasks hosted when hits period; not ensure success, i.e. when pending queue is full, some tasks will be discarded.
 class ScheduledTask: virtual public Runnable {
 protected:
 	shared_ptr<ServerHandler> handler;
@@ -103,6 +105,16 @@ private:
 
 }; // class TaskScheduler
 
+/*
+ * use to keep one zk conn wake at least
+ */
+class KeepWakeTask: public ScheduledTask {
+public:
+	KeepWakeTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
+	virtual ~KeepWakeTask() {}
+	void dorun();
+}; // class KeepWakeTask
+
 
 class CheckTask: public ScheduledTask {
 public:
@@ -110,25 +122,6 @@ public:
 	virtual ~CheckTask() {}
 	void dorun();
 }; // class CheckTask
-
-//// reload from zookeeper again, if all zk offline, then use local file
-//class ResetTask: public ScheduledTask {
-//public:
-//	ResetTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
-//	virtual ~ResetTask() {}
-//	void dorun();
-//}; // class ReloadTask
-//
-//class BreakZkConnTask: public ScheduledTask{
-//private:
-//	ClientPool *pool;
-//public:
-//	BreakZkConnTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms, ClientPool *pool) : ScheduledTask(_handler, _name, _interval_in_ms), pool(pool) {}
-//	virtual ~BreakZkConnTask() {
-//		pool = NULL;
-//	}
-//	void dorun();
-//}; // class AutoBreakZkConnTask
 
 class SaveTask: public ScheduledTask {
 private:
@@ -184,20 +177,14 @@ private:
 	void dorun();
 }; // class RegisterTask
 
-class GetFromZkTask: public OnceTask { // virtual public Runnable {
-//private:
-//	ClientPool *pool;
+class GetServiceTask: public OnceTask { // virtual public Runnable {
+private:
 	string zkpath;
-//	SkipBuffer *skip_buf;
-//	ZkClient *c;
 public:
-	GetFromZkTask(shared_ptr<ServerHandler> _handler, string& _zkpath) : OnceTask(_handler), zkpath(_zkpath){}
-//	ZkReadTask(ClientPool *pool, string zkpath, SkipBuffer *skip_set) : pool(pool), zkpath(zkpath), skip_buf(skip_set) {
-//		c = 0;
-//	}
+	GetServiceTask(shared_ptr<ServerHandler> _handler, string& _zkpath) : OnceTask(_handler), zkpath(_zkpath){}
 private:
 	void dorun();
-}; // class ZkReadTask
+}; // class GetServiceTask
 
 
 class ServerHandler: virtual public RegistryProxyIf, public boost::enable_shared_from_this<ServerHandler> {
@@ -240,20 +227,26 @@ public:
 	// RegistryProxyIf::status
 	int32_t status();
 
-	void get_from_zk(string& zkpath);
-	void async_get_from_zk(string& zkpath);
+	void get_service_from_zk(string& zkpath);
+	void async_get_service_from_zk(string& zkpath);
 
-	// save cache into /tmp/frproxy.cache
-	void save(string& filename);
+	// load from file, and check it again
 	void warm();
 	void async_warm();
-
-	void check();
 
 	void register_self();
 	void async_register_self();
 
+	// save cache into /tmp/frproxy.cache
+	void save(string& filename);
+	// check zk, cache
+	void check();
+	// check zk, keep it conned and it's session state valid
+	void keep_wake();
+
+	// commit TaskScheduler
 	void start_scheduler();
+	// commit tasks hosted by TaskScheduler
 	void commit_task(shared_ptr<ScheduledTask> task);
 
 	// for test
