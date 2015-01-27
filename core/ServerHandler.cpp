@@ -379,9 +379,9 @@ void ServerHandler::check() {
 	}
 	c->close();
 	// remove dead instance info from cache
-	cout << "check 5." << pool->dump() << "now=" << now << endl;
+	cout << "check 5." << "now=" << now << endl;
 	cache->remove_before(now);
-	cout << "check 6." << pool->dump() << endl;
+	// cout << "check 6." << endl;
 }
 
 void ServerHandler::register_self() {

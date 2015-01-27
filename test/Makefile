@@ -8,7 +8,7 @@ THRIFT=/usr/local/bin/thrift
 #CC=g++ -O2
 CC=g++ -ggdb -g
 # -fPIC -DPIC
-CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy:../lib:../bin:/usr/local/lib
+CPP_OPTS=-D_LINUX_ -D_GNU_SOURCE -DTHREADED -Wl,-rpath=.:/usr/local/frproxy:../lib:../bin:/usr/local/lib:/usr/local/webserver/boost_1_44_0/lib
 
 BIN_PATH=.
 INSTALL_PATH=/usr/local/webserver/frproxy

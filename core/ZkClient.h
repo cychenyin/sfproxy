@@ -142,7 +142,8 @@ public:
 	static void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 	// biz staff, check whether conn is ok; NO watch
 	bool check(const string& top_zk_path="/soa");
-
+	// use for debug
+	string to_string();
 public:
 	// simple get children; no watch, no biz
 	vector<string> get_children(const string& zkpath );

@@ -68,6 +68,12 @@ echo ===========================================================================
 %{userpath}/libzookeeper_mt.so
 %{userpath}/libzookeeper_mt.so.2
 %{userpath}/libzookeeper_mt.so.2.0.0
+%{userpath}/libboost_filesystem.a
+%{userpath}/libboost_filesystem.so
+%{userpath}/libboost_filesystem.so.1.44.0
+%{userpath}/libboost_system.a
+%{userpath}/libboost_system.so
+%{userpath}/libboost_system.so.1.44.0
 %{userpath}/proxy.sh
 %{userpath}/proxy_client.sh
 %{userpath}/README.md

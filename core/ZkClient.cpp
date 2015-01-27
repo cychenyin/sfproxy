@@ -172,7 +172,7 @@ void ZkClient::remove_state(ZkState& state) {
 // when re connect to zk server, the conn needs to restore these watcher state
 void ZkClient::restore_states() {
 #ifdef DEBUG_
-	cout << "restore_states calllllllllllllllllllllllled" << endl;
+	cout << "restore_states clientId=" << this.id_ << endl;
 #endif
 	if (shared_states_) {
 		cout << "restore_states size=" << shared_states_->size() << endl;
@@ -235,10 +235,10 @@ bool ZkClient::get_service_instance(string serviceZpath, string ephemeralName) {
 
 	Stat stat;
 	mutex.lock();
-	int res = zoo_wget(zhandle_, path.c_str(), &this->service_instance_watcher, this, buffer, &buffer_len, &stat);
+	int result = zoo_wget(zhandle_, path.c_str(), &this->service_instance_watcher, this, buffer, &buffer_len, &stat);
 	this->save_state(path, ZkState::k_type_get_service_instance);
 	mutex.unlock();
-	if (res == ZOK) {
+	if (result == ZOK) {
 		Registry reg;
 		reg.name = serviceZpath;
 		reg.ctime = stat.ctime / 1000;
@@ -259,11 +259,11 @@ bool ZkClient::get_service_instance(string serviceZpath, string ephemeralName) {
 		if (pcache_) {
 			pcache_->add(reg);
 		}
-	} else if (ret == ZNONODE) {
+	} else if (result == ZNONODE) {
 		ZkState state(serviceZpath, ZkState::k_type_get_service_instance);
 		remove_state(state);
 		ret = false;
-	} else if (ret == ZINVALIDSTATE) {
+	} else if (result == ZINVALIDSTATE) {
 		this->on_session_timeout();
 		ret = false;
 	} else {
@@ -286,11 +286,11 @@ bool ZkClient::get_service(string serviceZpath) {
 	struct String_vector str_vec;
 	mutex.lock();
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int res = zoo_wget_children(zhandle_, serviceZpath.c_str(), &this->service_watcher, this, &str_vec);
+	int result = zoo_wget_children(zhandle_, serviceZpath.c_str(), &this->service_watcher, this, &str_vec);
 	this->save_state(serviceZpath, ZkState::k_type_get_service);
 	mutex.unlock();
 
-	if (res == ZOK) {
+	if (result == ZOK) {
 		if (str_vec.count > 0) {
 			// remove before get all children
 			if (pcache_)
@@ -302,11 +302,11 @@ bool ZkClient::get_service(string serviceZpath) {
 			}
 			delete str_vec.data;
 		}
-	} else if (ret == ZNONODE) {
+	} else if (result == ZNONODE) {
 		ZkState state(serviceZpath, ZkState::k_type_get_service);
 		remove_state(state);
 		ret = false;
-	} else if (ret == ZINVALIDSTATE) {
+	} else if (result == ZINVALIDSTATE) {
 		this->on_session_timeout();
 		ret = false;
 	} else {
@@ -326,23 +326,23 @@ int ZkClient::create_pnode(string abs_path, bool log_when_exists) {
 	}
 	mutex.lock();
 	// return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int ret = zoo_create(zhandle_, abs_path.c_str(), NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0);
+	int result = zoo_create(zhandle_, abs_path.c_str(), NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0);
 	mutex.unlock();
 
-	if (ret == ZOK) {
+	if (result == ZOK) {
 #ifdef DEBUG_
 		cout << "create_pnode create persist node successfully. path:" << abs_path << endl;
 #endif
 
-	} else if (ret == ZINVALIDSTATE) {
+	} else if (result == ZINVALIDSTATE) {
 		this->set_connected(false);
-	} else if (ret == ZNODEEXISTS) {
+	} else if (result == ZNODEEXISTS) {
 		if (log_when_exists)
-			logger::info("create_pnode zoo_create failure, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
+			logger::info("create_pnode zoo_create failure, ret=%d; msg=%s path=%s", result, zerror(result), abs_path.c_str());
 	} else {
-		logger::warn("create_pnode zoo_create error, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
+		logger::warn("create_pnode zoo_create error, ret=%d; msg=%s path=%s", result, zerror(result), abs_path.c_str());
 	}
-	return ret;
+	return result;
 }
 // creaet ephermeral node
 int ZkClient::create_enode(string abs_path, string data) {
@@ -354,27 +354,27 @@ int ZkClient::create_enode(string abs_path, string data) {
 	}
 	mutex.lock();
 	// return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int ret = zoo_create(zhandle_, abs_path.c_str(), data.c_str(), data.length(), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, 0, 0);
+	int result = zoo_create(zhandle_, abs_path.c_str(), data.c_str(), data.length(), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, 0, 0);
 
 	mutex.unlock();
-	if (ret == ZOK) {
+	if (result == ZOK) {
 #ifdef DEBUG_
 		cout << " create_enode create ephemeral node successfully. path:" << abs_path << endl;
 #endif
 //	} else if (ret == ZNODEEXISTS) {
 //		remove_state(&ZkState(abs_path, ZkState::TYPE_CREATE_EPHERERAL));
-	} else if (ret == ZINVALIDSTATE) {
+	} else if (result == ZINVALIDSTATE) {
 		this->on_session_timeout();
 	} else {
 #ifdef DEBUG_
-		logger::warn("create_enode zoo_create error, ret=%d; msg=%s path=%s", ret, zerror(ret), abs_path.c_str());
+		logger::warn("create_enode zoo_create error, ret=%d; msg=%s path=%s", result, zerror(result), abs_path.c_str());
 #endif
 	}
 	mutex.lock();
-	ret = zoo_wget(zhandle_, abs_path.c_str(), &this->create_enode_watcher, this, NULL, 0, NULL);
+	result = zoo_wget(zhandle_, abs_path.c_str(), &this->create_enode_watcher, this, NULL, 0, NULL);
 	this->save_state(abs_path, ZkState::k_type_create_ephereral, data);
 	mutex.unlock();
-	return ret;
+	return result;
 }
 
 void ZkClient::create_enode_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
@@ -606,7 +606,7 @@ bool ZkClient::get_all_services(string _serivces_root) {
 			// }
 			++it;
 		}
-	} else if (ret == ZINVALIDSTATE) {
+	} else if (rc == ZINVALIDSTATE) {
 		this->on_session_timeout();
 		ret = false;
 	} else {
@@ -668,11 +668,11 @@ bool ZkClient::check(const string& top_zk_path) {
 	Stat stat;
 	mutex.lock();
 	// zoo_get(zhandle_t *zh, const char *path, int watch, char *buffer,  int* buffer_len, struct Stat *stat);
-	int res = zoo_get(zhandle_, top_zk_path.c_str(), 0, buffer, &buffer_len, NULL);
+	int result = zoo_get(zhandle_, top_zk_path.c_str(), 0, buffer, &buffer_len, NULL);
 	mutex.unlock();
 	delete[] buffer;
 	buffer = 0;
-	return res == ZOK;
+	return result == ZOK;
 }
 
 vector<string> ZkClient::get_children(const string& zkpath) {
@@ -687,15 +687,17 @@ vector<string> ZkClient::get_children(const string& zkpath) {
 	struct String_vector str_vec;
 	mutex.lock();
 	// zoo_get_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int rc = zoo_get_children(zhandle_, zkpath.c_str(), 0, &str_vec);
+	int result = zoo_get_children(zhandle_, zkpath.c_str(), 0, &str_vec);
 	mutex.unlock();
-	if (rc == ZOK) {
+	if (result == ZOK) {
 		for (int i = 0; i < str_vec.count; ++i) {
 			list.push_back(zkpath + "/" + str_vec.data[i]);
 			// get_children(root + "/" + str_vec.data[i]);
 			delete str_vec.data[i];
 		}
 		delete str_vec.data;
+	} else if (result == ZINVALIDSTATE) {
+		this->on_session_timeout();
 	}
 	return list;
 }
@@ -717,10 +719,12 @@ string ZkClient::get_data(const string& zkpath) {
 	Stat stat;
 	mutex.lock();
 	// (zhandle_t *zh, const char *path, int watch, char *buffer, int* buffer_len, struct Stat *stat);
-	int res = zoo_get(zhandle_, zkpath.c_str(), 0, buffer, &buffer_len, 0);
+	int result = zoo_get(zhandle_, zkpath.c_str(), 0, buffer, &buffer_len, 0);
 	mutex.unlock();
-	if (res == ZOK) {
+	if (result == ZOK) {
 		ret = string(buffer);
+	} else if (result == ZINVALIDSTATE) {
+		this->on_session_timeout();
 	}
 	return ret;
 }
