@@ -25,6 +25,10 @@ using boost::shared_ptr;
 
 using namespace FinagleRegistryProxy;
 
+#ifndef DiffMs_
+#define DiffMs(end, start) ((double) (end - start) / CLOCKS_PER_SEC * 1000)
+#endif
+
 class Cursor {
 public:
 	Cursor(int seed) :
@@ -94,16 +98,18 @@ public:
 			transport->open();
 			long open = utils::now_in_us();
 			std::string ret;
+			cout << "getting" << endl;
 			client.get(ret, name);
 			long done = utils::now_in_us();
-			cout << "client get total=" << (double) (done - start) / 1000 << "ms. open cost=" << (double) (open - start) / 1000
-					<< "ms. get cost=" << (double) (done - open) / 1000 << endl;
+
+			cout << "client get total=" << DiffMs(done, start) << "ms. open cost=" << DiffMs(open, start) << "ms. get cost="
+					<< DiffMs(done, open) << endl;
 			cout << "result:	" << ret << endl;
-		} catch (const apache::thrift::transport::TTransportException& ex) {
+		} catch (const apache::thrift::TException& ex) {
 			//transport->close();
-			cout << "client get excepiton: " << ex.what() << endl;
+			cout << "client get thrift excepiton: " << ex.what() << endl;
 		} catch (const std::exception& ex) {
-			cout << ex.what() << endl;
+			cout << "client get unknown exception:" << ex.what() << endl;
 		}
 		transport->close();
 	}
@@ -119,9 +125,7 @@ public:
 			transport->open();
 			int status = client.status();
 			cout << "status : " << status << endl;
-			cout
-					<< "	tips: get 0 is fine; 1 means zk conn , 2 means watcher, 3 means cache, 4 means that thread has some problem."
-					<< endl;
+			cout << "	tips: get 0 is fine; if >0 means sth not ok. 1 zk conn fail, 2 cache empty , 3 watcher loss, 4 thread pool fail." << endl;
 
 		} catch (const apache::thrift::transport::TTransportException& ex) {
 			//transport->close();

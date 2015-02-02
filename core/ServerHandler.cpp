@@ -198,7 +198,6 @@ ServerHandler::~ServerHandler() {
 // RegistryProxyIf::get
 void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 #ifdef DEBUG_
-
 	uint64_t start = utils::now_in_us();
 	uint64_t got(start), zk_retrieve_start(start), zk_retrieve_end(start), serial(start);
 #endif
@@ -268,10 +267,10 @@ void ServerHandler::reset(std::string& _return) {
 	this->init_scheduledtask();
 
 	this->threadManager->stop(); // needed ?
-	this->threadManager->start(); // needed ?
+	this->init_thread_pool();
 
-	register_self();
-	warm();
+	this->register_self();
+	this->warm();
 
 	stringstream ss;
 	int res = status();
@@ -299,7 +298,7 @@ int32_t ServerHandler::status() {
 	int32_t ret = 0; // success
 	ret += (pool->size() == 0 ? 1 : 0);
 	ret += (cache->size() == 0 ? 2 : 0);
-	ret += (pool->watcher_size() < 2 ? 2 : 0); // should watch service root /soa/serives/ and self /soa/proxies/xxx at least
+	ret += (pool->watcher_size() < 2 ? 4 : 0); // should watch service root /soa/serives/ and self reg /soa/proxies/xxx at least
 	ret += (threadManager->workerCount() < thread_count ? 8 : 0);
 	return ret;
 }
@@ -399,21 +398,18 @@ void ServerHandler::register_self() {
 				name << this->hostname << ":" << port;
 				ss << "/" << name.str();
 				int res = c->create_enode(ss.str(), "");
-				cout << "register self done. path=" << ss.str() << endl;
 				if (res != 0) {
-					logger::warn("register_self zoo_create error, path=%s", ss.str().c_str());
+					logger::warn("register_self zoo_create error, path=%s code=%ld", ss.str().c_str(), res);
+				} else {
+					logger::warn("register self done. path=%s", ss.str());
 				}
 			}
 		} catch (...) {
 			logger::warn("fail to regsister self");
-#ifdef DEBUG_
-			cout << "fail to regsister self" << endl;
-#endif
 		}
 		c->close();
 	} else {
 		logger::warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
-		cout << "fail to open zk client when registering self. please check out whether zookeeper cluster is valid" << endl;
 	}
 
 }
