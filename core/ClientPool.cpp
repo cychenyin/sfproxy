@@ -25,7 +25,7 @@ ClientPool::~ClientPool() {
 
 //
 ClientBase* ClientPool::open() {
-	ClientBase* c;
+	ClientBase* c = NULL;
 	mutex.lock();
 
 	if (idle_.size() == 0) {

@@ -150,7 +150,6 @@ void SaveTask::dorun() {
 	int status = handler->status();
 	if (status == 0) { // save to file only if server works healthly
 		handler->save(filename);
-		cout << status << "cache saved into file "<< filename << endl;
 	} else {
 		logger::warn("server status %ld is nonzero, auto save cancelled.", status);
 	}
@@ -265,8 +264,8 @@ void ServerHandler::dump(std::string& _return) {
 // RegistryProxyIf::reset
 void ServerHandler::reset(std::string& _return) {
 	this->pool->clear(); // thread safe
-	this->init_scheduledtask();
 	this->cache->clear();
+	this->init_scheduledtask();
 
 	this->threadManager->stop(); // needed ?
 	this->threadManager->start(); // needed ?
@@ -379,7 +378,7 @@ void ServerHandler::check() {
 	}
 	c->close();
 	// remove dead instance info from cache
-	cout << "check 5." << "now=" << now << endl;
+//	cout << "check 5." << "now=" << now << endl;
 	cache->remove_before(now);
 	// cout << "check 6." << endl;
 }
@@ -463,15 +462,15 @@ void ServerHandler::init_scheduledtask() {
 		scheduler = new TaskScheduler(this->shared_from_this());
 	else
 		scheduler->clear();
-	shared_ptr<KeepWakeTask> wake(new KeepWakeTask(this->shared_from_this(), string("wake"), 5 * 60 * 1000)); // 5 minutes
-	shared_ptr<CheckTask> check(new CheckTask(this->shared_from_this(), string("check"), 5 * 60 * 1000));		// 5 minutes
+	shared_ptr<KeepWakeTask> wake(new KeepWakeTask(this->shared_from_this(), string("wake"), 1 * 60 * 1000)); // 5 minutes
+	shared_ptr<CheckTask> check(new CheckTask(this->shared_from_this(), string("check"), 10 * 60 * 1000));		// 10 minutes
 	shared_ptr<SaveTask> autosave(new SaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, cache_file_name)); // 1 hour
 
 	// TODO ... delete 3 lines followed
 #ifdef DEBUG_
-	wake->interval_in_ms = 1 * 1000;
-	check->interval_in_ms = 10 * 1000;
-	autosave->interval_in_ms = 300 * 1000;
+//	wake->interval_in_ms = 1 * 1000;
+//	check->interval_in_ms = 10 * 1000;
+//	autosave->interval_in_ms = 300 * 1000;
 #endif
 
 	cout << utils::time_stamp() << " " << check->name << " scheduled task interval(ms): " << check->interval_in_ms << endl;

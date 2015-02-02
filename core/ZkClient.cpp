@@ -221,7 +221,7 @@ bool ZkClient::get_service_instance(string path) {
 bool ZkClient::get_service_instance(string serviceZpath, string ephemeralName) {
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return false;
 		}
 	}
@@ -278,7 +278,7 @@ bool ZkClient::get_service_instance(string serviceZpath, string ephemeralName) {
 bool ZkClient::get_service(string serviceZpath) {
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return false;
 		}
 	}
@@ -320,7 +320,7 @@ bool ZkClient::get_service(string serviceZpath) {
 int ZkClient::create_pnode(string abs_path, bool log_when_exists) {
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return ZCONNECTIONLOSS;
 		}
 	}
@@ -348,7 +348,7 @@ int ZkClient::create_pnode(string abs_path, bool log_when_exists) {
 int ZkClient::create_enode(string abs_path, string data) {
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return ZCONNECTIONLOSS;
 		}
 	}
@@ -574,7 +574,7 @@ void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *pa
 bool ZkClient::get_all_services(string _serivces_root) {
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return false;
 		}
 	}
@@ -652,7 +652,7 @@ bool ZkClient::check(const string& top_zk_path) {
 		// cout << "ZkClient::check 2" << endl;
 		connect_zk();
 		// cout << "ZkClient::check 3" << endl;
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			// cout << "ZkClient::check 4" << endl;
 			return false;
 		}
@@ -679,7 +679,7 @@ vector<string> ZkClient::get_children(const string& zkpath) {
 	vector<string> list;
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return list;
 		}
 	}
@@ -706,7 +706,7 @@ string ZkClient::get_data(const string& zkpath) {
 	string ret;
 	if (!this->get_connected()) {
 		connect_zk();
-		if (!this->get_connected()) {
+		if (!this->get_connected() || zhandle_ == NULL) {
 			return false;
 		}
 	}

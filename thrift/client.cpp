@@ -82,7 +82,7 @@ public:
 		transport->close();
 	}
 
-	void once() {
+	void get_once() {
 		boost::shared_ptr<TSocket> socket(new TSocket(host, port));
 		boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -101,7 +101,7 @@ public:
 			cout << "result:	" << ret << endl;
 		} catch (const apache::thrift::transport::TTransportException& ex) {
 			//transport->close();
-			cout << ex.what() << endl;
+			cout << "client get excepiton: " << ex.what() << endl;
 		} catch (const std::exception& ex) {
 			cout << ex.what() << endl;
 		}
@@ -159,7 +159,7 @@ public:
 		// cout << "count = " << count << endl;
 		while (c++ < count || count == 0) {
 			// cout << "thread[" << pthread_self() << "]=" << c << endl;
-			once();
+			get_once();
 		}
 		// cout << "thread[" << pthread_self() << "]=" << c << endl;
 		if (cursor) {
@@ -242,17 +242,16 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	cout << "conn to port=" << port << endl;
-
+	// cout << "connecting to port=" << port << endl;
 	if (method == "dump") {
 		ClientTask task(host, port, service_name, count);
 		task.dump();
 		return 0;
 	}
 
-	cout << "service name=" << service_name << endl;
+	// cout << "service name=" << service_name << endl;
 	if (pool_size > 0) {
-		cout << "multi thread modeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;" << endl;
+		// cout << "multi thread modeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;" << endl;
 		Cursor *cursor = new Cursor(pool_size);
 		shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(pool_size);
 		shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());

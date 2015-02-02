@@ -30,7 +30,7 @@ OBJS2=$(MOD_NAME2_CXXFILES:.cpp=.o)
 OBJS3=$(MOD_NAME3_CXXFILES:.cpp=.o)
 OBJS4=$(MOD_NAME4_CXXFILES:.cpp=.o)
 
-all: clean $(MOD_NAME) $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
+all: $(MOD_NAME) $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
 # $(MOD_NAME2) $(MOD_NAME3) $(MOD_NAME4)
 #client.cpp  proxy_constants.cpp  proxy_types.cpp  RegistryProxy.cpp	server.cpp
 	@echo 'make client done....................................'	

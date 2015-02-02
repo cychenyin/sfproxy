@@ -9,7 +9,7 @@
 #define FRPROXY_H_
 
 #ifndef DEBUG_
-#define DEBUG_
+//#define DEBUG_
 #else
 #define TASKSCHEDULER_STOP_WAIT_PERIOD_COUNT
 #endif
