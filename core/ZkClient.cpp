@@ -76,7 +76,9 @@ inline void ZkClient::close_zk_handle() {
 //#define SESSION_EVENT_DEF -1
 //#define NOTWATCHING_EVENT_DEF -2
 bool ZkClient::connect_zk() {
+#ifdef DEBUG_
 	cout << "connect_zk ing" << endl;
+#endif
 	if (this->get_connected())
 		return true;
 	mutex.lock();
@@ -175,7 +177,9 @@ void ZkClient::restore_states() {
 	cout << "restore_states clientId=" << this.id_ << endl;
 #endif
 	if (shared_states_) {
+#ifdef DEBUG_
 		cout << "restore_states size=" << shared_states_->size() << endl;
+#endif
 		StateList list = shared_states_->get(this->id());
 		for (StateList::iterator it = list.begin(); it != list.end(); it++) {
 			ZkState* state = dynamic_cast<ZkState*>(*it);
