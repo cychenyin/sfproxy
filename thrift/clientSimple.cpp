@@ -14,9 +14,7 @@ using namespace apache::thrift::transport;
 using namespace FinagleRegistryProxy;
 
 int main(int argc, char **argv) {
-	// 9090 for test
-	// 9091 for debug
-	int port = 9091;
+	int port = 9009;
 	cout << "conn to port=" << port << endl;
 	boost::shared_ptr<TSocket> socket(new TSocket("localhost", port));
 	boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));

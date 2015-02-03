@@ -181,8 +181,8 @@ public: // state stuff
 public:
 	string* root_;
 	const static int k_max_connect_retry_times = 3;
-	const static int k_receive_time_out_us = 10 * 1000 * 1000; // in microsecond, us
-	const static int k_wait_conn_timeout_us = 10 * 1000; // 10000us = 10 ms
+	const static int k_receive_time_out_us = 10 * 1000 * 1000; // in microsecond, us, 10s
+	const static int k_wait_conn_timeout_us = 30 * 1000; // 30000us = 30 ms
 private:
 	apache::thrift::concurrency::Mutex mutex;
 	RegistryCache *pcache_;

@@ -76,8 +76,8 @@ void TaskScheduler::run() {
 			uint64_t now = utils::now_in_ms();
 			//TaskInfo* task = *it;
 			shared_ptr<ScheduledTask> task = *it;
-			// cout << utils::now() << " " << task->name << " now=" << now << " last=" << task->last_run_ms << " diff=" << now - task->last_run_ms << " inter=" << task->interval_in_ms << endl;
 
+			// cout << utils::time_stamp() << " " << task->name << " now=" << now << " last=" << task->last_run_ms << " diff=" << now - task->last_run_ms << " inter=" << task->interval_in_ms << endl;
 			if (/*task->busy == false && */now - task->last_run_ms > task->interval_in_ms) {
 				try {
 					// task->busy = true; // set flag before commit
@@ -130,7 +130,7 @@ string ScheduledTask::tostring() const {
 }
 // run task, make sure no exception throw out
 void ScheduledTask::run() {
-// cout << utils::time_stamp() << " " << name << " task running..." << endl;
+	cout << utils::time_stamp() << " " << name << " task running... " << endl;
 #ifdef DEBUG_
 #endif
 	last_run_ms = utils::now_in_ms();
@@ -165,17 +165,19 @@ ServerHandler::ServerHandler(string _zkhosts, int _port) :
 	async_exec_timeout = 1000;
 	skip_buf = new SkipBuffer(async_exec_timeout);
 	init_hostname();
-
 	cache_file_name = "/tmp/frproxy.cache";
+
+	// scheduler = NULL;
 	// use shared_from_this, so, CAN NOT initialize scheduler in constructor
 	// init_scheduledtask();
 }
 
 ServerHandler::~ServerHandler() {
-	if (scheduler) {
-		delete scheduler;
-		scheduler = 0;
-	}
+	// change scheduler to smart point, so, need not to delete any more.
+//	if (scheduler) {
+//		delete scheduler;
+//		scheduler = 0;
+//	}
 	if (pool) {
 		delete pool;
 		pool = 0;
@@ -205,7 +207,7 @@ void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 	vector<Registry>* pvector = cache->get(path.c_str());
 	if (pvector == 0 || pvector->size() == 0) { // not hit cache, then update cache
 #ifdef DEBUG_
-		zk_retrieve_start = utils::now_in_us();
+			zk_retrieve_start = utils::now_in_us();
 #endif
 		// if getting from zk, then skip
 		pair<map<string, uint32_t>::iterator, bool> insert = skip_buf->insert(path);
@@ -227,7 +229,7 @@ void ServerHandler::get(std::string& _return, const std::string& serviceName) {
 	serial = utils::now_in_us();
 	cout << " pool total=" << pool->size() << " used=" << pool->used() << " idle=" << pool->idle() << endl;
 	cout << " get total cost=" << DiffMs(serial, start) << " got=" << DiffMs(got, start) << " zk retrieve="
-			<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
+	<< DiffMs(zk_retrieve_end, zk_retrieve_start) << " serial=" << DiffMs(serial, got) << endl;
 	// cache->dump();
 #endif
 }
@@ -249,10 +251,12 @@ void ServerHandler::dump(std::string& _return) {
 	ss << cache->dump() << endl;
 
 	ss << "threads:    " << "---------------------------------------------" << endl;
+
 	ss << "worker count:" << threadManager->workerCount() << endl;
 	ss << "worker idle :" << threadManager->idleWorkerCount() << endl;
-	ss << "expired task:" << threadManager->expiredTaskCount() << endl;
 	ss << "pending task:" << threadManager->pendingTaskCount() << endl;
+	ss << "total   task:" << threadManager->totalTaskCount() << endl;
+	ss << "expired task:" << threadManager->expiredTaskCount() << endl;
 	ss << "pending max :" << threadManager->pendingTaskCountMax() << endl;
 
 	ss << skip_buf->dump() << endl;
@@ -262,16 +266,26 @@ void ServerHandler::dump(std::string& _return) {
 
 // RegistryProxyIf::reset
 void ServerHandler::reset(std::string& _return) {
-	this->pool->clear(); // thread safe
+	this->pool->clear(); // conn pool clear, thread safe
 	this->cache->clear();
-	this->init_scheduledtask();
 
+	scheduler->stop();
+#ifdef DEBUG_
+	cout << utils::time_stamp() << endl;
+	usleep(scheduler->interval_in_us * 2);
+	cout << utils::time_stamp() << endl;
+#endif
+	this->init_scheduledtask();
 	this->threadManager->stop(); // needed ?
 	this->init_thread_pool();
-
-	this->register_self();
 	this->warm();
 
+	this->start_scheduler();
+#ifdef DEBUG_
+	cout << utils::time_stamp() << endl;
+	usleep(scheduler->interval_in_us * 2);
+	cout << utils::time_stamp() << endl;
+#endif
 	stringstream ss;
 	int res = status();
 	switch (res) {
@@ -285,21 +299,26 @@ void ServerHandler::reset(std::string& _return) {
 		ss << "no service configured" << endl;
 		break;
 	case 4:
-		ss << "unable to create enought thread " << endl;
+		ss << "unable to create enough thread " << endl;
 		break;
 	default:
 		break;
 	}
-
 	_return = ss.str();
 }
 // RegistryProxyIf::status
 int32_t ServerHandler::status() {
 	int32_t ret = 0; // success
-	ret += (pool->size() == 0 ? 1 : 0);
-	ret += (cache->size() == 0 ? 2 : 0);
-	ret += (pool->watcher_size() < 2 ? 4 : 0); // should watch service root /soa/serives/ and self reg /soa/proxies/xxx at least
-	ret += (threadManager->workerCount() < thread_count ? 8 : 0);
+
+	ret &= (pool->size() == 0 ? 1 : 0); // must have one zk client
+	if (ret == 0) {
+		ZkClient* c = (ZkClient*) pool->open();
+		ret &= (!c->get_connected()) ? 1 : 0; // must have one conned zk client
+		c->close();
+	}
+	ret &= (cache->size() == 0 ? 2 : 0);
+	ret &= (pool->watcher_size() < 2 ? 4 : 0); // should watch service root /soa/serives/ and self reg /soa/proxies/xxxx at least
+	ret &= (threadManager->workerCount() < thread_count ? 8 : 0);
 	return ret;
 }
 
@@ -349,8 +368,11 @@ void ServerHandler::async_warm() {
 }
 
 void ServerHandler::keep_wake() {
-	if(pool->used() == 0) {
+	if (pool->used() == 0) {
 		ZkClient* c = (ZkClient*) pool->open();
+		if (c->get_connected() == false) {
+			logger::warn("keep wake can't get connnected zk client.");
+		}
 		c->close();
 	}
 }
@@ -369,9 +391,9 @@ void ServerHandler::check() {
 		c->get_all_services(*root);
 //		cout << "check 4." << pool->dump() << endl;
 // 		cout << "check 4." << endl;
-	} else  {
+	} else {
 		logger::warn("check says zk is not ready");
-		if(this->cache->size() == 0) {
+		if (this->cache->size() == 0) {
 			this->cache->from_file(this->cache_file_name);
 		}
 	}
@@ -401,7 +423,7 @@ void ServerHandler::register_self() {
 				if (res != 0) {
 					logger::warn("register_self zoo_create error, path=%s code=%ld", ss.str().c_str(), res);
 				} else {
-					logger::warn("register self done. path=%s", ss.str());
+					logger::warn("register self done. path=%s", ss.str().c_str());
 				}
 			}
 		} catch (...) {
@@ -430,6 +452,10 @@ void ServerHandler::start_scheduler() {
 	}
 	try {
 		// expiration is not expire, and wait forever
+		//
+		// v1, use point; has bug, shared_ptr leading to that start_scheduler CAN NOT BE called twice
+		// threadManager->add(shared_ptr<TaskScheduler>(scheduler), 0, 0);
+		// v2, use smart point
 		threadManager->add(shared_ptr<TaskScheduler>(scheduler), 0, 0);
 
 	} catch (const TooManyPendingTasksException &ex) {
@@ -447,22 +473,22 @@ void ServerHandler::commit_task(shared_ptr<ScheduledTask> task) {
 	// threadManager->add(envlope->runner, async_wait_timeout);
 	// v4
 	// threadManager->add(task, async_wait_timeout, 3 * async_wait_timeout); // 10ms wait to add task to pending queue // 200ms expiration in execution
-	if(threadManager->pendingTaskCount() < threadManager->pendingTaskCountMax()) {
+	// v5 wait for ever; and not expire
+	if (threadManager->pendingTaskCount() < threadManager->pendingTaskCountMax()) {
 		threadManager->add(task);
 	} else
-		logger::warn("thread pool pending task queue is full. %s task is avoid.", task->name.c_str() );
+		logger::warn("thread pool pending task queue is full. %s task is avoid.", task->name.c_str());
 }
 
 void ServerHandler::init_scheduledtask() {
 	if (scheduler == NULL)
-		scheduler = new TaskScheduler(this->shared_from_this());
+		scheduler = shared_ptr<TaskScheduler>(new TaskScheduler(this->shared_from_this()));
 	else
 		scheduler->clear();
 	shared_ptr<KeepWakeTask> wake(new KeepWakeTask(this->shared_from_this(), string("wake"), 1 * 60 * 1000)); // 5 minutes
 	shared_ptr<CheckTask> check(new CheckTask(this->shared_from_this(), string("check"), 10 * 60 * 1000));		// 10 minutes
 	shared_ptr<SaveTask> autosave(new SaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, cache_file_name)); // 1 hour
 
-	// TODO ... delete 3 lines followed
 #ifdef DEBUG_
 //	wake->interval_in_ms = 1 * 1000;
 //	check->interval_in_ms = 10 * 1000;

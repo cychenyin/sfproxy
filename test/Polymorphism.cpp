@@ -17,7 +17,7 @@
 #include <concurrency/Thread.h>
 #include <concurrency/ThreadManager.h>
 
-BOOST_AUTO_TEST_SUITE( serialize_fixture_suite )
+BOOST_AUTO_TEST_SUITE( polymorphism_fixture_suite )
 
 using namespace std;
 using boost::shared_ptr;

@@ -56,9 +56,9 @@ protected:
 	shared_ptr<ScheduledTask> runner;
 public:
 	string name;
-	uint32_t interval_in_ms;
+	uint64_t interval_in_ms;
 	// last run time; accurate to ms,
-	uint32_t last_run_ms;
+	uint64_t last_run_ms;
 	// bool busy; // remove busy flag cause of when expiration happens in multi thread env, busy state will keep be true forever
 
 public:
@@ -79,11 +79,11 @@ typedef vector<shared_ptr<ScheduledTask> > TaskVector;
 class TaskScheduler: virtual public Runnable {
 private:
 	shared_ptr<ServerHandler> handler;
-	int interval_in_us;
 	TaskVector runners;
 	bool stop_flag;
 	int count;
 public:
+	int interval_in_us;
 	int first_delay_sec;
 public:
 	TaskScheduler(shared_ptr<ServerHandler> handler);
@@ -202,7 +202,7 @@ private:
 	string hostname;
 	string zkhosts;
 	int port;
-	TaskScheduler *scheduler;
+	shared_ptr<TaskScheduler> scheduler;
 	string cache_file_name;
 public:
 	shared_ptr<ServerHandler> get_sharedPtr_from_this(){
@@ -251,7 +251,7 @@ public:
 
 	// for test
 	TaskScheduler* get_scheduler() {
-		return scheduler;
+		return scheduler.get();
 	}
 private:
 	void init_scheduledtask();

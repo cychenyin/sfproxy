@@ -16,7 +16,7 @@ const string filename = "/tmp/serialize.test";
 const int count = 2;
 
 
-class F {
+struct F {
 	F() {
 		// BOOST_TEST_MESSAGE("setup fixture");
 		setup();

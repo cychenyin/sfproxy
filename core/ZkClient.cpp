@@ -87,9 +87,10 @@ bool ZkClient::connect_zk() {
 	int retry = 0;
 	do {
 		++retry;
+#ifdef DEBUG_
 		uint64_t start = utils::unix_time();
+#endif
 		zhandle_ = zookeeper_init(zk_hosts_.c_str(), global_watcher, timeout_, 0, this, 0);
-
 		// 999 is a valid status too.
 		// (zhandle_->state == CONNECTED_STATE_DEF || zhandle_->state == ASSOCIATING_STATE_DEF || zhandle_->state == CONNECTING_STATE_DEF))
 #ifdef DEBUG_
@@ -102,24 +103,26 @@ bool ZkClient::connect_zk() {
 			int status = zhandle_->state;
 			if(status == ASSOCIATING_STATE_DEF || status == CONNECTING_STATE_DEF) {
 				usleep(1 * 1000); // 1 ms
-			} else
+			} else {
+				cout <<  utils::time_stamp() << " zookeeper_init state =" << status << endl;
 				break;
+			}
 		}
 		// if not ready, close it, and retry next time
-		if(zhandle_ == 0 || zhandle_->state != CONNECTED_STATE_DEF) {
+		if(zhandle_ && zhandle_->state != CONNECTED_STATE_DEF) {
 			this->close_zk_handle();
 		}
-	} while (zhandle_ == 0 && retry < k_max_connect_retry_times);
-	if (retry >= k_max_connect_retry_times) {
-		logger::warn("ZkClient fail to connect to zk : zk_hosts_=%s; retry times:=%d", zk_hosts_.c_str(), retry);
-		cout << "ZkClient fail to connect to zk=" << zk_hosts_ << " exceed retry times." << retry << endl;
+	} while (zhandle_ == NULL && retry <= k_max_connect_retry_times);
+	if (retry >= k_max_connect_retry_times && zhandle_ == NULL) {
+		logger::warn("%s ZkClient fail to connect to zk : zk_hosts_=%s; retry times:=%ld", utils::time_stamp().c_str(), zk_hosts_.c_str(), retry - 1);
+		cout << utils::time_stamp() << " ZkClient fail to connect to zk=" << zk_hosts_ << " exceed retry times. " << retry -1 << endl;
 	}
 #ifdef DEBUG_
 	cout << "connect_zk retry = " << retry << " handle=" << zhandle_ << " state=" << (zhandle_ !=0 ? zhandle_->state : -1) << endl;
 #endif
 
 	mutex.unlock();
-	if (zhandle_ != 0) {
+	if (zhandle_) {
 		set_connected(true);
 		set_in_using(true);
 		this->set_session_id(zhandle_->client_id.client_id);
@@ -239,7 +242,7 @@ bool ZkClient::get_service_instance(string serviceZpath, string ephemeralName) {
 
 	Stat stat;
 	mutex.lock();
-	int result = zoo_wget(zhandle_, path.c_str(), &this->service_instance_watcher, this, buffer, &buffer_len, &stat);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_wget(zhandle_, path.c_str(), &this->service_instance_watcher, this, buffer, &buffer_len, &stat);
 	this->save_state(path, ZkState::k_type_get_service_instance);
 	mutex.unlock();
 	if (result == ZOK) {
@@ -271,7 +274,7 @@ bool ZkClient::get_service_instance(string serviceZpath, string ephemeralName) {
 		this->on_session_timeout();
 		ret = false;
 	} else {
-		logger::warn("get_node zk_wget epheramal node error, ret=%d; msg=%s", ret, zerror(ret));
+		logger::warn("get_node zk_wget epheramal node error, ret=%ld; msg=%s", ret, zerror(ret));
 	}
 	delete buffer;
 	buffer = 0;
@@ -290,7 +293,7 @@ bool ZkClient::get_service(string serviceZpath) {
 	struct String_vector str_vec;
 	mutex.lock();
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int result = zoo_wget_children(zhandle_, serviceZpath.c_str(), &this->service_watcher, this, &str_vec);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_wget_children(zhandle_, serviceZpath.c_str(), &this->service_watcher, this, &str_vec);
 	this->save_state(serviceZpath, ZkState::k_type_get_service);
 	mutex.unlock();
 
@@ -315,7 +318,7 @@ bool ZkClient::get_service(string serviceZpath) {
 		ret = false;
 	} else {
 		ret = false;
-		logger::warn("get_children zoo_wget_children error, ret=%d; msg=%s; path=%s", ret, zerror(ret), serviceZpath.c_str());
+		logger::warn("get_children zoo_wget_children error, ret=%ld; msg=%s; path=%s", ret, zerror(ret), serviceZpath.c_str());
 	}
 	return ret;
 }
@@ -330,7 +333,7 @@ int ZkClient::create_pnode(string abs_path, bool log_when_exists) {
 	}
 	mutex.lock();
 	// return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int result = zoo_create(zhandle_, abs_path.c_str(), NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_create(zhandle_, abs_path.c_str(), NULL, 0, &ZOO_OPEN_ACL_UNSAFE, 0, NULL, 0);
 	mutex.unlock();
 
 	if (result == ZOK) {
@@ -342,9 +345,9 @@ int ZkClient::create_pnode(string abs_path, bool log_when_exists) {
 		this->set_connected(false);
 	} else if (result == ZNODEEXISTS) {
 		if (log_when_exists)
-			logger::info("create_pnode zoo_create failure, ret=%d; msg=%s path=%s", result, zerror(result), abs_path.c_str());
+			logger::info("create_pnode zoo_create failure, ret=%ld; msg=%s path=%s", result, zerror(result), abs_path.c_str());
 	} else {
-		logger::warn("create_pnode zoo_create error, ret=%d; msg=%s path=%s", result, zerror(result), abs_path.c_str());
+		logger::warn("create_pnode zoo_create error, ret=%ld; msg=%s path=%s", result, zerror(result), abs_path.c_str());
 	}
 	return result;
 }
@@ -358,7 +361,7 @@ int ZkClient::create_enode(string abs_path, string data) {
 	}
 	mutex.lock();
 	// return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int result = zoo_create(zhandle_, abs_path.c_str(), data.c_str(), data.length(), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, 0, 0);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_create(zhandle_, abs_path.c_str(), data.c_str(), data.length(), &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, 0, 0);
 
 	mutex.unlock();
 	if (result == ZOK) {
@@ -371,7 +374,7 @@ int ZkClient::create_enode(string abs_path, string data) {
 		this->on_session_timeout();
 	} else {
 #ifdef DEBUG_
-		logger::warn("create_enode zoo_create error, ret=%d; msg=%s path=%s", result, zerror(result), abs_path.c_str());
+		logger::warn("create_enode zoo_create error, ret=%ld; msg=%s path=%s", result, zerror(result), abs_path.c_str());
 #endif
 	}
 	mutex.lock();
@@ -566,7 +569,7 @@ void ZkClient::global_watcher(zhandle_t *zh, int type, int state, const char *pa
 #endif
 	//if (type == ZOO_SESSION_EVENT && state == ZOO_EXPIRED_SESSION_STATE) {
 	if (type == ZOO_SESSION_EVENT && state != CONNECTED_STATE_DEF) {
-		logger::warn("Zookeeper session expired. session_id: %d", ((ZkClient*) watcherCtx)->id());
+		logger::warn("Zookeeper session expired. session_id: %ld", ((ZkClient*) watcherCtx)->id());
 		ZkClient *client = (ZkClient*) watcherCtx;
 		if (client) {
 			client->on_session_timeout();
@@ -589,7 +592,7 @@ bool ZkClient::get_all_services(string _serivces_root) {
 
 	mutex.lock();
 	// zoo_wget_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int rc = zoo_wget_children(zhandle_, _serivces_root.c_str(), &this->root_watcher, this, &str_vec);
+	int rc = zhandle_ == NULL ? ZINVALIDSTATE : zoo_wget_children(zhandle_, _serivces_root.c_str(), &this->root_watcher, this, &str_vec);
 	mutex.unlock();
 	this->save_state(_serivces_root, ZkState::k_type_get_root);
 	if (rc == ZOK) {
@@ -672,7 +675,7 @@ bool ZkClient::check(const string& top_zk_path) {
 	Stat stat;
 	mutex.lock();
 	// zoo_get(zhandle_t *zh, const char *path, int watch, char *buffer,  int* buffer_len, struct Stat *stat);
-	int result = zoo_get(zhandle_, top_zk_path.c_str(), 0, buffer, &buffer_len, NULL);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_get(zhandle_, top_zk_path.c_str(), 0, buffer, &buffer_len, NULL);
 	mutex.unlock();
 	delete[] buffer;
 	buffer = 0;
@@ -691,7 +694,7 @@ vector<string> ZkClient::get_children(const string& zkpath) {
 	struct String_vector str_vec;
 	mutex.lock();
 	// zoo_get_children return value: ZOK=0 ZNONODE=-101 ZNOAUTH=-102 ZBADARGUMENTS=-8 ZINVALIDSTATE=-9 ZMARSHALLINGERROR-5
-	int result = zoo_get_children(zhandle_, zkpath.c_str(), 0, &str_vec);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_get_children(zhandle_, zkpath.c_str(), 0, &str_vec);
 	mutex.unlock();
 	if (result == ZOK) {
 		for (int i = 0; i < str_vec.count; ++i) {
@@ -723,7 +726,7 @@ string ZkClient::get_data(const string& zkpath) {
 	Stat stat;
 	mutex.lock();
 	// (zhandle_t *zh, const char *path, int watch, char *buffer, int* buffer_len, struct Stat *stat);
-	int result = zoo_get(zhandle_, zkpath.c_str(), 0, buffer, &buffer_len, 0);
+	int result = zhandle_ == NULL ? ZINVALIDSTATE : zoo_get(zhandle_, zkpath.c_str(), 0, buffer, &buffer_len, 0);
 	mutex.unlock();
 	if (result == ZOK) {
 		ret = string(buffer);

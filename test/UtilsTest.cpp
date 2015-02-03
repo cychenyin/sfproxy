@@ -30,6 +30,9 @@ public:
 	}
 
 };
+BOOST_FIXTURE_TEST_CASE( now_in_ms_VS_unix_time , F) {
+
+}
 
 BOOST_FIXTURE_TEST_CASE( multi_times_localtime_r , F) {
 	BOOST_CHECK(true);

@@ -61,7 +61,7 @@ $ ./frproxy -h
 Proxy Server of Service Framework of Ganji RPC.
 Usage: frproxy [options [option value]]
 	-d,  --debug:		run test main for debugging only
-	-p,  --port:		use definited port. default 9091. eg. -p 9090
+	-p,  --port:		use definited port. default 9009. eg. -p 9009
 	-st, --threaded:	run server as TTreadedServer
 	-sp, --threadpool:	run server as TTreadPoolServer
 	-sn, --nonblocking:	run server as TNonblockingServer. default server type

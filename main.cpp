@@ -41,7 +41,7 @@ using namespace FinagleRegistryProxy;
 int nonblockingServer(string zkhosts, int port, int threadCount) {
 	cout << utils::time_stamp() << " frproxy nonblocking server starting at port " << port << endl;
 	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
-	logger::warn("frproxy nonblocking server starting at port %d. zk server %s", port, zkhosts.c_str());
+	logger::warn("frproxy nonblocking server starting at port %ld. zk server %s", port, zkhosts.c_str());
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -78,7 +78,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 int poolServer(string zkhosts, int port, int poolSize) {
 	cout << utils::time_stamp() << " frproxy pool server starting at port " << port << endl;
 	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
-	logger::warn("frproxy pool server starting at port %d. zk server %s", port, zkhosts.c_str());
+	logger::warn("frproxy pool server starting at port %ld. zk server %s", port, zkhosts.c_str());
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -108,7 +108,7 @@ int poolServer(string zkhosts, int port, int poolSize) {
 int threadedServer(string zkhosts, int port) {
 	cout << utils::time_stamp() << " frproxy threaded server starting at port " << port << endl;
 	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
-	logger::warn("frproxy threaded server starting at port %d. zk server %s", port, zkhosts.c_str());
+	logger::warn("frproxy threaded server starting at port %ld. zk server %s", port, zkhosts.c_str());
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
 	} catch (const std::exception& ex) {
 		cout << "fatal error occured! need to restart server. message:" << ex.what() << endl;
 	} catch (char* ex) {
-		logger::error("fatal error occured! need to restart server. message: %d", ex);
+		logger::error("fatal error occured! need to restart server. message: %s", ex);
 		cout << "fatal error occured! need to restart server. message:" << ex << endl;
 		return 1;
 	} catch (...) {

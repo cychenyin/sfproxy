@@ -14,12 +14,14 @@ BOOST_AUTO_TEST_SUITE( task_suite )
 
 struct F {
 	F() {
+		name="wake";
+		interval_in_ms = 1000;
 	}
 	~F() {
 	}
 
-	// RegistryCache* p;
-
+	string name;
+	int interval_in_ms;
 };
 
 BOOST_FIXTURE_TEST_CASE( empty , F) {
@@ -28,31 +30,21 @@ BOOST_FIXTURE_TEST_CASE( empty , F) {
 
 BOOST_FIXTURE_TEST_CASE( run_directly, F) {
 	// Runnable *pr;
-	ServerHandler*server = new ServerHandler("localhost:2181", 9009);
-
-	ResetTask reload(server);
-	reload.run();
-
-	delete server;
-	server = NULL;
+//	shared_ptr<ServerHandler> server =shared_ptr<ServerHandler> (new ServerHandler("localhost:2181", 9009));
+	// KeepWakeTask task(server, name, interval_in_ms);
+//	task.run();
 	BOOST_CHECK(true);
 }
 
 BOOST_FIXTURE_TEST_CASE( run_by_runnalbe, F) {
 	Runnable *pr;
-	ServerHandler*server = new ServerHandler("localhost:2181", 9009);
+	shared_ptr<ServerHandler> server =shared_ptr<ServerHandler> (new ServerHandler("localhost:2181", 9009));
+//	KeepWakeTask task(server, name, interval_in_ms);
+//	pr  = &task;
+//	pr->run();
+//	delete pr;
+//	pr = NULL;
 
-	ResetTask reload(server);
-
-	pr  = &reload;
-
-	pr->run();
-
-	delete pr;
-	pr = NULL;
-
-	delete server;
-	server = NULL;
 	BOOST_CHECK(true);
 }
 

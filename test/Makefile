@@ -38,12 +38,15 @@ SRC_CXXFILE =$(LOG_CXXFILES) ../thrift/proxy_constants.cpp ../thrift/proxy_types
 	../core/Registry.cpp ../core/JsonUtil.cpp ../core/FileCache.cpp ../core/RegistryCache.cpp ../core/ZkClient.cpp ../core/ClientPool.cpp \
 	../core/ServerHandler.cpp 
 	
-TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp SerializeTest.cpp UtilsTest.cpp # ZkPoolTest.cpp # RegistryCacheTest.cpp # SmartpointTest.cpp #Polymorphism.cpp # TaskTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
+TARGET_CXXFILES=$(SRC_CXXFILE) entry.cpp UtilsTest.cpp #SerializeTest.cpp ZkPoolTest.cpp RegistryCacheTest.cpp SmartpointTest.cpp Polymorphism.cpp TaskTest.cpp SerializeFixtureTest.cpp FileCacheTest.cpp SchedulerTest.cpp 
 
 OBJS=$(TARGET_CXXFILES:.cpp=.o)
 
-all: preexec $(TARGET) afterexec
-	@echo '---------------all done. package can be started now ---------------'
+quick:  preexec $(TARGET) afterexec
+	@echo '---------------quick build done.  ---------------'
+
+all: clean preexec $(TARGET) afterexec
+	@echo '---------------all build done. and run automaticly  ---------------'
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $(CPP_OPTS) $(CPPFLAGS) $(LDFLAGS) $(addprefix -l,$(LIBS)) $(addprefix -L,$(LIB_PATH)) $(OBJS) -o $(BIN_PATH)/$(TARGET) 

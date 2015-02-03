@@ -21,7 +21,7 @@ using boost::shared_ptr;
 using namespace FinagleRegistryProxy;
 
 int main(int argc, char **argv) {
-	int port = 9091;
+	int port = 9009;
 	shared_ptr<RegistryProxyHandler> handler(new RegistryProxyHandler());
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
 	shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

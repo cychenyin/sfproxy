@@ -18,37 +18,35 @@ public:
 
 public:
 	F() {
-		setup();
+		pserver = new ServerHandler("localhost", 9009);
 		count = 0;
 	}
 	~F() {
 		count++;
-		// delete pserver;
+//		delete pserver;
 //		pserver = 0;
 	}
 	int count;
-	void setup() {
-		pserver = new ServerHandler("localhost", 9009);
-	}
+
 };
 
 BOOST_FIXTURE_TEST_CASE( empty, F) {
-//	BOOST_TEST_MESSAGE("test init ");
-	BOOST_TEST_MESSAGE("empty start ===========");
-	BOOST_CHECK(true);
-	// cout << "test init by cout" << endl;
-	BOOST_TEST_MESSAGE("empty end -------------");
+	 BOOST_CHECK(true);
 }
 
 BOOST_FIXTURE_TEST_CASE( init, F) {
-	BOOST_TEST_MESSAGE("init start ===========");
+//	BOOST_TEST_MESSAGE("init start ===========");
 	TaskScheduler *pts = pserver->get_scheduler();
 	// BOOST_CHECK_EQUAL(pts->size(), 3);
+//
+//	pts->clear();
+//	BOOST_CHECK_EQUAL(pts->size(), 0);
 
-	pts->clear();
-	BOOST_CHECK_EQUAL(pts->size(), 0);
+//	pserver->init_thread_pool();
+//	pserver->init_scheduledtask();
+//	pserver->start_scheduler();
 
-	BOOST_TEST_MESSAGE("init end -------------");
+//	BOOST_TEST_MESSAGE("init end -------------");
 }
 
 //BOOST_FIXTURE_TEST_CASE( start, F) {

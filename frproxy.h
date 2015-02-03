@@ -53,10 +53,6 @@ inline std::string tm_2_local(const tm& gm_tm_time) {
 	return tc;
 }
 
-inline uint64_t unix_time(){
-	return (uint64_t)time(NULL);
-}
-
 inline std::string get_current_time() {
 	time_t tt;
 	struct tm vtm;
@@ -95,6 +91,10 @@ inline uint64_t now_in_ms() {
 	gettimeofday(&tv, &tz);
 	uint64_t time = (tv.tv_sec * (uint64_t) 1000000 + tv.tv_usec) /1000LL;
 	return time;
+}
+
+inline uint64_t unix_time(){
+	return (uint64_t)time(NULL);
 }
 
 } // class utils
