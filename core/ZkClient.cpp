@@ -94,7 +94,7 @@ bool ZkClient::connect_zk() {
 		// (zhandle_->state == CONNECTED_STATE_DEF || zhandle_->state == ASSOCIATING_STATE_DEF || zhandle_->state == CONNECTING_STATE_DEF))
 #ifdef DEBUG_
 		if(zhandle_)
-			cout << "zookeeper_init calledddddddddddddd cost: " << utils::unix_time() - start << " zk conn status:" << zhandle_->state << endl;
+			cout << "zookeeper_init called and cost: " << utils::unix_time() - start << " zk conn status:" << zhandle_->state << endl;
 #endif
 		uint64_t wait = utils::now_in_us();
 		// wait for status ready
