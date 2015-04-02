@@ -242,6 +242,8 @@ bool RegistryCache::save(const string& filename) {
 	} catch (const std::exception& ex) {
 		logger::warn("RegistryCache.save fail to save file %s.  cause of %s", filename.c_str(), ex.what());
 		return false;
+	} catch(...) {
+		logger::error("RegistryCache.save fail to save file.");
 	}
 	return true;
 }

@@ -81,6 +81,7 @@ void TaskScheduler::run() {
 			if (/*task->busy == false && */now - task->last_run_ms > task->interval_in_ms) {
 				try {
 					// task->busy = true; // set flag before commit
+					task->last_run_ms = now; // ignore it if be avoided
 					handler->commit_task(task);
 				} catch (const TooManyPendingTasksException &ex) {
 					logger::warn("TaskScheduler::run exception, too many pending task in thread pool when committing %s task. %s",
@@ -288,37 +289,33 @@ void ServerHandler::reset(std::string& _return) {
 #endif
 	stringstream ss;
 	int res = status();
-	switch (res) {
-	case 1:
-		ss << "fail to create zk conn " << endl;
-		break;
-	case 2:
-		ss << "none watcher created" << endl;
-		break;
-	case 3:
-		ss << "no service configured" << endl;
-		break;
-	case 4:
-		ss << "unable to create enough thread " << endl;
-		break;
-	default:
-		break;
-	}
+	if(res & 1)
+		ss << "fail to create zk conn; " << endl;
+	if(res & 2)
+		ss << "none watcher created; " << endl;
+	if(res & 4)
+		ss << "no service configured; " << endl;
+	if(res & 8)
+		ss << "unable to create enough thread; " << endl;
 	_return = ss.str();
 }
 // RegistryProxyIf::status
 int32_t ServerHandler::status() {
 	int32_t ret = 0; // success
 
-	ret &= (pool->size() == 0 ? 1 : 0); // must have one zk client
+	ret |= (pool->size() == 0 ? 1 : 0); // must have one zk client
 	if (ret == 0) {
 		ZkClient* c = (ZkClient*) pool->open();
-		ret &= (!c->get_connected()) ? 1 : 0; // must have one conned zk client
-		c->close();
+		if(c) {
+			ret |= (!c->get_connected()) ? 1 : 0; // must have one conned zk client
+			c->close();
+		} else {
+			ret |= 1;
+		}
 	}
-	ret &= (cache->size() == 0 ? 2 : 0);
-	ret &= (pool->watcher_size() < 2 ? 4 : 0); // should watch service root /soa/serives/ and self reg /soa/proxies/xxxx at least
-	ret &= (threadManager->workerCount() < thread_count ? 8 : 0);
+	ret |= (cache->size() == 0 ? 2 : 0);
+	ret |= (pool->watcher_size() < 2 ? 4 : 0); // should watch service root /soa/serives/ and self reg /soa/proxies/xxxx at least
+	ret |= (threadManager->workerCount() < thread_count ? 8 : 0);
 	return ret;
 }
 
@@ -370,10 +367,15 @@ void ServerHandler::async_warm() {
 void ServerHandler::keep_wake() {
 	if (pool->used() == 0) {
 		ZkClient* c = (ZkClient*) pool->open();
-		if (c->get_connected() == false) {
-			logger::warn("keep wake can't get connnected zk client.");
+		if(c) {
+			try {
+				if (c->get_connected() == false) {
+					logger::warn("keep wake can't get connnected zk client.");
+				}
+			} catch (...) {
+			}
+			c->close();
 		}
-		c->close();
 	}
 }
 void ServerHandler::check() {
@@ -381,27 +383,23 @@ void ServerHandler::check() {
 	// 2. scan zk, and reload them all.
 	// 3. if zk conn ready, check consistency of cache and zk. traverse the cache, and if not exists in zk, then drop off it from cache
 	uint64_t now = utils::now_in_ms();
-//	cout << "check 1." << pool->dump() << endl;
-//	cout << "check 1." << endl;
 	ZkClient* c = (ZkClient*) pool->open();
-//	cout << "check 2." << pool->dump() << endl;
-//	cout << "check 2." << endl;
-	if (c->check(*root)) {
-//		cout << "check 3." << pool->dump() << endl;
-		c->get_all_services(*root);
-//		cout << "check 4." << pool->dump() << endl;
-// 		cout << "check 4." << endl;
-	} else {
-		logger::warn("check says zk is not ready");
-		if (this->cache->size() == 0) {
-			this->cache->from_file(this->cache_file_name);
+	try {
+		if (c && c->check(*root)) {
+			c->get_all_services(*root);
+		} else {
+			logger::warn("check says zk is not ready");
+			if (this->cache->size() == 0) {
+				this->cache->from_file(this->cache_file_name);
+			}
 		}
+	} catch(...) {
+		logger::warn("fail to check");
 	}
-	c->close();
+	if(c)
+		c->close();
 	// remove dead instance info from cache
-//	cout << "check 5." << "now=" << now << endl;
 	cache->remove_before(now);
-	// cout << "check 6." << endl;
 }
 
 void ServerHandler::register_self() {

@@ -240,6 +240,9 @@ public:
 	// save cache into /tmp/frproxy.cache
 	void save(string& filename);
 	// check zk, cache
+	// // 1. check zk conn, if false, then clear pool;
+	// // 2. scan zk, and reload them all.
+	// // 3. if zk conn ready, check consistency of cache and zk. traverse the cache, and if not exists in zk, then drop off it from cache
 	void check();
 	// check zk, keep it conned and it's session state valid
 	void keep_wake();
