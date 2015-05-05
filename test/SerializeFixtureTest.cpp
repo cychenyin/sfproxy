@@ -87,6 +87,33 @@ BOOST_FIXTURE_TEST_CASE( unserialize , F) {
 
 }
 
+BOOST_FIXTURE_TEST_CASE( unserialize2 , F) {
+	setup();
+
+	const string content =
+			"[{\"name\":\"servier0\",\"host\":\"localhost\",\"port\":\"99\",\"weight\":3600 },{\"name\":\"servier1\",\"host\":\"localhost\",\"port\":1,\"weight\":3600 }]";
+	// vector<Registry>
+	RVector v = Registry::unserialize(content);
+
+	BOOST_CHECK_EQUAL(v.size(), 2);
+	BOOST_CHECK_EQUAL(v.at(0).port, 99);
+	//cout << v.at(0).port << endl;
+	BOOST_CHECK_EQUAL(v.at(1).port, 1);
+}
+BOOST_FIXTURE_TEST_CASE( unserialize3 , F) {
+	setup();
+
+	const string content =
+			"[{\"name\":\"servier0\",\"host\":\"localhost\",\"port\":\"x99\",\"weight\":3600 },{\"name\":\"servier1\",\"host\":\"localhost\",\"port\":22,\"weight\":3600 }]";
+	// vector<Registry>
+	RVector v = Registry::unserialize(content);
+	cout << v.size() << "$$$$$$$$$$$$$$$$$$$$$$$$$" << endl; // << v.at(0).port << endl;
+
+	BOOST_CHECK_EQUAL(v.size(), 2);
+	BOOST_CHECK_EQUAL(v.at(0).port, 0);
+	BOOST_CHECK_EQUAL(v.at(1).port, 22);
+}
+
 BOOST_FIXTURE_TEST_CASE( ser_vs_unser , F) {
 	assert(count > 0);
 

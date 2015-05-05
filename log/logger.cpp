@@ -40,7 +40,6 @@ void logger::destory() {
 }
 
 void logger::error(const char* format, ...) {
-#ifdef DEBUG_
 	{
 		va_list args;
 		va_start(args, format);
@@ -48,6 +47,7 @@ void logger::error(const char* format, ...) {
 		vsprintf(message, format, args);
 		cout << message << endl;
 	}
+#ifdef DEBUG_
 #endif
 	if (logger::switcher) {
 		va_list args;
@@ -60,7 +60,6 @@ void logger::error(const char* format, ...) {
 }
 
 void logger::warn(const char* format, ...) {
-#ifdef DEBUG_
 	{
 		va_list args;
 		va_start(args, format);
@@ -68,6 +67,7 @@ void logger::warn(const char* format, ...) {
 		vsprintf(message, format, args);
 		cout << message << endl;
 	}
+#ifdef DEBUG_
 #endif
 
 	if (logger::switcher) {

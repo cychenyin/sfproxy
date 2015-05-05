@@ -29,8 +29,8 @@ void OnceTask::run() {
 void CheckTask::dorun() {
 	handler->check();
 }
-void KeepWakeTask::dorun() {
-	handler->keep_wake();
+void KeepAwakeTask::dorun() {
+	handler->keep_awake();
 }
 
 // init registry cache from file firstly, and then override these registry with zk if possible;
@@ -167,7 +167,7 @@ ServerHandler::ServerHandler(string _zkhosts, int _port) :
 	skip_buf = new SkipBuffer(async_exec_timeout);
 	init_hostname();
 	cache_file_name = "/tmp/frproxy.cache";
-
+	resetting = false;
 	// scheduler = NULL;
 	// use shared_from_this, so, CAN NOT initialize scheduler in constructor
 	// init_scheduledtask();
@@ -267,21 +267,27 @@ void ServerHandler::dump(std::string& _return) {
 
 // RegistryProxyIf::reset
 void ServerHandler::reset(std::string& _return) {
+	if (!this->resetting) {
+		resetting = true;
+	} else
+		return;
+
 	this->pool->clear(); // conn pool clear, thread safe
 	this->cache->clear();
 
-	scheduler->stop();
-#ifdef DEBUG_
-	cout << utils::time_stamp() << endl;
-	usleep(scheduler->interval_in_us * 2);
-	cout << utils::time_stamp() << endl;
-#endif
-	this->init_scheduledtask();
-	this->threadManager->stop(); // needed ?
-	this->init_thread_pool();
+//#ifdef DEBUG_
+//	cout << utils::time_stamp() << endl;
+//	usleep(scheduler->interval_in_us * 2);
+//	cout << utils::time_stamp() << endl;
+//#endif
+//	this->init_scheduledtask();
+//	this->threadManager->stop(); // needed ?
+//	this->init_thread_pool();
 	this->warm();
+//	scheduler->stop();
 
-	this->start_scheduler();
+//	this->start_scheduler();
+
 #ifdef DEBUG_
 	cout << utils::time_stamp() << endl;
 	usleep(scheduler->interval_in_us * 2);
@@ -289,15 +295,17 @@ void ServerHandler::reset(std::string& _return) {
 #endif
 	stringstream ss;
 	int res = status();
-	if(res & 1)
+	if (res & 1)
 		ss << "fail to create zk conn; " << endl;
-	if(res & 2)
+	if (res & 2)
 		ss << "none watcher created; " << endl;
-	if(res & 4)
+	if (res & 4)
 		ss << "no service configured; " << endl;
-	if(res & 8)
+	if (res & 8)
 		ss << "unable to create enough thread; " << endl;
 	_return = ss.str();
+
+	resetting = false;
 }
 // RegistryProxyIf::status
 int32_t ServerHandler::status() {
@@ -306,7 +314,7 @@ int32_t ServerHandler::status() {
 	ret |= (pool->size() == 0 ? 1 : 0); // must have one zk client
 	if (ret == 0) {
 		ZkClient* c = (ZkClient*) pool->open();
-		if(c) {
+		if (c) {
 			ret |= (!c->get_connected()) ? 1 : 0; // must have one conned zk client
 			c->close();
 		} else {
@@ -364,12 +372,12 @@ void ServerHandler::async_warm() {
 	}
 }
 
-void ServerHandler::keep_wake() {
+void ServerHandler::keep_awake() {
 	if (pool->used() == 0) {
 		ZkClient* c = (ZkClient*) pool->open();
-		if(c) {
+		if (c) {
 			try {
-				if (c->get_connected() == false) {
+				if (c == 0 || !c->get_connected()) {
 					logger::warn("keep wake can't get connnected zk client.");
 				}
 			} catch (...) {
@@ -382,55 +390,58 @@ void ServerHandler::check() {
 	// 1. check zk conn, if false, then clear pool;
 	// 2. scan zk, and reload them all.
 	// 3. if zk conn ready, check consistency of cache and zk. traverse the cache, and if not exists in zk, then drop off it from cache
-	uint64_t now = utils::now_in_ms();
-	ZkClient* c = (ZkClient*) pool->open();
+	ZkClient* c = 0;
 	try {
+		c = (ZkClient*) pool->open();
 		if (c && c->check(*root)) {
+			usleep(1000);
+			uint64_t now = utils::now_in_ms();
 			c->get_all_services(*root);
+//			cout << "check get_all_services from zk" << endl;
+			// remove dead instance info from cache
+			cache->remove_overdue(now);
 		} else {
-			logger::warn("check says zk is not ready");
 			if (this->cache->size() == 0) {
+				logger::warn("check says zk data is empty, auto load from file");
+				cout << "check says zk is not ready, auto load from file" << endl;
 				this->cache->from_file(this->cache_file_name);
 			}
 		}
-	} catch(...) {
+	} catch (...) {
 		logger::warn("fail to check");
 	}
-	if(c)
+	if (c)
 		c->close();
-	// remove dead instance info from cache
-	cache->remove_before(now);
 }
 
 void ServerHandler::register_self() {
-	ZkClient *c = (ZkClient*) pool->open();
-	if (c) {
-		try {
-			if (c->get_connected() == true) {
+	ZkClient *c = 0;
+	try {
+		c = (ZkClient*) pool->open();
+		if (c && c->get_connected() == true) {
+			stringstream ss;
+			ss << "/soa";
+			c->create_pnode(ss.str());
+			ss << "/proxies";
+			c->create_pnode(ss.str());
 
-				stringstream ss;
-				ss << "/soa";
-				c->create_pnode(ss.str());
-				ss << "/proxies";
-				c->create_pnode(ss.str());
-
-				stringstream name;
-				name << this->hostname << ":" << port;
-				ss << "/" << name.str();
-				int res = c->create_enode(ss.str(), "");
-				if (res != 0) {
-					logger::warn("register_self zoo_create error, path=%s code=%ld", ss.str().c_str(), res);
-				} else {
-					logger::warn("register self done. path=%s", ss.str().c_str());
-				}
+			stringstream name;
+			name << this->hostname << ":" << port;
+			ss << "/" << name.str();
+			int res = c->create_enode(ss.str(), "");
+			if (res != 0) {
+				logger::warn("register_self zoo_create error, path=%s code=%d", ss.str().c_str(), res);
+			} else {
+				logger::warn("register self done. path=%s", ss.str().c_str());
 			}
-		} catch (...) {
-			logger::warn("fail to regsister self");
+		} else {
+			logger::warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
 		}
-		c->close();
-	} else {
-		logger::warn("fail to open zk client registering self. please check out whether zookeeper cluster is valid.");
+	} catch (...) {
+		logger::warn("fail to regsister self cause of exception");
 	}
+	if (c)
+		c->close();
 
 }
 void ServerHandler::async_register_self() {
@@ -483,7 +494,7 @@ void ServerHandler::init_scheduledtask() {
 		scheduler = shared_ptr<TaskScheduler>(new TaskScheduler(this->shared_from_this()));
 	else
 		scheduler->clear();
-	shared_ptr<KeepWakeTask> wake(new KeepWakeTask(this->shared_from_this(), string("wake"), 1 * 60 * 1000)); // 5 minutes
+	shared_ptr<KeepAwakeTask> wake(new KeepAwakeTask(this->shared_from_this(), string("wake"), 1 * 60 * 1000)); // 5 minutes
 	shared_ptr<CheckTask> check(new CheckTask(this->shared_from_this(), string("check"), 10 * 60 * 1000));		// 10 minutes
 	shared_ptr<SaveTask> autosave(new SaveTask(this->shared_from_this(), string("autosave"), 3600 * 1000, cache_file_name)); // 1 hour
 
@@ -492,7 +503,7 @@ void ServerHandler::init_scheduledtask() {
 //	check->interval_in_ms = 10 * 1000;
 //	autosave->interval_in_ms = 300 * 1000;
 #endif
-
+	cout << utils::time_stamp() << " " << wake->name << " scheduled task interval(ms): " << wake->interval_in_ms << endl;
 	cout << utils::time_stamp() << " " << check->name << " scheduled task interval(ms): " << check->interval_in_ms << endl;
 	cout << utils::time_stamp() << " " << autosave->name << " scheduled task interval(ms): " << autosave->interval_in_ms << endl;
 

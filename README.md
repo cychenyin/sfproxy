@@ -113,6 +113,24 @@ $ yum install
 ----------------
 release：
 ----------------
+#### version 1.1.7 release 20
+#   1. 简化了连接池中连接状态与使用状态的控制
+#   2. 回调中不再复用原连接
+#   3. 保证先监听端口, 启动的过程中热机和自注册不再阻塞, 避免在zk不可用情况下表现为假死
+#   4. 改进了一些提示
+#   5. 按上面的状态图增加销毁队列, 
+#   6. 将使用状态改成计数器, 
+#   7. 在加入销毁队列的时候讲状态的client.id设置为0, 
+#   8. 在restore_status的时候恢复client.id=0的状态, 
+#   9. 改进了watcher的实现,  避免静态函数中访问受保护的成员; 
+#   10. 改进了client中状态恢复的机制, 10分钟(检查周期，可修改)后通过check自动恢复监视
+#   11. 增加了当client中队列满的时候的容错机制
+
+#### version 1.1.6 release 19
+#   1. add log error when save cache; 
+#   2. fix serverhandler status calculate bug. 
+#   3. add try catch to surround all zk access action,specifically, wake, check, reset etc.
+
 #### version 1.1.6 release 17
 #   1. add status method supported in frproxy.init.d.sh 
 #   2. frproxy 增加zk自动刷新

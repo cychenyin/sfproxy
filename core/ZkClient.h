@@ -98,9 +98,9 @@ class ZkClient: public ClientBase {
 	friend class ZkClientFactory;
 	friend class ClientPool;
 public:
+
 	// hosts format: 127.0.0.1:2181,127.0.0.1:2182
-	ZkClient();
-	ZkClient(string hosts, RegistryCache *pcache, StateBag *shared_states=NULL);
+	ZkClient(ClientPool *pool, string hosts, RegistryCache *pcache, StateBag *shared_states=NULL);
 public:
 	void init(string hosts, RegistryCache *pcache);
 	virtual ~ZkClient();
@@ -180,10 +180,11 @@ public: // state stuff
 
 public:
 	string* root_;
-	const static int k_max_connect_retry_times = 3;
+	const static int k_max_connect_retry_times = 10;
 	const static int k_receive_time_out_us = 10 * 1000 * 1000; // in microsecond, us, 10s
 	const static int k_wait_conn_timeout_us = 30 * 1000; // 30000us = 30 ms
 private:
+	ZkClient(); // forbid non-parameter constructor
 	apache::thrift::concurrency::Mutex mutex;
 	RegistryCache *pcache_;
 	zhandle_t *zhandle_;
@@ -197,7 +198,7 @@ private:
 	void init();
 	// close zk handle
 	void close_zk_handle();
-
+	ClientPool *pool;
 };
 
 class ZkClientContext {
@@ -235,8 +236,8 @@ public:
 	}
 	~ZkClientFactory() {
 	}
-	ClientBase* create(StateBag* states){
-		return new ZkClient(this->zkhosts, this->cache, states);
+	ClientBase* create(ClientPool *pool, StateBag* states){
+		return new ZkClient(pool, this->zkhosts, this->cache, states);
 	}
 };
 

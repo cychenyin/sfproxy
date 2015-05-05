@@ -22,6 +22,8 @@ RegistryCache::~RegistryCache() {
 }
 
 void RegistryCache::add(Registry& reg) {
+//	cout << "cache size:" << cache.size() << endl;
+//	cout << "adding: " << " name:" << reg.name << " host:" << reg.host << " port:" << reg.port << endl;
 	string &name = reg.name;
 	if (name == "" || reg.host == "" || reg.ephemeral == "") {
 		logger::error("Registry invalid. name ,host or ephemeral is empty");
@@ -74,31 +76,28 @@ void RegistryCache::remove(const string name, const string ephemeral) {
 	}
 	mutex.unlock();
 }
-
+// algorithm can be improved througth erase directly
 // delete reg who's mtime less than given timestamp
-void RegistryCache::remove_before(uint64_t timestamp) {
+void RegistryCache::remove_overdue(uint64_t timestamp_ms) {
 	mutex.lock();
 	RVector* pv;
-	vector<Registry*> v_del;
+	vector<Registry> v_del;
 	for (RMap::iterator it = cache.begin(); it != cache.end(); ++it) {
 		pv = &(it->second);
 		for (RVector::iterator itProxy = pv->begin(); itProxy != pv->end(); ++itProxy) {
-// 			cout << "timestamp=" << timestamp << " mtime=" << (*itProxy).mtime << endl;
-			if(itProxy->mtime < timestamp) {
-				Registry* p = &(*itProxy);
+			if(itProxy->mtime < timestamp_ms) {
+				Registry& p = *itProxy;
 				v_del.push_back(p);
 			}
 		}
 	}
 	mutex.unlock();
-	// cout << "to del size " << v_del.size() << endl;
-	vector<Registry*>::iterator it = v_del.begin();
+	vector<Registry>::iterator it = v_del.begin();
 	while (it != v_del.end()) {
-		remove(**it);
+		remove(*it);
 		++it;
 	}
 	v_del.clear();
-//	cout << "remove mtime before " << v_del.size() << endl;
 }
 
 void RegistryCache::remove(Registry& reg) {
@@ -110,11 +109,14 @@ void RegistryCache::remove(Registry& reg) {
 		ptr = &(it->second);
 		RVector::iterator itProxy = ptr->begin();
 		while (itProxy != ptr->end()) {
-			if ((*itProxy) == reg) {
-				ptr->erase(itProxy);
+			if ((*itProxy).equals(reg)) {
+				itProxy = ptr->erase(itProxy);
 				break;
-			}
-			++itProxy;
+			} else
+				++itProxy;
+		}
+		if(ptr->size() == 0) {
+			cache.erase(it);
 		}
 	}
 	mutex.unlock();
@@ -178,6 +180,7 @@ int RegistryCache::size() {
 }
 
 void RegistryCache::from_file(const string& filename) {
+	cout << "loading cache from file" << filename << endl;
 	FileCache f(filename);
 	string content;
 	if (f.open_read() && f.read_all(content)) {
@@ -191,6 +194,8 @@ void RegistryCache::from_file(const string& filename) {
 		}
 		logger::info("loaded from file. service count=%ld, item count= %ld", cache.size(), v.size());
 	}
+
+//	cout << this->dump() << endl;
 }
 
 string RegistryCache::dump() {
@@ -207,7 +212,7 @@ string RegistryCache::dump() {
 		RVector::iterator vit = v.begin();
 		while (vit != v.end()) {
 			Registry &r = *vit;
-			ss << "\t" << Registry::serialize(r) << "mtime= " << r.mtime << endl;
+			ss << "\t" << mit->first << "\t" << Registry::serialize(r) << " mtime= " << r.mtime << endl;
 			++vit;
 		}
 		++mit;

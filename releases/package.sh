@@ -1,5 +1,5 @@
 #!/bin/bash
-pkgname=frproxy-1.1.6
+pkgname=frproxy-1.1.7
 
 if [ -d ~/rpmbuild/ ]; then
     rpmb_root=~/rpmbuild

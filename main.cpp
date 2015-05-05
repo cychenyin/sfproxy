@@ -58,8 +58,8 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	TNonblockingServer server(processor, protocolFactory, port, threadManager);
 
-	handler.get()->register_self();
-	handler.get()->warm();
+	handler.get()->async_register_self();
+	handler.get()->async_warm();
 	handler.get()->start_scheduler();
 
 	try {
@@ -68,7 +68,10 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 
 	} catch (TException &ex) {
 		logger::error("thrift error occured when trying to serve. check port which maybe used. message: %s", ex.what());
+		cout << utils::time_stamp() << " thrift error occured when trying to serve. check port which maybe used anyway. msg:" << ex.what() << endl;
+	} catch(...) {
 	}
+
 	cout << "frproxy server exiting." << endl;
 	threadManager->stop();
 	cout << "frproxy server exited." << endl;
@@ -76,9 +79,7 @@ int nonblockingServer(string zkhosts, int port, int threadCount) {
 }
 
 int poolServer(string zkhosts, int port, int poolSize) {
-	cout << utils::time_stamp() << " frproxy pool server starting at port " << port << endl;
-	cout << utils::time_stamp() << " zk server " << zkhosts << endl;
-	logger::warn("frproxy pool server starting at port %ld. zk server %s", port, zkhosts.c_str());
+	cout << utils::time_stamp() << "warming zk server " << zkhosts << endl;
 
 	shared_ptr<ServerHandler> handler(new ServerHandler(zkhosts, port));
 	shared_ptr<TProcessor> processor(new RegistryProxyProcessor(handler));
@@ -92,8 +93,13 @@ int poolServer(string zkhosts, int port, int poolSize) {
 	threadManager->start();
 	TThreadPoolServer server(processor, serverTransport, transportFactory, protocolFactory, threadManager);
 
-	handler.get()->register_self();
-	handler.get()->warm();
+	handler.get()->async_register_self();
+	handler.get()->async_warm();
+	handler.get()->start_scheduler();
+
+	cout << utils::time_stamp() << " frproxy pool server starting at port " << port << endl;
+	logger::warn("frproxy pool server starting at port %ld. zk server %s", port, zkhosts.c_str());
+
 	try {
 		server.serve();
 	} catch (TException &ex) {
@@ -118,8 +124,9 @@ int threadedServer(string zkhosts, int port) {
 
 	TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
-	handler.get()->register_self();
-	handler.get()->warm();
+	handler.get()->async_register_self();
+	handler.get()->async_warm();
+	handler.get()->start_scheduler();
 	try {
 		server.serve();
 	} catch (TException &ex) {
@@ -148,7 +155,6 @@ void usage() {
 	cout << "	" << "-lh, --scribehost:\t\tscribe hosts. default 127.0.0.1. eg. -lg localhost" << endl;
 	cout << "	" << "-lp, --scribeport:\t\tscribe port. default 11463. eg. -lp 11463" << endl;
 	cout << "	" << "-l,  --enablelog:\t\tenable scribe log" << endl;
-	cout << "	" << "-a,  --autoreset:\t\tauto reset. default true; '-a true' same to '-a' eg. -a. eg. -a false. eg. -a true" << endl;
 }
 
 int main(int argc, char **argv) {
@@ -192,6 +198,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
+	cout << "starting server" << endl;
 	try {
 		switch (type) {
 		case 1:

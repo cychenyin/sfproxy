@@ -125,7 +125,7 @@ public:
 			transport->open();
 			int status = client.status();
 			cout << "status : " << status << endl;
-			cout << "	tips: get 0 is fine; if >0 means sth not ok. 1 zk conn fail, 2 cache empty , 3 watcher loss, 4 thread pool fail." << endl;
+			cout << "	tips: get 0 is fine; if >0 means sth not ok. 1 zk conn fail, 2 cache empty , 4 watcher loss, 8 thread pool fail." << endl;
 
 		} catch (const apache::thrift::transport::TTransportException& ex) {
 			//transport->close();
@@ -177,6 +177,7 @@ void usage(int egg = 0) {
 	cout << "client version: " << FinagleRegistryProxy::FRPROXY_VERSION << endl;
 	cout << "Usage: client [option [option_value]]" << endl;
 	cout << "Options:" << endl;
+	cout << "	" << "-v, --version:	show version info. " << endl;
 	cout << "	" << "-h, --help:		print usage. " << endl;
 	cout << "	" << "-s, --server:		server of frproxy :	default 127.0.0.1. eg. -s localhost" << endl;
 	cout << "	" << "-p, --port:		default 9009. eg. -p 9090" << endl;
@@ -186,11 +187,11 @@ void usage(int egg = 0) {
 	cout << "	" << "-m, --method:		candidatation include get, remove, dump. default get" << endl;
 	cout << "	" << "-l, --list:		list frproxy server" << endl;
 	cout << "	"
-			<< "-a, --status:		list frproxy working status. get 0 is fine; 1 means zk conn , 2 means watcher, 3 means cache, 4 means that thread has some problem. "
+			<< "-a, --status:		list frproxy working status. get 0 is fine; if >0 means sth not ok. 1 zk conn fail, 2 cache empty , 4 watcher loss, 8 thread pool fail."
 			<< endl;
 	cout << "	" << "-z,  --zkhosts:	zookeeper hosts. default 127.0.0.1:2181. eg. -z 192.168.2.202:2181" << endl;
 	if (egg > 0) {
-		cout << "	" << "-r,  --reset:\t\t server running health status" << endl;
+		cout << "	" << "-r,  --reset:\t\t reset server status." << endl;
 	}
 
 	cout << "eg. " << endl;
@@ -226,7 +227,10 @@ int main(int argc, char **argv) {
 	int count = option_value(argc, argv, "-c", "--count", pool_size > 0 ? 0 : 1);
 
 	string method = option_value(argc, argv, "-m", "--method", "");
-
+	if (option_exists(argc, argv, "-v") || option_exists(argc, argv, "--version")) {
+		cout << "frproxy client version " << FRPROXY_VERSION << endl;
+		return 0;
+	}
 	if (option_exists(argc, argv, "-h") || option_exists(argc, argv, "--help")) {
 		usage();
 		return 0;

@@ -36,7 +36,7 @@ using namespace std;
 
 namespace FinagleRegistryProxy {
 
-const string FRPROXY_VERSION = "1.1.6";
+const string FRPROXY_VERSION = "1.1.7";
 
 namespace utils {
 

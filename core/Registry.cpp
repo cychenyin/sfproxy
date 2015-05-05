@@ -7,11 +7,13 @@
 
 #include "Registry.h"
 #include <sstream>
+#include <stdlib.h>
 #include <boost/format.hpp>
 #include "../rapidjson/document.h"
 #include "../rapidjson/prettywriter.h"
 #include "../rapidjson/filestream.h"
 #include "../rapidjson/stringbuffer.h"
+#include "../log/logger.h"
 
 using namespace rapidjson;
 
@@ -144,22 +146,32 @@ string Registry::serialize(vector<Registry>& v) {
 vector<Registry> Registry::unserialize(const string& str) {
 	vector<Registry> v;
 	Document d;
-	d.Parse<0>(str.c_str());
-	if (d.IsArray()) {
-		for (int i = 0; i < d.Size(); i++) {
-			if (d[i].HasMember("name") && d[i].HasMember("host") && d[i].HasMember("port")) {
-				Registry reg;
-				reg.name = d[i]["name"].GetString();
-				reg.host = d[i]["host"].GetString();
-				reg.port = d[i]["port"].GetInt();
-				reg.ephemeral = "";
-				reg.ctime = utils::now_in_ms();
-				v.push_back(reg);
+	try {
+		d.Parse<0>(str.c_str());
+		if (d.IsArray()) {
+			for (int i = 0; i < d.Size(); i++) {
 
+				if (d[i].HasMember("name") && d[i].HasMember("host") && d[i].HasMember("port")) {
+					Registry reg;
+					reg.name = d[i]["name"].GetString();
+					reg.host = d[i]["host"].GetString();
+					if (d[i]["port"].IsInt() == true) {
+						reg.port = d[i]["port"].GetInt();
+					} else if (d[i]["port"].IsString() == true) {
+						string s = d[i]["port"].GetString();
+						reg.port = (int) atol(s.c_str());
+					} else
+						continue;
+					reg.ephemeral = "";
+					reg.ctime = utils::now_in_ms();
+					v.push_back(reg);
+				}
 
-//				cout << "host:" << reg.host << endl;
 			}
 		}
+	} catch (...) {
+		logger::error("fail to unserialize Registry %s", str.c_str());
+		cout << "fail to unserialize Registry xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << str << endl;
 	}
 	return v;
 }

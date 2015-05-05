@@ -44,7 +44,7 @@ public:
 
 	void add(Registry& proxy);
 	// remove instance before timestamp;
-	void remove_before(uint64_t timestamp);
+	void remove_overdue(uint64_t timestamp);
 	// name eg /sao/services/test.thrift
 	void remove(Registry& reg);
 	// name eg /sao/services/test.thrift, ephemeral eg member00000001

@@ -161,6 +161,7 @@ BOOST_FIXTURE_TEST_CASE( get_test , F) {
 
 BOOST_FIXTURE_TEST_CASE( remove1 , F) {
 	cache.clear();
+	BOOST_CHECK(cache.size() == 0);
 	//string name("remove2");
 	string name("/soa/services/testservice");
 	Registry r1 = createRegistry();
@@ -299,43 +300,48 @@ BOOST_FIXTURE_TEST_CASE( remove4 , F) {
 	// can delete case
 	Registry r = createRegistry();
 	r.mtime = time;
-	cache.add(r);
-	cache.add(r);
-	BOOST_CHECK(cache.size() == 1);
-	cache.remove_before(time + 1);
+//	cache.add(r);
+//	cache.add(r);
+//	BOOST_CHECK(cache.size() == 1);
+//	cache.remove_overdue(time + 1);
 	RVector* v = cache.get(r.name);
-	BOOST_CHECK((v ? v->size() : 0) == 0);
+//	BOOST_CHECK((v ? v->size() : 0) == 0);
+//	BOOST_CHECK(cache.size() == 0);
+//	// multi can del case
+//	cache.clear();
+//	BOOST_CHECK(cache.size() == 0);
+	int nameTotal = 20;
+	for(int i =0; i< nameTotal;i++) {
+		r = createRegistry();
+		r.mtime = time;
+		cache.add(r);
+	}
 
-	// multi can del case
-	cache.clear();
-	r = createRegistry();
-	r.mtime = time;
-	cache.add(r);
-	r = createRegistry();
-	r.mtime = time;
-	cache.add(r);
 	v = cache.get(r.name);
 	BOOST_CHECK(cache.size() == 1);
-	BOOST_CHECK((v ? v->size() : 0) == 2);
+	BOOST_CHECK((v ? v->size() : 0) == nameTotal);
 	r = createRegistry();
-	r.mtime = time;
 	r.name = r.name + "x";
+	r.mtime = time;
 	cache.add(r);
 	v = cache.get(r.name);
 	BOOST_CHECK(cache.size() == 2);
 	BOOST_CHECK((v ? v->size() : 0) == 1);
 
-	cache.remove_before(time + 1);
+//	cout << "before commit remove_overdue "<< cache.dump() << endl;
+	cache.remove_overdue(time + 1);
 	v = cache.get(r.name);
 	BOOST_CHECK((v ? v->size() : 0) == 0);
-
+//	cout << "after remove_overdue sizeeeeeeeeeeeeeeeeeeeeeeee: "<< cache.size() << endl;
+//	cout << cache.dump() << endl;
+	BOOST_CHECK(cache.size() == 0);
 	// cannot delete case
 	cache.clear();
 	r = createRegistry();
 	r.mtime = time;
 	cache.add(r);
 
-	cache.remove_before(time - 1);
+	cache.remove_overdue(time - 1);
 	v = cache.get(r.name);
 	BOOST_CHECK((v ? v->size() : 0) == 1);
 
@@ -348,7 +354,7 @@ BOOST_FIXTURE_TEST_CASE( remove4 , F) {
 	v = cache.get(r.name);
 	BOOST_CHECK((v ? v->size() : 0) == 1);
 
-	cache.remove_before(time);
+	cache.remove_overdue(time);
 	v = cache.get(r.name);
 	BOOST_CHECK((v ? v->size() : 0) == 1);
 
@@ -365,7 +371,7 @@ BOOST_FIXTURE_TEST_CASE( remove5_memory_leak_test , F) {
 		cache.add(r);
 		BOOST_CHECK(cache.size() == 1);
 
-		cache.remove_before(time + 1);
+		cache.remove_overdue(time + 1);
 		RVector* v = cache.get(r.name);
 		BOOST_CHECK((v ? v->size() : 0) == 0);
 	}
@@ -391,4 +397,72 @@ BOOST_FIXTURE_TEST_CASE( json_test, F) {
 	BOOST_CHECK(_return.size() > 40);
 }
 
+BOOST_FIXTURE_TEST_CASE( load_remove_overdue, F) {
+
+	cache.from_file("/tmp/frproxy.cache");
+	// usleep(1000);
+	// cache.remove_overdue(utils::now_in_ms());
+	//BOOST_CHECK(cache.size() == 0 );
+	BOOST_CHECK(true);
+}
+BOOST_FIXTURE_TEST_CASE( remove_middle_one, F) {
+	string name = "name";
+	int middle  = 100;
+
+	Registry r = createRegistry();
+	r.name = name + " begin";
+	cache.add(r);
+	for(int i=0;i< middle; i++) {
+		r = createRegistry();
+		stringstream ss;
+		ss << name << i;
+		r.name = ss.str();
+		cache.add(r);
+	}
+	r = createRegistry();
+		r.name = name + " end";
+		cache.add(r);
+
+	BOOST_CHECK(cache.size() == middle + 2);
+
+	for(int i=middle-1;i>-1; i--) {
+		stringstream ss;
+		ss << name << i;
+		cache.remove(ss.str());
+	}
+	BOOST_CHECK(cache.size() == 2);
+
+}
+
+BOOST_FIXTURE_TEST_CASE( remove_middle_one2, F) {
+	string name = "name";
+	int middle  = 100;
+
+	Registry r = createRegistry();
+	r.name = name + " begin";
+	cache.add(r);
+	Registry& m = r;
+	for(int i=0;i< middle; i++) {
+		r = createRegistry();
+		stringstream ss;
+		ss << name << i;
+		r.name = ss.str();
+		cache.add(r);
+		m = r;
+	}
+	r = createRegistry();
+		r.name = name + " end";
+		cache.add(r);
+
+	BOOST_CHECK(cache.size() == middle + 2);
+
+	cache.remove(m);
+//	for(int i=middle-1;i>-1; i--) {
+//		stringstream ss;
+//		ss << name << i;
+//		cache.remove(ss.str());
+//	}
+	BOOST_CHECK(cache.size() == middle + 1);
+
+}
 BOOST_AUTO_TEST_SUITE_END()

@@ -108,10 +108,10 @@ private:
 /*
  * use to keep one zk conn wake at least
  */
-class KeepWakeTask: public ScheduledTask {
+class KeepAwakeTask: public ScheduledTask {
 public:
-	KeepWakeTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
-	virtual ~KeepWakeTask() {}
+	KeepAwakeTask(shared_ptr<ServerHandler> _handler, string _name, int _interval_in_ms) : ScheduledTask(_handler, _name, _interval_in_ms){}
+	virtual ~KeepAwakeTask() {}
 	void dorun();
 }; // class KeepWakeTask
 
@@ -204,6 +204,7 @@ private:
 	int port;
 	shared_ptr<TaskScheduler> scheduler;
 	string cache_file_name;
+	volatile bool resetting;
 public:
 	shared_ptr<ServerHandler> get_sharedPtr_from_this(){
 	             return shared_from_this();
@@ -245,7 +246,7 @@ public:
 	// // 3. if zk conn ready, check consistency of cache and zk. traverse the cache, and if not exists in zk, then drop off it from cache
 	void check();
 	// check zk, keep it conned and it's session state valid
-	void keep_wake();
+	void keep_awake();
 
 	// commit TaskScheduler
 	void start_scheduler();
