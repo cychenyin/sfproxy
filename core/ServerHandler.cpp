@@ -349,7 +349,7 @@ void ServerHandler::async_get_service_from_zk(string &zkpath) {
 	try {
 		threadManager->add(shared_ptr<Runnable>(new GetServiceTask(this->shared_from_this(), zkpath)), async_wait_timeout,
 				async_exec_timeout);
-		logger::warn("server async_get_service_from_zk task committed. ");
+		// logger::warn("server async_get_service_from_zk task committed. ");
 	} catch (const TooManyPendingTasksException &e) {
 		logger::warn("too many pending task occured  in thread pool when async_get_service_from_zk. %s", e.what());
 	}
