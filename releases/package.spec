@@ -57,6 +57,7 @@ echo ===========================================================================
 %{userpath}/libevent.a
 %{userpath}/libevent.la
 %{userpath}/libevent.so
+%{userpath}/libevent-1.4.so.2
 %{userpath}/libthriftnb.so
 %{userpath}/libthriftnb.so.0
 %{userpath}/libthriftnb.so.0.0.0
