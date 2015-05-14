@@ -11,11 +11,6 @@ interface：
 ----------------
 ##use thrift interface
 
-namespace java com.ganji.arch.sf.thrift
-namespace php RegistryProxy
-namespace py RegistryProxy
-namespace cpp FinagleRegistryProxy
-
  #zookeeper registry proxy interface for php client
 service RegistryProxy {
 	#get enty of serviceName, serviceName is path info in zookeeper
